@@ -1,67 +1,82 @@
-# 2025-04-22
+# 2025-04-23
 
-## 아이디어 구체화
+## 아이디어 구체화 및 중간 발표 준비
 
----
+### 🍏 달디단 – 사과 실시간 당도 예측 앱 (서버 추론 기반 MVP)
 
-### ✅ BookCycle – AI 기반 중고 거래 자동화 플랫폼
+#### 📌 발표 시작
+- A, B, C 등급의 빨간 사과 사진 3장을 제시하며 시작
+- 겉보기엔 비슷하지만 당도가 다르다는 점을 강조
 
-#### 📌 개요  
-AI가 사용자의 사진 한 장으로 제품을 인식하고, 시세를 분석해 자동 등록/응대/기부까지 처리하는 **중고 거래 자동화 플랫폼**
+#### 🎯 기획 의도
+- 기존 당도 측정은 고가 장비 필요 → 일반 사용자 접근 어려움
+- 스마트폰 카메라로 누구나 간편하게 당도 예측 → 맛있는 과일 구매 도우미
 
-#### 🔍 주요 기능
-- 📷 이미지 인식 기반 자동 등록 (책 표지, 제품 외형 → 정보 자동 완성)
-- 💰 감가율 기반 자동 시세 제안 및 원클릭 등록
-- 🤖 GPT 기반 챗봇 자동 응대 (판매자는 승인만)
-- 🎁 기부 시스템 + 지도 시각화 + 명예 트리
+#### 📖 기술적 근거
+- RGB(색상값)와 당도(Brix) 간 상관관계 확인 (논문 및 보고서 인용)
+- 색상 분석 기반 당도 예측 가능성 제시
 
-#### 🛠 사용 기술 스택
-- **프론트엔드**: React  
-- **백엔드**: Spring Boot, JPA, MySQL  
-- **AI**: FastAPI + YOLO/CLIP, GPT API  
-- **외부 API**: ISBN API, 알라딘/YES24 시세 API
+#### 🧠 구현 계획 및 흐름
+1. **데이터셋 확보**: 전북 장수 사과 당도 품질 데이터 (50만 장)
+   - AI Hub 공개 데이터 활용
+   - 기존 모델은 사과 등급 분류용 → 회귀 문제로 리모델링 필요
 
-#### 📦 개발 과제 예시
-- 이미지 인식 모델 연동, 챗봇 설계, 기부 UI/DB 설계 등  
+2. **실시간 추론 흐름**
+   - getUserMedia로 카메라 뷰 띄우기
+   - 1초마다 canvas로 프레임 캡처 + 압축 (toDataURL 또는 toBlob)
+   - WebSocket을 통한 이미지 전송 및 결과 수신
 
-#### 🧠 기술 난이도 및 리스크
-- 이미지 인식/챗봇 정확도, API 비용, 시세 수집 안정성
+3. **프론트엔드 예시 코드**
+```jsx
+const video = document.querySelector("video");
+navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
+  video.srcObject = stream;
+  video.play();
+});
 
-#### 👥 역할 분담 구조 (6인 팀 구성에 적합)
-- BE 2명 / FE 2~3명 / AI+FE 1~2명
+const canvas = document.createElement("canvas");
+const ctx = canvas.getContext("2d");
+canvas.width = 224;
+canvas.height = 224;
 
----
+setInterval(() => {
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  const dataURL = canvas.toDataURL("image/jpeg", 0.5);
+  sendImageToBackend(dataURL);
+}, 1000);
 
-### 🍊 SweetOr – 오렌지 실시간 당도 예측 앱 (서버 추론 기반 MVP)
+const socket = new WebSocket("ws://localhost:8000/ws");
+function sendImageToBackend(dataURL) {
+  const base64 = dataURL.split(',')[1];
+  socket.send(base64);
+}
+socket.onmessage = (e) => {
+  const result = JSON.parse(e.data);
+  console.log("예측 결과:", result);
+};
+```
 
-#### 📌 개요  
-스마트폰으로 오렌지를 비추기만 하면 1초마다 당도 예측 결과가 실시간으로 표시되는 PWA 웹앱 서비스
-
-#### 🔍 핵심 흐름
-- getUserMedia로 카메라 뷰 활성화
-- 매 1초마다 `<canvas>`로 프레임 캡처
-- 흐림 감지(OpenCV.js) → 서버 전송 → PyTorch 추론 → UI 렌더링
-- 흐림 시 자동 경고: “카메라를 고정해주세요!”
-
-#### 🧠 기술 개요
+#### 🔬 사용 기술 및 도구
 | 항목 | 내용 |
 |------|------|
-| 추론 방식 | FastAPI 서버 + PyTorch 모델 |
-| 흐림 감지 | OpenCV.js + Laplacian Variance |
-| 데이터셋 | 직접 촬영 1,000개 + 굴절 당도계 |
-| 출력 | 점수(`12.1°Bx`) + 문장(`상급 오렌지입니다! 🍊`)
+| 데이터셋 | 전북 장수 사과 당도 품질 데이터 (AI Hub) |
+| 실시간 영상 | getUserMedia + Canvas 압축 |
+| 통신 방식 | WebSocket |
+| 서버 추론 | FastAPI + PyTorch 모델 (Mask-RCNN 기반 재활용) |
+| 흐림 감지 | OpenCV.js Laplacian Variance 방식 적용 |
 
-#### ⚖️ 서버 추론 vs On-device 비교
-| 항목 | 서버 추론 | On-device |
-|------|-------------|------------|
-| 속도 | 0.5~1초 | 100~200ms |
-| 오프라인 | ❌ | ✅ |
-| 유지보수 | 쉬움 | 어려움 |
-| UX | 충분히 빠름 | 최고 수준 UX
+#### 🎨 UI/UX 고도화 계획
+- 흔들어서 측정 시작 기능
+- 당도에 따라 햅틱 진동 제공
+- AR 기반 시각화 인터페이스 적용 예정
 
-#### 🧪 개발 전략
-1. 서버 추론 MVP부터 완성 (흐림 감지 포함)  
-2. 여유 시 TensorFlow.js 등으로 On-device 추론 전환 고려
+#### ✅ MVP 활용 시나리오
+- 마트에서 사과 구매 전 → 스마트폰 카메라로 당도 확인
+- UX 데모 영상 or 생성형 AI 기반 시연 영상 활용 가능
+
+#### 🌱 향후 확장 계획
+- RGB 외 요소 분석 (채도, 명도 등)
+- 다양한 과일 추가 대응
+- 당도 예측 정확도 개선 및 지속적 학습
 
 ---
-
