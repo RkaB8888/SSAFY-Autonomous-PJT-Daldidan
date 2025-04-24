@@ -1,82 +1,57 @@
-# 2025-04-23
+# 2025-04-24
 
-## 아이디어 구체화 및 중간 발표 준비
-
-### 🍏 달디단 – 사과 실시간 당도 예측 앱 (서버 추론 기반 MVP)
-
-#### 📌 발표 시작
-- A, B, C 등급의 빨간 사과 사진 3장을 제시하며 시작
-- 겉보기엔 비슷하지만 당도가 다르다는 점을 강조
-
-#### 🎯 기획 의도
-- 기존 당도 측정은 고가 장비 필요 → 일반 사용자 접근 어려움
-- 스마트폰 카메라로 누구나 간편하게 당도 예측 → 맛있는 과일 구매 도우미
-
-#### 📖 기술적 근거
-- RGB(색상값)와 당도(Brix) 간 상관관계 확인 (논문 및 보고서 인용)
-- 색상 분석 기반 당도 예측 가능성 제시
-
-#### 🧠 구현 계획 및 흐름
-1. **데이터셋 확보**: 전북 장수 사과 당도 품질 데이터 (50만 장)
-   - AI Hub 공개 데이터 활용
-   - 기존 모델은 사과 등급 분류용 → 회귀 문제로 리모델링 필요
-
-2. **실시간 추론 흐름**
-   - getUserMedia로 카메라 뷰 띄우기
-   - 1초마다 canvas로 프레임 캡처 + 압축 (toDataURL 또는 toBlob)
-   - WebSocket을 통한 이미지 전송 및 결과 수신
-
-3. **프론트엔드 예시 코드**
-```jsx
-const video = document.querySelector("video");
-navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
-  video.srcObject = stream;
-  video.play();
-});
-
-const canvas = document.createElement("canvas");
-const ctx = canvas.getContext("2d");
-canvas.width = 224;
-canvas.height = 224;
-
-setInterval(() => {
-  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-  const dataURL = canvas.toDataURL("image/jpeg", 0.5);
-  sendImageToBackend(dataURL);
-}, 1000);
-
-const socket = new WebSocket("ws://localhost:8000/ws");
-function sendImageToBackend(dataURL) {
-  const base64 = dataURL.split(',')[1];
-  socket.send(base64);
-}
-socket.onmessage = (e) => {
-  const result = JSON.parse(e.data);
-  console.log("예측 결과:", result);
-};
-```
-
-#### 🔬 사용 기술 및 도구
-| 항목 | 내용 |
-|------|------|
-| 데이터셋 | 전북 장수 사과 당도 품질 데이터 (AI Hub) |
-| 실시간 영상 | getUserMedia + Canvas 압축 |
-| 통신 방식 | WebSocket |
-| 서버 추론 | FastAPI + PyTorch 모델 (Mask-RCNN 기반 재활용) |
-| 흐림 감지 | OpenCV.js Laplacian Variance 방식 적용 |
-
-#### 🎨 UI/UX 고도화 계획
-- 흔들어서 측정 시작 기능
-- 당도에 따라 햅틱 진동 제공
-- AR 기반 시각화 인터페이스 적용 예정
-
-#### ✅ MVP 활용 시나리오
-- 마트에서 사과 구매 전 → 스마트폰 카메라로 당도 확인
-- UX 데모 영상 or 생성형 AI 기반 시연 영상 활용 가능
-
-#### 🌱 향후 확장 계획
-- RGB 외 요소 분석 (채도, 명도 등)
-- 다양한 과일 추가 대응
-- 당도 예측 정확도 개선 및 지속적 학습
+## 중간 발표 자료 제작 및 발표 준비
 
 ---
+
+### 🍏 달디단 – 사과 실시간 당도 예측 앱 (중간 발표 정리)
+
+#### 📝 발표 주제
+- **주제명**: 달디단 – 사과 실시간 당도 예측 앱
+- **문제 제기**: 외관상 비슷한 사과지만 당도는 다름
+- **기존 당도 측정법**: 적외선 센서 기반, 고가 장비(15만원 이상), 비일상적 접근성
+
+#### 🎯 기획 의도
+- 비용 부담 없이 누구나 스마트폰 카메라로 간편하게 당도 확인
+- 휴대성과 즉시성 강조
+
+#### 📊 사과 선택 이유
+- 한국인이 가장 좋아하는 과일 1위: 사과(22.5%)
+  (출처: 한국농촌경제연구원, 식품소비행태조사)
+
+#### 📖 기술적 근거 및 모델
+1. **색상 기반 당도 예측 가능성 입증**
+   - 채도(S), 명도(V)와 당도의 상관관계 입증 (97.4% 정확도 기반 분류 기준)
+2. **데이터 확보**
+   - 전북 장수 사과 이미지 + 당도 데이터 507,600장 활용
+3. **AI 모델 구조**
+   - 기존 Mask-RCNN 모델 → YOLOv8 기반으로 개선 예정
+   - 당도 등급 분류 및 회귀 기반 점수(Brix) 예측
+
+#### 🛠 기술 구성
+| 요소 | 내용 |
+|------|------|
+| 프론트 | React + getUserMedia (실시간 카메라 스트림) |
+| 전송 방식 | WebSocket (1초 단위 프레임 압축 후 전송) |
+| 서버 | FastAPI + PyTorch 추론 서버 |
+| 모델 | Mask-RCNN → YOLO v8 + 회귀 분석 |
+| 후처리 | 당도 점수 시각화, 진동 피드백, AR 기반 UI 고려 중 |
+
+#### 🎨 UI / UX 구성
+- 화면 정지 → 사과 당도 분석 진행
+- 목표 과일: 사과 (품종: 후지)
+- 흔들어서 앱 시작 → 접근성 강화
+- 추론 결과에 따른 햅틱 진동 제공
+- 향후 AR 기능 적용 고려
+
+#### 📈 MVP 구성
+- 사용자가 마트에서 사과를 비추면 당도가 1초 단위로 실시간 표시
+- 점수(`13.9°Bx`) + 설명(`보통 사과입니다 🍎`) 형태
+- 화면 상단에 당도 등급 바 시각화
+
+#### 🔍 파파고 실시간 번역 아키텍처 참고
+- 빠른 REST API 요청-응답 흐름 기반 실시간 처리 모델 벤치마킹
+- 마찬가지로 클라이언트에서 영상 프레임을 캡처하여 서버로 전송 → 결과 렌더링
+
+---
+
