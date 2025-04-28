@@ -109,3 +109,66 @@
 - 현재 사용을 하고 있는 사용자들의 시간을 더욱 단축하고, 사용자의 편의를 제공하고자 노력한다
 
 - 앞으로 다양한 데이터 셋, 알고리즘 등을 구현하기 위해 많은 레퍼런스들을 찾아보자
+
+[250428]
+- ai모델의 구체화
+1. 전반적으로 모든 과일들의 색상, 질감, 특징 등을 출력할 수 있는 알고리즘 코드를 작성하자
+2. 각 과일에 대한 근거 논문 및 자료 들을 찾아본다
+```
+import os
+import cv2
+import numpy as np
+from sklearn.linear_model import LinearRegression
+from feature_extractor import extract_gloss, extract_color_ratio, extract_texture
+from utils import preprocess_image
+
+# 1. 사진 폴더 경로
+image_folder = "sample_images/"
+image_files = [f for f in os.listdir(image_folder) if f.endswith(('.jpg', '.png'))]
+
+# 2. Sweetness Score 계산
+sweetness_scores = []
+
+for file_name in image_files:
+    file_path = os.path.join(image_folder, file_name)
+    
+    # 이미지 읽기
+    image = cv2.imread(file_path)
+    
+    # 전처리
+    preprocessed_image = preprocess_image(image)
+    
+    # 특징 추출
+    gloss = extract_gloss(preprocessed_image)
+    color = extract_color_ratio(preprocessed_image)
+    texture = extract_texture(preprocessed_image)
+    
+    # Sweetness Score 계산
+    sweetness_score = (gloss * 0.4) + (color * 0.4) - (texture * 0.2)
+    
+    sweetness_scores.append(sweetness_score)
+
+print("Sweetness Scores:", sweetness_scores)
+
+# 3. Sweetness Score → 등급(A/B) 매칭해서 Brix 만들기
+grades = ['A', 'B', 'B', 'A', 'B', 'A', 'B', 'A', 'B', 'B', 'B', 'A', 'B', 'A']  # 네가 가지고 있는 등급 순서대로
+brix_values = []
+for grade in grades:
+    if grade == 'A':
+        brix_values.append(14.5)
+    else:
+        brix_values.append(13.0)
+
+# 4. numpy 변환
+sweetness_scores = np.array(sweetness_scores).reshape(-1, 1)
+brix_values = np.array(brix_values)
+
+# 5. 선형 회귀 학습
+model = LinearRegression()
+model.fit(sweetness_scores, brix_values)
+
+# 6. 결과 출력
+print("회귀식: Brix = {:.3f} * Score + {:.3f}".format(model.coef_[0], model.intercept_))
+
+```
+3. 인프라 기본 설정을 학습 및 인프라를 직접 구현.
