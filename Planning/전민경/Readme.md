@@ -172,3 +172,160 @@ print("회귀식: Brix = {:.3f} * Score + {:.3f}".format(model.coef_[0], model.i
 
 ```
 3. 인프라 기본 설정을 학습 및 인프라를 직접 구현.
+
+[250429]인프라 기본설정 및 ai모델 고도화방안 고려
+
+### 인프라 기본설정 
+1. termius 설정
+2. termius에서 작업을 해보자
+```bash
+#도커 설치 명령어
+Add Docker's official GPG key:
+sudo apt-get update
+sudo apt-get install ca-certificates curl
+sudo install -m 0755 -d /etc/apt/keyrings
+sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+sudo chmod a+r /etc/apt/keyrings/docker.asc
+
+Add the repository to Apt sources:
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
+  $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}") stable" | \
+  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+sudo apt-get update
+```
+
+```bash
+sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+```
+
+```bash
+일반 사용자 권한 설정
+sudo usermod -aG docker $USER
+
+등록 && 시작
+sudo systemctl enable docker
+sudo systemctl start docker 
+sudo systemctl status docker
+#status로 아래 사진의 결과값을 보여줄 수 있다.
+```
+
+- apt == advanced package tool를 뜻함.
+
+
+4. 엔지닉스
+```bash
+sudo apt install curl gnupg2 ca-certificates lsb-release ubuntu-keyring
+sudo apt install nginx
+sudo systemctl enable nginx
+sudo systemctl start nginx 
+sudo systemctl status nginx
+```
+
+5. 방화벽 설정
+6. HTTPS관련 설정인 ssl인증서 발급
+```bash
+sudo apt-get update
+sudo apt-get install -y certbot python3-certbot-nginx
+
+적용할 도메인 주소와 이메일 입력해주기
+sudo certbot certonly --nginx -d {도메인주소}
+-> 에서 나오는 내용을----if위의 내용을 복사해서  gpt에게 물어보자!!!! 
+질문내용 "이거에 맞게 ssl적용되는 nginx.conf를 만들어줘"
+```
+
+7. 자바 설치
+   백엔드를 FastAPI로 쓸예정이지만, 예전플젝을 참고하여 springboot가 추가될지도 모르는 상황에 대비하기위해,
+
+자바 버전을 예전플젝버전을 사용할 예정으로 생각하고, 버전을 알아오니, 17이었다
+
+8. 자바 설치했으니,,, 환경변수 설정을 해보자…
+```bash
+echo $JAVA_HOME
+
+sudo nano /etc/environment
+ #environment를 써야 젠킨스 가능. 그냥 bashsr?? 은 젠킨스가 무시할 수 있음.
+ 
+ #안의 내용을 이렇게 추가한다.
+PATH="~~~~:/usr/lib/jvm/java-17-openjdk-amd64/bin"
+JAVA_HOME="/usr/lib/jvm/java-17-openjdk-amd64"
+```
+
+9. 젠킨스 설치
+- 젠킨스 설치를 해보자...!
+
+### ai모델 고도화방안 고려
+- 고도화 구상
+
+#### 광택(Glossiness)
+- 단순 밝기 평균이 아니라, 빛의 "하이라이트 영역(반사 강한 부분)" 비율 계산
+
+#### 색상(Color)
+- RGB가 아니라 HSV 색공간 기준으로 Hue(색상) 분포를 분석
+
+#### 텍스처(Texture)
+- Gray Level Co-occurrence Matrix (GLCM) 기반의 콘트라스트, 에너지, 동질성(Homogeneity) 계산
+
+
+```
+import cv2
+import numpy as np
+from skimage.feature import graycomatrix, graycoprops
+
+# ----------------------------------------------------------
+# 광택 (Glossiness) 추출 함수
+# → 이미지의 밝은 영역(하이라이트) 비율을 계산
+# ----------------------------------------------------------
+def extract_gloss(image):
+    # 이미지를 그레이스케일로 변환
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    
+    # 밝기가 220 이상인 픽셀 수를 계산
+    bright_pixels = np.sum(gray > 220)
+    
+    # 전체 픽셀 수
+    total_pixels = gray.size
+    
+    # 광택 비율 (밝은 픽셀 수 / 전체 픽셀 수)
+    glossiness = bright_pixels / total_pixels
+    return glossiness
+
+# ----------------------------------------------------------
+# 색상 (Color) 추출 함수 (HSV 색공간 기반)
+# → 색조(Hue), 채도(Saturation), 명도(Value) 평균값 추출
+# ----------------------------------------------------------
+def extract_color_hsv(image):
+    # 이미지를 HSV 색공간으로 변환
+    hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+    
+    # Hue(색조) 평균 (0~180 범위를 0~1로 정규화)
+    mean_hue = np.mean(hsv[:, :, 0]) / 180
+    
+    # Saturation(채도) 평균 (0~255 범위를 0~1로 정규화)
+    mean_saturation = np.mean(hsv[:, :, 1]) / 255
+    
+    # Value(명도) 평균 (0~255 범위를 0~1로 정규화)
+    mean_value = np.mean(hsv[:, :, 2]) / 255
+    
+    return mean_hue, mean_saturation, mean_value
+
+# ----------------------------------------------------------
+# 텍스처 (Texture) 추출 함수 (GLCM 기반)
+# → 텍스처의 대비(Contrast)와 동질성(Homogeneity) 계산
+# ----------------------------------------------------------
+def extract_texture(image):
+    # 이미지를 그레이스케일로 변환
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    
+    # GLCM (Gray-Level Co-occurrence Matrix) 계산
+    glcm = graycomatrix(gray, [1], [0], symmetric=True, normed=True)
+    
+    # 대비 (Contrast) 특징 추출
+    contrast = graycoprops(glcm, 'contrast')[0, 0]
+    
+    # 동질성 (Homogeneity) 특징 추출
+    homogeneity = graycoprops(glcm, 'homogeneity')[0, 0]
+    
+    return contrast, homogeneity
+
+```
