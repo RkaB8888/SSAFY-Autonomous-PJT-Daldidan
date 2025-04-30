@@ -3,7 +3,9 @@ import { FrameData, PredictionData } from "./types";
 
 // 소켓 연결 초기화
 export const initSocketConnection = (): void => {
-  socket.connect();
+  if (!socket.connected) {
+    socket.connect();
+  }
 
   socket.on("connect", () => {
     console.log("✅ 소켓 연결 성공:", socket.id);
@@ -26,8 +28,13 @@ export const sendFrame = (frameData: FrameData): void => {
 
 // 서버로부터 예측 결과 받기
 export const onPrediction = (callback: (data: PredictionData) => void): void => {
+  socket.off("prediction"); // 중복 방지
   socket.on("prediction", (data) => {
     console.log("📈 예측 결과 수신:", data);
     callback(data);
+  });
+
+  socket.on("connect_error", (err) => {
+    console.error("❗ 연결 오류:", err.message);
   });
 };
