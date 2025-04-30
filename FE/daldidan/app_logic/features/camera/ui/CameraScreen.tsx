@@ -1,42 +1,34 @@
+import React from 'react';
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
-import type { CameraView as CameraViewType, CameraCapturedPicture } from 'expo-camera';
+import type { CameraView as CameraViewType } from 'expo-camera';
 import { useEffect, useRef, useState } from 'react';
 import { Button, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { toggleCameraFacing } from '../api/cameraApi';
 import { initSocketConnection, sendFrame, onPrediction } from '@/app_logic/features/socket/socketEvents';
+import { PredictionData, ApplePrediction } from '@/app_logic/features/socket/types';
+import Svg, { Rect, Text as SvgText } from 'react-native-svg';
 
 export default function CameraScreen() {
   const [facing, setFacing] = useState<CameraType>('back');
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraViewType | null>(null);
   const intervalRef = useRef<number | null>(null);
-  const [prediction, setPrediction] = useState<number | null>(null);
+  const [predictions, setPredictions] = useState<ApplePrediction[]>([]);
+  const [isSending, setIsSending] = useState(false);
 
-  // ✅ 소켓 연결 + 예측 결과 핸들러 등록
   useEffect(() => {
     initSocketConnection();
-
-    onPrediction((data) => {
-      setPrediction(data.brix);
-    });
+    onPrediction((data: PredictionData) => setPredictions(data.results));
 
     return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
+      if (intervalRef.current) clearInterval(intervalRef.current);
     };
   }, []);
 
-  // ✅ 카메라 전환 버튼 핸들러
-  const handleToggleCameraFacing = () => {
-    setFacing(toggleCameraFacing);
-  };
+  const handleToggleCameraFacing = () => setFacing(toggleCameraFacing);
 
-  // ✅ 프레임 전송 시작 함수
   const startSendingFrames = () => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-    }
+    if (intervalRef.current) clearInterval(intervalRef.current);
 
     intervalRef.current = window.setInterval(() => {
       (async () => {
@@ -46,17 +38,22 @@ export default function CameraScreen() {
               base64: true,
               quality: 0.3,
             });
-            console.log(photo?.base64?.slice(0, 20))
-    
-            if (photo?.base64) {
-              sendFrame({ image: photo.base64 });
-            }
+
+            if (photo?.base64) sendFrame({ image: photo.base64 });
           } catch (err) {
             console.warn('📸 촬영 실패:', err);
           }
         }
       })();
-    }, 1000);
+    }, 3000);
+
+    setIsSending(true);
+  };
+
+  const stopSendingFrames = () => {
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    intervalRef.current = null;
+    setIsSending(false);
   };
 
   if (!permission) return <View style={styles.container} />;
@@ -72,41 +69,57 @@ export default function CameraScreen() {
   return (
     <View style={styles.container}>
       <CameraView ref={cameraRef} style={styles.camera} facing={facing}>
+        <Svg style={StyleSheet.absoluteFill}>
+          {predictions.map((apple) => (
+            <React.Fragment key={apple.id}>
+              <Rect
+                x={apple.box[0]}
+                y={apple.box[1]}
+                width={apple.box[2]}
+                height={apple.box[3]}
+                stroke="red"
+                strokeWidth={2}
+                fill="transparent"
+              />
+              <SvgText
+                x={apple.box[0] + 5}
+                y={apple.box[1] + 20}
+                fill="white"
+                fontSize="14"
+              >
+                🍎 {apple.brix} °Brix
+              </SvgText>
+            </React.Fragment>
+          ))}
+        </Svg>
+
         <View style={styles.buttonContainer}>
           <TouchableOpacity style={styles.button} onPress={handleToggleCameraFacing}>
             <Text style={styles.text}>카메라 전환</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.button} onPress={startSendingFrames}>
-            <Text style={styles.text}>촬영 시작</Text>
+          <TouchableOpacity
+            style={styles.button}
+            onPress={isSending ? stopSendingFrames : startSendingFrames}
+          >
+            <Text style={styles.text}>{isSending ? '촬영 중지' : '촬영 시작'}</Text>
           </TouchableOpacity>
         </View>
-
-        {prediction !== null && (
-          <View style={styles.predictionBox}>
-            <Text style={styles.predictionText}>예측 당도: {prediction}</Text>
-          </View>
-        )}
       </CameraView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  camera: {
-    flex: 1,
-  },
+  container: { flex: 1 },
+  camera: { flex: 1 },
   buttonContainer: {
     flexDirection: 'row',
     backgroundColor: 'transparent',
-    margin: 64,
+    margin: 54,
     position: 'absolute',
-    bottom: 0,
-    width: '100%',
+    bottom: 40,
+    width: '80%',
     justifyContent: 'space-around',
   },
   button: {
@@ -123,17 +136,5 @@ const styles = StyleSheet.create({
   message: {
     textAlign: 'center',
     paddingBottom: 10,
-  },
-  predictionBox: {
-    position: 'absolute',
-    top: 40,
-    alignSelf: 'center',
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    padding: 10,
-    borderRadius: 10,
-  },
-  predictionText: {
-    fontSize: 20,
-    color: 'white',
   },
 });
