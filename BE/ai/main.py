@@ -1,0 +1,8 @@
+# FastAPI 앱 시작점 (AI 추론 서버)
+from fastapi import FastAPI
+from ai.api.v1 import routes
+
+app = FastAPI()
+
+# /api/v1/predict 엔드포인트 등록
+app.include_router(routes.router)
