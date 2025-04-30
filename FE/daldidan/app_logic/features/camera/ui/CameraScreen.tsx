@@ -1,11 +1,34 @@
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
-import { useState } from 'react';
+import type {CameraView as CameraViewType } from 'expo-camera'
+import { useEffect, useRef, useState } from 'react';
 import { Button, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { toggleCameraFacing } from '../api/cameraApi';
+import { initSocketConnection, sendFrame, onPrediction } from '@/app_logic/features/socket/socketEvents';
+
 
 export default function CameraScreen() {
   const [facing, setFacing] = useState<CameraType>('back');
   const [permission, requestPermission] = useCameraPermissions();
+  const cameraRef = useRef<CameraViewType | null>(null); // 카메라 인스턴스 관리
+  const intervalRef = useRef<number  | null>(null); // 프레임 전송 주기 관리
+  const [prediction, setPrediction] = useState<number | null>(null); // 예측 결과 상태
+
+  // 소켓 연결 및 예측 수신
+  useEffect(() => {
+    initSocketConnection();
+
+    onPrediction((data) => {
+      setPrediction(data.brix);
+    });
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, []);
+  
+  
 
   if (!permission) {
     return <View style={styles.container} />;
@@ -23,6 +46,7 @@ export default function CameraScreen() {
   const handleToggleCameraFacing = () => {
     setFacing(toggleCameraFacing);
   };
+
 
   return (
     <View style={styles.container}>
