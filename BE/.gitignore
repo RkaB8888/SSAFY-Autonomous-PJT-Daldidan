@@ -174,7 +174,7 @@ cython_debug/
 .pypirc
 
 # ========== AI 모델 가중치 파일 무시 ==========
-/app/models/*/*.pth
-/app/models/*/*.h5
-/app/models/*/*.pt
-!*/.gitkeep
+ai/models/*/*.pth
+ai/models/*/*.h5
+ai/models/*/*.pt
+!ai/models/**/.gitkeep
