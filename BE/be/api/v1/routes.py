@@ -1,4 +1,5 @@
-# 여기는 Spring Boot의 Controller에 해당
+# ai/api/v1/routes.py
+
 from fastapi import APIRouter
 
 router = APIRouter()
