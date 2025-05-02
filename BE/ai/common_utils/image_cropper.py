@@ -1,4 +1,4 @@
-# utils/image_cropper.py
+# common_utils/image_cropper.py
 
 from pathlib import Path
 from typing import Tuple
