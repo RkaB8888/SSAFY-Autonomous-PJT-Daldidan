@@ -1,7 +1,7 @@
 # ai/api/v1/routes.py
 
 from fastapi import APIRouter, File, UploadFile, Form
-from be.schemas.api import DummyPredictResponse
+from schemas.api import DummyPredictResponse
 import random
 
 router = APIRouter()
