@@ -4,7 +4,7 @@ WORKDIR /app/be
 
 COPY . /app/be
 
-COPY ../requirements.txt /app/requirements.txt
+COPY requirements.txt /app/requirements.txt
 
 ENV PYTHONPATH=/app
 
