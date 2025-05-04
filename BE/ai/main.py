@@ -1,6 +1,6 @@
 # FastAPI 앱 시작점 (AI 추론 서버)
 from fastapi import FastAPI
-from ai.api.v1 import routes
+from api.v1 import routes
 
 app = FastAPI()
 
