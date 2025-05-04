@@ -1,6 +1,6 @@
 # Spring의 Application.java에 해당
 from fastapi import FastAPI
-from be.api.v1 import routes
+from api.v1 import routes
 
 app = FastAPI()
 

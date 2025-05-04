@@ -184,20 +184,18 @@ def extract_crop_image_shape_features(
 
 """
 기능: 위의 모든 feature 추출 함수를 통합 실행
-- 이미지 (crop 상태)를 받아 최종 특징 벡터 반환
+- 입력된 이미지(ndarray)에 대해 모든 시각적 특징을 추출하고 연결
 
-입력: 
-- 이미지 경로
+입력:
+- image: crop된 사과 이미지 (numpy.ndarray)
 
 출력:
-- feature_vec: np.ndarray 형식의 특징 벡터
-- feature_names: 각 특징의 이름 목록 (debug, logging 등에 유용)
+- feature_vec: np.ndarray 형식의 특징 벡터 (모델 입력값)
+- feature_names: 각 특징의 이름 목록 (디버깅 및 시각화용)
 """
 
 
-def extract_features(image_path: Path) -> Tuple[np.ndarray, List[str]]:
-    image = load_image(image_path)
-
+def extract_features(image: np.ndarray) -> Tuple[np.ndarray, List[str]]:
     f1, n1 = extract_normalized_rgb(image)
     f2, n2 = extract_cmy_first_component(image)
     f3, n3 = extract_hsv_means(image)
