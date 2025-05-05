@@ -63,7 +63,12 @@ def train_lightgbm(
 
     # -- 학습 --
     model = lgb.LGBMRegressor(
-        n_estimators=300, learning_rate=0.05, max_depth=5, random_state=42
+        n_estimators=300,
+        learning_rate=0.05,
+        max_depth=5,
+        device="gpu",  # <== GPU 사용 설정
+        gpu_use_dp=True,  # (선택) 더 안정적인 처리
+        random_state=42,
     )
     model.fit(X_reduced, y)
 
