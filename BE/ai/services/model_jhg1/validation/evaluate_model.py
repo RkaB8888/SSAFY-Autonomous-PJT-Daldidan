@@ -13,11 +13,7 @@ from tqdm import tqdm
 
 from common_utils.image_cropper import crop_bbox_from_json
 from services.model_jhg1.utils.feature_extractors import extract_features
-
-
-def load_model(model_path: Path):
-    bundle = joblib.load(model_path)
-    return bundle["model"], bundle["selector"]
+from services.model_jhg1.utils.loader import load_model_bundle
 
 
 def load_test_set(img_dir: Path, json_dir: Path):
@@ -31,8 +27,13 @@ def load_test_set(img_dir: Path, json_dir: Path):
             continue
         feats, _ = extract_features(crop)
         with open(js, "r", encoding="utf-8") as f:
-            sugar = json.load(f)["collection"].get("sugar_content")
+            data = json.load(f)
+        collection = data.get("collection", {})
+        sugar = collection.get("sugar_content")
         if sugar is None:
+            sugar = collection.get("sugar_content_nir")
+        if sugar is None:
+            tqdm.write(f"[무시] 당도 정보 없음: {img_path.name}")
             continue
         X.append(feats)
         y.append(sugar)
@@ -56,7 +57,7 @@ def main():
     p.add_argument("--out_csv", help="optional: save per-sample CSV")
     args = p.parse_args()
 
-    model, selector = load_model(Path(args.model))
+    model, selector = load_model_bundle(Path(args.model))
 
     X_test, y_test, ids = load_test_set(Path(args.images), Path(args.jsons))
     X_sel = selector.transform(X_test)

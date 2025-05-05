@@ -35,8 +35,13 @@ def load_dataset(images_dir: Path, jsons_dir: Path):
 
             with open(json_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
-            sugar = data["collection"].get("sugar_content")
+            collection = data.get("collection", {})
+            sugar = collection.get("sugar_content")
             if sugar is None:
+                sugar = collection.get("sugar_content_nir")
+
+            if sugar is None:
+                tqdm.write(f"[무시] 당도 정보 없음: {image_path.name}")
                 continue
 
             X.append(feats)
