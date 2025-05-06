@@ -21,10 +21,11 @@ class AppleSugarRegressor(nn.Module):
             nn.Linear(64, 1)  # 회귀
         )
 
-    # 버전1
-    def forward(self, x, color_feat, texture_feat):
+    def forward(self, x, extra_feat):
         cnn_feat = self.cnn(x)
         cnn_feat = self.flatten(cnn_feat)  # (batch, 32)
-        
-        combined = torch.cat([cnn_feat, color_feat, texture_feat], dim=1)
-        return self.fc(combined)
+
+        # extra_feat: (batch, 7)
+        combined_feat = torch.cat([cnn_feat, extra_feat], dim=1)  # (batch, 39)
+
+        return self.fc(combined_feat)
