@@ -6,6 +6,11 @@ import torch.optim as optim
 from dataset.apple_dataset import AppleDataset
 from models.cnn_model import AppleSugarRegressor
 from utils import calculate_mae
+from tqdm import tqdm
+
+# 버전 선택
+fuji_version = ""    # 후지1, 후지2, 후지3, 후지4 중 선택
+grade_version = ""  # 당도A등급, 당도B등급, 당도C등급 중 선택
 
 # 경로 설정 (실제 경로로 수정)
 IMG_DIR = r""
@@ -33,12 +38,26 @@ for epoch in range(epochs):
     preds = []
     targets = []
 
-    #버전1
-    for images, sugars in dataloader:
-        images, sugars = images.to(device), sugars.to(device)
+    # #버전1
+    # for images, sugars in dataloader:
+    #     images, sugars = images.to(device), sugars.to(device)
+
+    #     optimizer.zero_grad()
+    #     outputs = model(images)
+    #     loss = criterion(outputs, sugars)
+    #     loss.backward()
+    #     optimizer.step()
+
+    #     epoch_loss += loss.item()
+    #     preds.extend(outputs.detach().cpu().numpy())
+    #     targets.extend(sugars.cpu().numpy())
+    # #---------------------------------------------------------
+        #버전2
+    for images, features, sugars  in tqdm(dataloader, desc=f"Epoch {epoch+1}/{epochs}", total=len(dataloader)):  # ✅ 3개 받아야 함
+        images, features, sugars = images.to(device), features.to(device), sugars.to(device)
 
         optimizer.zero_grad()
-        outputs = model(images)
+        outputs = model(images, features)  # ✅ model에 features도 같이 전달
         loss = criterion(outputs, sugars)
         loss.backward()
         optimizer.step()
