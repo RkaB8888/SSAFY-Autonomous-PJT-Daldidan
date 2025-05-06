@@ -41,8 +41,16 @@ def predict_image(image_path):
     return output.item()
 
 if __name__ == "__main__":
-    img_path = r""
-    prediction = predict_image(img_path)
-    print(f"Predicted Sugar Content: {prediction:.2f} Brix")
+    test_folder = r""
+    image_paths = glob.glob(os.path.join(test_folder, "*.jpg"))
 
+    if not image_paths:
+        print("No jpg files found in test folder.")
+    else:
+        for img_path in image_paths:
+            try:
+                prediction = predict_image(img_path)
+                print(f"{os.path.basename(img_path)} → Predicted Sugar Content: {prediction:.2f} Brix")
+            except Exception as e:
+                print(f"Error processing {img_path}: {e}")
 
