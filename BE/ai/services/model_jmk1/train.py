@@ -3,8 +3,8 @@ import torch
 from torch.utils.data import DataLoader
 import torch.nn as nn
 import torch.optim as optim
-from dataset.apple_dataset import AppleDataset
-from models.cnn_model import AppleSugarRegressor
+from apple_dataset import AppleDataset
+from cnn_model import AppleSugarRegressor
 from utils import calculate_mae
 from tqdm import tqdm
 import os
