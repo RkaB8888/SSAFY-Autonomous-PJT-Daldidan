@@ -3,7 +3,7 @@ import os, pathlib, glob, numpy as np, tqdm
 from PIL import Image
 from torch.utils.data import Dataset, DataLoader
 
-from services.model_jhg2.utils.cnn_feature_extractor import extract
+from services.model_jhg2.utils.cnn_feature_extractor import extract_batch
 from services.model_jhg2.config import CACHE_DIR, IMAGES_DIR
 
 
@@ -43,7 +43,9 @@ all_feats = np.empty((len(dl.dataset), emb_dim), np.float32)
 
 idx = 0
 for batch_imgs in tqdm.tqdm(dl, total=len(dl), ncols=80):
-    vecs = np.stack([extract(img) for img in batch_imgs])
+    # batch_imgs : 리스트 → np.stack 한번만
+    batch_np = np.stack(batch_imgs, axis=0)
+    vecs = extract_batch(batch_np)  # ★ 단일 호출
     all_feats[idx : idx + len(vecs)] = vecs
     idx += len(vecs)
 

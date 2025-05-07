@@ -1,6 +1,5 @@
 # ai>services>model_jhg2>utils>cnn_feature_extractor.py
-import torch
-import numpy as np
+import torch, numpy as np
 from torchvision import models, transforms
 
 # ── 환경 설정 ────────────────────────────────────────────────
@@ -23,12 +22,13 @@ preproc = transforms.Compose(
 
 
 @torch.inference_mode()
-def extract(img: "np.ndarray") -> "np.ndarray":
+def extract_batch(imgs: "np.ndarray") -> "np.ndarray":
     """
-    HWC uint8 이미지를 받아 1280‑차원 벡터(np.float32) 반환
+    imgs : (B, H, W, C) uint8
+    return: (B, 1280) float32
     """
-    x = torch.as_tensor(img).permute(2, 0, 1)  # HWC → CHW
-    x = preproc(x).unsqueeze(0).to(device)  # 배치 차원 추가
+    x = torch.from_numpy(imgs).permute(0, 3, 1, 2)  # BHWC → BCHW
+    x = preproc(x).to(device, non_blocking=True)
     with torch.cuda.amp.autocast():
-        vec = model(x).squeeze().cpu().numpy()
-    return vec.astype(np.float32)
+        vec = model(x).cpu().numpy().astype(np.float32)
+    return vec
