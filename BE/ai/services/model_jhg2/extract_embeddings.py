@@ -4,7 +4,7 @@ from torch.utils.data import DataLoader
 from torchvision.datasets import ImageFolder
 
 from services.model_jhg2.utils.cnn_feature_extractor import extract
-from services.model_jhg2.config import CACHE_DIR, DATA_ROOT
+from services.model_jhg2.config import CACHE_DIR, IMAGES_DIR
 
 # ── 데이터 준비 ──────────────────────────────────────────────
 BATCH_SIZE = 1024
@@ -13,7 +13,7 @@ NUM_WORKERS = 48
 # ⭐ 1) PIL → np.ndarray 로 변환하는 람다 transform 추가
 to_numpy = lambda img: np.asarray(img)  # HWC  uint8
 
-ds = ImageFolder(DATA_ROOT, transform=to_numpy)
+ds = ImageFolder(IMAGES_DIR, transform=to_numpy)
 dl = DataLoader(
     ds,
     batch_size=BATCH_SIZE,

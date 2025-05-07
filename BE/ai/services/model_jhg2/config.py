@@ -1,9 +1,9 @@
 from pathlib import Path
 
 # ── GPU 서버 고정 절대경로 ───────────────────────────────
-DATA_ROOT = Path("/home/j-k12e206/ai-hub/Fuji/train")
-IMAGES_DIR = DATA_ROOT / "images"
-JSONS_DIR = DATA_ROOT / "jsons"
+TRAIN_ROOT = Path("/home/j-k12e206/ai-hub/Fuji/train")
+IMAGES_DIR = TRAIN_ROOT / "images"
+JSONS_DIR = TRAIN_ROOT / "jsons"
 
 VALID_ROOT = Path("/home/j-k12e206/ai-hub/Fuji/valid")
 VALID_IMAGES_DIR = VALID_ROOT / "images"
