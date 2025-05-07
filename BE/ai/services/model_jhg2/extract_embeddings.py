@@ -22,8 +22,8 @@ class FlatImageDataset(Dataset):
 
 
 # ── 데이터 준비 ──────────────────────────────────────────────
-BATCH_SIZE = 1024
-NUM_WORKERS = 48
+BATCH_SIZE = 512
+NUM_WORKERS = 24
 
 ds = FlatImageDataset(IMAGES_DIR)
 dl = DataLoader(
@@ -31,7 +31,7 @@ dl = DataLoader(
     batch_size=BATCH_SIZE,
     num_workers=NUM_WORKERS,
     pin_memory=True,
-    prefetch_factor=4,
+    prefetch_factor=2,
 )
 
 # ── 임베딩 추출 ─────────────────────────────────────────────
