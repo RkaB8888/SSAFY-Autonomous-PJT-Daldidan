@@ -1,6 +1,6 @@
 # ai>services>model_jhg2>utils>cnn_feature_extractor.py
+import torch
 import numpy as np
-from torch import amp
 from torchvision import models, transforms
 
 # ── 환경 설정 ────────────────────────────────────────────────
