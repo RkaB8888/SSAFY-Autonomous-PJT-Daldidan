@@ -22,12 +22,13 @@ class FlatImageDataset(Dataset):
 
 
 # ── DataLoader 설정 ─────────────────────────────────────────
-BATCH, WORKERS, PREFETCH = 256, 16, 1
+BATCH, WORKERS, PREFETCH = 512, 32, 2
 
 dl = DataLoader(
     FlatImageDataset(IMAGES_DIR),
     batch_size=BATCH,
     num_workers=WORKERS,
+    collate_fn=lambda x: x,
     prefetch_factor=PREFETCH,
     pin_memory=False,
     persistent_workers=False,
