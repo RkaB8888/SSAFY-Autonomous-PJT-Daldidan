@@ -5,18 +5,53 @@ import torch
 from PIL import Image
 import torchvision.transforms as transforms
 import numpy as np
-from models.cnn_model import AppleSugarRegressor
+from cnn_model import AppleSugarRegressor
 from utils import extract_color_features, extract_texture_features
 import os
 import glob
+import re
+from pathlib import Path
+
+
+# 모델 경로 탐색
+SAVE_DIR = "/home/j-k12e206/jmk/S12P31E206/BE/ai/services/model_jmk1"
+BASENAME = "apple_model"
+EXTENSION = ".pth"
+
+# 폴더 안에 기존 파일 검색
+existing_files = os.listdir(SAVE_DIR)
+
+# apple_model_숫자.pth 패턴 매칭
+pattern = re.compile(rf"{BASENAME}_(\d+){EXTENSION}")
+
+max_index = 0
+latest_model_file = None
+for filename in existing_files:
+    match = pattern.match(filename)
+    if match:
+        index = int(match.group(1))
+        if index > max_index:
+            max_index = index
+            latest_model_file = filename
+
+if latest_model_file is None:
+    raise FileNotFoundError("No saved model found in directory.")
+
+MODEL_LOAD_PATH = os.path.join(SAVE_DIR, latest_model_file)
+print(f"최신 모델 로드 경로: {MODEL_LOAD_PATH}")
+
 
 # Load model
 model = AppleSugarRegressor()
-model.load_state_dict(torch.load("apple_model.pth"))
+model.load_state_dict(torch.load(MODEL_LOAD_PATH))
 model.eval()
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 model.to(device)
+
+# 검증 데이터 경로
+VALID_ROOT = Path("/home/j-k12e206/ai-hub/Fuji/valid")
+VALID_IMAGES_DIR = VALID_ROOT / "images"
 
 # Preprocess
 transform = transforms.Compose([
@@ -41,7 +76,7 @@ def predict_image(image_path):
     return output.item()
 
 if __name__ == "__main__":
-    test_folder = r""
+    test_folder = str(VALID_IMAGES_DIR)
     image_paths = glob.glob(os.path.join(test_folder, "*.jpg"))
 
     if not image_paths:
