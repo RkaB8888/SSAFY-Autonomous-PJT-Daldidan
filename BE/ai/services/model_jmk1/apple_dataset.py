@@ -49,11 +49,11 @@ class AppleDataset(Dataset):
         print(f"\n총 {len(self.samples)}개의 데이터 로드 완료 (이미지 + json 매칭된 것만).")
 
         # 추가: 처음 ?000개만 사용
-        if len(self.samples) > 2000:
-            random.shuffle(self.samples) 
+        # if len(self.samples) > 2000:
+        #     random.shuffle(self.samples) 
 
-            self.samples = random.sample(self.samples, 2000)
-            print(f"✅ 임시로 {len(self.samples)}만 샘플로 사용 (총 {len(self.samples)}개)")
+        #     self.samples = random.sample(self.samples, 2000)
+        #     print(f"✅ 임시로 {len(self.samples)}만 샘플로 사용 (총 {len(self.samples)}개)")
 
     def __len__(self):
         return len(self.samples)
