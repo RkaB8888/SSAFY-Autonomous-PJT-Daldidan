@@ -13,7 +13,6 @@ model.to(device).eval()
 # 이미지 전처리 파이프라인
 preproc = transforms.Compose(
     [
-        transforms.Resize(256),
         transforms.CenterCrop(224),
         transforms.ConvertImageDtype(torch.float32),
         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
@@ -22,7 +21,7 @@ preproc = transforms.Compose(
 
 
 @torch.inference_mode()
-def extract_batch(imgs: "np.ndarray") -> "np.ndarray":
+def extract_batch(imgs: np.ndarray) -> np.ndarray:
     """
     imgs : (B, H, W, C) uint8
     return: (B, 1280) float32
