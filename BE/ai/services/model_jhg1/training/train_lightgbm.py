@@ -2,6 +2,7 @@
 import json
 import joblib
 from pathlib import Path
+from typing import List
 
 import lightgbm as lgb
 import numpy as np
@@ -10,6 +11,7 @@ from sklearn.feature_selection import VarianceThreshold
 
 from common_utils.image_cropper import crop_bbox_from_json
 from services.model_jhg1.utils.feature_extractors import extract_features
+from services.model_jhg1.config import IMAGES_DIR, JSONS_DIR, MODEL_SAVE_PATH
 
 
 def load_dataset(images_dir: Path, jsons_dir: Path):
@@ -82,13 +84,9 @@ def train_lightgbm(
 
 
 def main():
-    images_dir = Path("dataset/images")
-    jsons_dir = Path("dataset/jsons")
-    save_path = Path("services/model_jhg1/weights/lightgbm_model.pkl")
-
-    X, y, feature_names = load_dataset(images_dir, jsons_dir)
+    X, y, feature_names = load_dataset(IMAGES_DIR, JSONS_DIR)
     print(f"▶ 샘플: {X.shape}, y 분포: {np.unique(y)}")
-    train_lightgbm(X, y, feature_names, save_path)
+    train_lightgbm(X, y, feature_names, MODEL_SAVE_PATH)
 
 
 if __name__ == "__main__":
