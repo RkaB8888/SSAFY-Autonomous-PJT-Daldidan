@@ -1,19 +1,31 @@
 # ai/services/model_jhg2/extract_embeddings.py
-import os, pathlib, numpy as np, tqdm
-from torch.utils.data import DataLoader
-from torchvision.datasets import ImageFolder
+import os, pathlib, glob, numpy as np, tqdm
+from PIL import Image
+from torch.utils.data import Dataset, DataLoader
 
 from services.model_jhg2.utils.cnn_feature_extractor import extract
 from services.model_jhg2.config import CACHE_DIR, IMAGES_DIR
+
+
+# ── FlatImageDataset 정의 ──────────────────────────────────
+class FlatImageDataset(Dataset):
+    def __init__(self, root: pathlib.Path):
+        self.files = sorted(glob.glob(str(root / "*.jpg")))  # 모든 JPG 수집
+        self.to_numpy = lambda img: np.asarray(img)  # HWC uint8
+
+    def __len__(self):
+        return len(self.files)
+
+    def __getitem__(self, idx):
+        img = Image.open(self.files[idx]).convert("RGB")
+        return self.to_numpy(img)
+
 
 # ── 데이터 준비 ──────────────────────────────────────────────
 BATCH_SIZE = 1024
 NUM_WORKERS = 48
 
-# ⭐ 1) PIL → np.ndarray 로 변환하는 람다 transform 추가
-to_numpy = lambda img: np.asarray(img)  # HWC  uint8
-
-ds = ImageFolder(IMAGES_DIR, transform=to_numpy)
+ds = FlatImageDataset(IMAGES_DIR)
 dl = DataLoader(
     ds,
     batch_size=BATCH_SIZE,
@@ -27,8 +39,7 @@ emb_dim = 1280
 all_feats = np.empty((len(ds), emb_dim), np.float32)
 
 idx = 0
-for batch_imgs, _ in tqdm.tqdm(dl, total=len(dl), ncols=80):
-    # batch_imgs: shape (B, H, W, C) — 이미 NumPy 배열
+for batch_imgs in tqdm.tqdm(dl, total=len(dl), ncols=80):
     vecs = np.stack([extract(img) for img in batch_imgs])
     all_feats[idx : idx + len(vecs)] = vecs
     idx += len(vecs)
