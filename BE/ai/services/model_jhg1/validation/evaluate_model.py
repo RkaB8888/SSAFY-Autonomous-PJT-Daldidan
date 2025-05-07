@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # services/model_jhg1/validation/evaluate_model.py
 
-
-import argparse
 import json
 from pathlib import Path
 
@@ -14,6 +12,11 @@ from tqdm import tqdm
 from common_utils.image_cropper import crop_bbox_from_json
 from services.model_jhg1.utils.feature_extractors import extract_features
 from services.model_jhg1.utils.loader import load_model_bundle
+from services.model_jhg1.config import (
+    MODEL_SAVE_PATH,
+    VALID_IMAGES_DIR,
+    VALID_JSONS_DIR,
+)
 
 
 def load_test_set(img_dir: Path, json_dir: Path):
@@ -50,16 +53,9 @@ def evaluate(y_true, y_pred):
 
 
 def main():
-    p = argparse.ArgumentParser()
-    p.add_argument("--model", required=True, help="path to lightgbm_model.pkl")
-    p.add_argument("--images", required=True, help="test images dir")
-    p.add_argument("--jsons", required=True, help="test jsons dir")
-    p.add_argument("--out_csv", help="optional: save per-sample CSV")
-    args = p.parse_args()
+    model, selector = load_model_bundle(MODEL_SAVE_PATH)
 
-    model, selector = load_model_bundle(Path(args.model))
-
-    X_test, y_test, ids = load_test_set(Path(args.images), Path(args.jsons))
+    X_test, y_test, ids = load_test_set(VALID_IMAGES_DIR, VALID_JSONS_DIR)
     X_sel = selector.transform(X_test)
     y_pred = model.predict(X_sel)
 
@@ -68,18 +64,14 @@ def main():
     print(f"▶ RMSE: {rmse:.4f}")
     print(f"▶ R2  : {r2:.4f}")
 
-    if args.out_csv:
-        import pandas as pd
+    # (선택) 결과 CSV로 저장하려면 이 경로를 활성화
+    out_path = Path("eval_results.csv")
+    import pandas as pd
 
-        df = pd.DataFrame(
-            {
-                "id": ids,
-                "true": y_test,
-                "pred": y_pred,
-            }
-        )
-        df.to_csv(args.out_csv, index=False)
-        print(f"✅ Saved results to {args.out_csv}")
+    pd.DataFrame({"id": ids, "true": y_test, "pred": y_pred}).to_csv(
+        out_path, index=False
+    )
+    print(f"✅ Saved results to {out_path}")
 
 
 if __name__ == "__main__":

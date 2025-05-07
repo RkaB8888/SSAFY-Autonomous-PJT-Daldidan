@@ -1,13 +1,11 @@
 # ai/schemas/predict.py
-
+from typing import Literal
 from pydantic import BaseModel
 
 
-class PredictRequest(BaseModel):
-    model_name: str
-    image_base64: str
-
-
-class PredictResponse(BaseModel):
-    label: str
+class SugarPredictResponse(BaseModel):
+    label: Literal["sugar_content"]
     confidence: float
+
+
+PredictResponse = SugarPredictResponse  # 현재는 하나뿐
