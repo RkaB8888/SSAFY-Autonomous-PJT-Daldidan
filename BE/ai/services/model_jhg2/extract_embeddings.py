@@ -11,32 +11,35 @@ from services.model_jhg2.config import CACHE_DIR, IMAGES_DIR
 class FlatImageDataset(Dataset):
     def __init__(self, root: pathlib.Path):
         self.files = sorted(glob.glob(str(root / "*.jpg")))  # 모든 JPG 수집
-        self.to_numpy = lambda img: np.asarray(img)  # HWC uint8
 
     def __len__(self):
         return len(self.files)
 
     def __getitem__(self, idx):
         img = Image.open(self.files[idx]).convert("RGB")
-        return self.to_numpy(img)
+        return np.array(img)
+
+
+# ── collate_keep : 변환 없이 리스트 그대로 ─────────────────
+def collate_keep(batch):
+    return batch
 
 
 # ── 데이터 준비 ──────────────────────────────────────────────
-BATCH_SIZE = 512
-NUM_WORKERS = 24
-
-ds = FlatImageDataset(IMAGES_DIR)
+BATCH_SIZE, NUM_WORKERS, PREFETCH = 512, 24, 2
 dl = DataLoader(
-    ds,
+    FlatImageDataset(IMAGES_DIR),
     batch_size=BATCH_SIZE,
     num_workers=NUM_WORKERS,
-    pin_memory=True,
-    prefetch_factor=2,
+    collate_fn=collate_keep,
+    prefetch_factor=PREFETCH,
+    persistent_workers=True,
+    pin_memory=False,
 )
 
 # ── 임베딩 추출 ─────────────────────────────────────────────
 emb_dim = 1280
-all_feats = np.empty((len(ds), emb_dim), np.float32)
+all_feats = np.empty((len(dl.dataset), emb_dim), np.float32)
 
 idx = 0
 for batch_imgs in tqdm.tqdm(dl, total=len(dl), ncols=80):
