@@ -39,7 +39,13 @@ class CroppedDataset(Dataset):
 
             # — 레이블(당도)
             coll = data.get("collection", {})
-            sugar = coll.get("sugar_content") or coll.get("sugar_content_nir")
+            sugar = coll.get("sugar_content")
+            # sugar = coll.get("sugar_content") or coll.get("sugar_content_nir")
+
+            if sugar is None:
+                print(f"[Warning] sugar_content 누락, 건너뜁니다: {js_p.name}")
+                return None  # 해당 샘플을 건너뜀
+
             sugar = float(sugar)
 
             return arr, sugar, img_p.stem
