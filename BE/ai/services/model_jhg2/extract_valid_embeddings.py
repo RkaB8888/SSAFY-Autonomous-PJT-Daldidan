@@ -65,10 +65,10 @@ def build_and_cache_embeddings(
     ds = CroppedDataset(img_dir, json_dir)
     dl = DataLoader(
         ds,
-        batch_size=512,
+        batch_size=1024,
         num_workers=32,
         collate_fn=lambda x: [s for s in x if s is not None],
-        prefetch_factor=2,
+        prefetch_factor=4,
         pin_memory=False,
         persistent_workers=False,
     )

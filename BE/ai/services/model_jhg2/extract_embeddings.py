@@ -62,9 +62,9 @@ class CroppedDataset(Dataset):
 def build_and_cache_embeddings(
     img_dir: pathlib.Path = IMAGES_DIR,
     json_dir: pathlib.Path = JSONS_DIR,
-    batch_size: int = 512,
+    batch_size: int = 1024,
     num_workers: int = 32,
-    prefetch: int = 2,
+    prefetch: int = 4,
 ):
     """
     1) IMAGE_DIR/JSON_DIR 를 돌면서 CroppedDataset 으로 이미지-당도-파일명 추출
