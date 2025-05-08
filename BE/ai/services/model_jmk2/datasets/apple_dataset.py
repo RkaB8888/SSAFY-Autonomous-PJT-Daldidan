@@ -42,8 +42,14 @@ class AppleDataset(Dataset):
         with open(json_path, 'r', encoding='utf-8') as f:
             data = json.load(f)
 
-        img_filename = data['images']['img_file_name']
-        # img_path = os.path.join(self.image_dir, img_filename)
+        # ✅ json 파일명 → 이미지 파일명 추출 (json 내부 data 무시)
+        json_filename = os.path.basename(json_path)
+        img_filename = os.path.splitext(json_filename)[0] + '.jpg'
+        img_path = os.path.join(self.image_dir, img_filename)
+
+        print(f"[DEBUG] json_path: {json_path}")
+        print(f"[DEBUG] img_filename: {img_filename}")
+        print(f"[DEBUG] img_path: {img_path}")
 
         image = cv2.imread(img_filename)
         if image is None:
