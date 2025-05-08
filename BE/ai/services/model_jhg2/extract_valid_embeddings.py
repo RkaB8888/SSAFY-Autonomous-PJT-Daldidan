@@ -12,13 +12,23 @@ class CroppedDataset(Dataset):
     def __init__(
         self, img_dir: pathlib.Path, json_dir: pathlib.Path, resize=(256, 256)
     ):
-        self.pairs = sorted(
+        # 1) 원래 있던 (이미지, json) 쌍을 모두 수집
+        raw_pairs = sorted(
             [
                 (p, json_dir / f"{p.stem}.json")
                 for p in img_dir.glob("*.jpg")
                 if (json_dir / f"{p.stem}.json").exists()
             ]
         )
+
+        # 2) sugar_content가 반드시 있는 것만 필터링
+        self.pairs = []
+        for img_p, js_p in raw_pairs:
+            data = json.loads(js_p.read_text(encoding="utf-8"))
+            # sugar_content가 존재해야만 추가
+            if data.get("collection", {}).get("sugar_content") is not None:
+                self.pairs.append((img_p, js_p))
+
         self.resize = resize
 
     def __len__(self):
@@ -86,6 +96,9 @@ def build_and_cache_embeddings(
 
     idx = 0
     for batch in tqdm.tqdm(dl, total=len(dl), ncols=80):
+        # 빈 배치는 건너뛰기
+        if not batch:
+            continue
         imgs, sugars, batch_stems = zip(*batch)
         batch_np = np.stack(imgs, axis=0)
         vecs = extract_batch(batch_np)
