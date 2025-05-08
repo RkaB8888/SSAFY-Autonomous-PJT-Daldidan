@@ -10,7 +10,9 @@ from tqdm import tqdm
 from sklearn.feature_selection import VarianceThreshold
 
 from common_utils.image_cropper import crop_bbox_from_json
-from services.model_jhg2.utils.cnn_feature_extractor import extract  # CNN extractor
+from services.model_jhg2.utils.cnn_feature_extractor import (
+    extract_batch,
+)  # CNN extractor
 from services.model_jhg2.config import (
     IMAGES_DIR,
     JSONS_DIR,
@@ -43,7 +45,7 @@ def load_dataset(
                 continue
 
             # ─────── 🔄 CNN 특징 벡터 추출 ───────
-            feats = extract(crop_img)
+            feats = extract_batch(np.expand_dims(crop_img, axis=0))[0]
 
             # CNN은 고정 길이이므로 한 번만 feature_names 생성
             if feature_names is None:
