@@ -59,32 +59,25 @@ class AppleDataset(Dataset):
         return len(self.samples)
 
     @staticmethod
-    def extract_apple_roi(image_np):
-        # HSV 변환
-        hsv = cv2.cvtColor(image_np, cv2.COLOR_RGB2HSV)
+    def extract_apple_roi(image_np, json_path):
+        # JSON에서 segmentation 좌표 읽기
+        with open(json_path, 'r', encoding='utf-8') as f:
+            json_data = json.load(f)
+        segmentation = json_data['annotations']['segmentation']
+        pts = np.array(segmentation, np.int32).reshape((-1, 1, 2))
 
-        lower_red1 = np.array([0, 50, 20])
-        upper_red1 = np.array([10, 255, 255])
-        lower_red2 = np.array([160, 50, 20])
-        upper_red2 = np.array([180, 255, 255])
+        # mask 생성
+        mask = np.zeros(image_np.shape[:2], dtype=np.uint8)
+        cv2.fillPoly(mask, [pts], 255)
 
-        mask1 = cv2.inRange(hsv, lower_red1, upper_red1)
-        mask2 = cv2.inRange(hsv, lower_red2, upper_red2)
-        mask = cv2.bitwise_or(mask1, mask2)
+        # mask 적용
+        masked_img = cv2.bitwise_and(image_np, image_np, mask=mask)
 
-        kernel = np.ones((5, 5), np.uint8)
-        mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
-        mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
+        # bounding box 잘라내기
+        x, y, w, h = cv2.boundingRect(pts)
+        roi = masked_img[y:y+h, x:x+w]
 
-        contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
-        if contours:
-            largest = max(contours, key=cv2.contourArea)
-            x, y, w, h = cv2.boundingRect(largest)
-            roi = image_np[y:y+h, x:x+w]
-            return roi
-        else:
-            return image_np  # fallback: ROI 못찾으면 원본
+        return roi
 
     def __getitem__(self, idx):
         img_path, json_path = self.samples[idx]
@@ -92,7 +85,7 @@ class AppleDataset(Dataset):
         image_np = np.array(image_pil)
 
         # OpenCV로 사과 ROI 추출
-        roi_np = self.extract_apple_roi(image_np)
+        roi_np = self.extract_apple_roi(image_np, json_path)
 
         # numpy → PIL
         roi_pil = Image.fromarray(roi_np)
