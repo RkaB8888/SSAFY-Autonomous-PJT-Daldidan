@@ -9,6 +9,12 @@ import numpy as np
 from features.extract_features import extract_features  # manual feature 추출 함수
 import random
 
+def custom_collate(batch):
+    # batch 안에 None 데이터 제거
+    batch = [b for b in batch if b is not None]
+    if len(batch) == 0:
+        return None  # 모든 batch가 None일 경우 처리
+    return torch.utils.data.dataloader.default_collate(batch)
 
 class AppleDataset(Dataset):
     def __init__(self, image_dir, json_files, transform=None):
@@ -28,12 +34,7 @@ class AppleDataset(Dataset):
         return len(self.json_files)
 
 
-    def custom_collate(batch):
-        # batch 안에 None 데이터 제거
-        batch = [b for b in batch if b is not None]
-        if len(batch) == 0:
-            return None  # 모든 batch가 None일 경우 처리
-        return torch.utils.data.dataloader.default_collate(batch)
+
     def __getitem__(self, idx):
         json_path = self.json_files[idx]
 
