@@ -14,3 +14,4 @@ sympy==1.14.0
 # torchvision==0.22.0+cu118
 typing_extensions==4.13.2
 timm
+scikit-learn
