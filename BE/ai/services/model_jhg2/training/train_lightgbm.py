@@ -10,65 +10,40 @@ from tqdm import tqdm
 from sklearn.feature_selection import VarianceThreshold
 
 from common_utils.image_cropper import crop_bbox_from_json
-from services.model_jhg2.utils.cnn_feature_extractor import (
-    extract_batch,
-)  # CNN extractor
+from services.model_jhg2.utils.cnn_feature_extractor import extract_batch
 from services.model_jhg2.config import (
     IMAGES_DIR,
     JSONS_DIR,
     MODEL_SAVE_PATH,
+    CACHE_DIR,
 )
+from services.model_jhg2.extract_embeddings import build_and_cache_embeddings
 
 
-# ---------- 🔄 CNN 추출기는 feature 이름이 없으므로 임의 생성 ----------
 def _make_feature_names(dim: int) -> List[str]:
-    """1280‑차원 벡터 ⇒ ['cnn_0', 'cnn_1', …] 리스트 반환"""
     return [f"cnn_{i}" for i in range(dim)]
 
 
 def load_dataset(
     images_dir: Path, jsons_dir: Path
 ) -> Tuple[np.ndarray, np.ndarray, List[str]]:
-    X, y = [], []
-    feature_names: List[str] = None  # 한번만 채워둘 리스트
+    feat_cache = CACHE_DIR / "train_embeddings.npy"
+    label_cache = CACHE_DIR / "train_labels.npy"
 
-    image_files = sorted(images_dir.glob("*.jpg"))
-    for image_path in tqdm(image_files, desc="Extracting CNN features"):
-        json_path = jsons_dir / (image_path.stem + ".json")
-        if not json_path.exists():
-            continue
+    # 1) 캐시가 없으면 extract_embeddings 로직 함수 호출
+    if not (feat_cache.exists() and label_cache.exists()):
+        print("🚀 캐시가 없으므로 build_and_cache_embeddings() 를 실행합니다…")
+        build_and_cache_embeddings(img_dir=images_dir, json_dir=jsons_dir)
+        print("✅ 임베딩 캐시 생성 완료.")
 
-        try:
-            crop_img, _ = crop_bbox_from_json(image_path, json_path)
-            if crop_img is None:
-                tqdm.write(f"[무시] 손상된 이미지: {image_path.name}")
-                continue
+    # 2) 캐시에서 바로 로드
+    X = np.load(feat_cache)
+    y = np.load(label_cache)
+    print(f"✅ Loaded cached train set: {len(X)} samples")
 
-            # ─────── 🔄 CNN 특징 벡터 추출 ───────
-            feats = extract_batch(np.expand_dims(crop_img, axis=0))[0]
-
-            # CNN은 고정 길이이므로 한 번만 feature_names 생성
-            if feature_names is None:
-                feature_names = _make_feature_names(len(feats))
-
-            # ─────── 라벨(당도) 추출 ───────
-            with open(json_path, "r", encoding="utf-8") as f:
-                data = json.load(f)
-            coll = data.get("collection", {})
-            sugar = coll.get("sugar_content") or coll.get("sugar_content_nir")
-
-            if sugar is None:
-                tqdm.write(f"[무시] 당도 정보 없음: {image_path.name}")
-                continue
-
-            X.append(feats)
-            y.append(sugar)
-
-        except Exception as e:
-            tqdm.write(f"[Error] {image_path.name}: {e}")
-
-    print(f"✅ 유효 샘플 수: {len(X)} / 전체: {len(image_files)}")
-    return np.array(X, dtype=np.float32), np.array(y, dtype=np.float32), feature_names
+    # feature_names는 CNN 차원에 맞춰 생성
+    feature_names = _make_feature_names(X.shape[1])
+    return X, y, feature_names
 
 
 def train_lightgbm(

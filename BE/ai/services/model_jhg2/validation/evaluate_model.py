@@ -1,47 +1,41 @@
 #!/usr/bin/env python
 # services/model_jhg2/validation/evaluate_model.py
 
-import json
 from pathlib import Path
+import time
 
-import joblib
 import numpy as np
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
-from tqdm import tqdm
 
-from common_utils.image_cropper import crop_bbox_from_json
-from services.model_jhg2.utils.cnn_feature_extractor import extract
 from services.model_jhg2.utils.loader import load_model_bundle
 from services.model_jhg2.config import (
     MODEL_SAVE_PATH,
     VALID_IMAGES_DIR,
     VALID_JSONS_DIR,
+    CACHE_DIR,
 )
+
+from services.model_jhg2.extract_valid_embeddings import build_and_cache_embeddings
 
 
 def load_test_set(img_dir: Path, json_dir: Path):
-    X, y, ids = [], [], []
-    for img_path in tqdm(sorted(img_dir.glob("*.jpg")), desc="Loading test set"):
-        js = json_dir / f"{img_path.stem}.json"
-        if not js.exists():
-            continue
-        crop, _ = crop_bbox_from_json(img_path, js)
-        if crop is None:
-            continue
-        feats = extract(crop)
-        with open(js, "r", encoding="utf-8") as f:
-            data = json.load(f)
-        collection = data.get("collection", {})
-        sugar = collection.get("sugar_content")
-        if sugar is None:
-            sugar = collection.get("sugar_content_nir")
-        if sugar is None:
-            tqdm.write(f"[무시] 당도 정보 없음: {img_path.name}")
-            continue
-        X.append(feats)
-        y.append(sugar)
-        ids.append(img_path.stem)  # ✅ 일치하는 ID 수집
-    return np.vstack(X), np.array(y, dtype=float), ids
+    feat_cache = CACHE_DIR / "valid_embeddings.npy"
+    label_cache = CACHE_DIR / "valid_labels.npy"
+    stem_cache = CACHE_DIR / "valid_stems.npy"
+
+    # 1) 캐시가 없으면 자동 생성
+    if not (feat_cache.exists() and label_cache.exists() and stem_cache.exists()):
+        print("🚀 검증용 임베딩 캐시가 없으므로 build_and_cache_embeddings() 실행…")
+        build_and_cache_embeddings(img_dir, json_dir)
+        print("✅ 검증 임베딩 캐시 생성 완료.")
+
+    # 2) 캐시에서 바로 로드
+    X = np.memmap(feat_cache, dtype=np.float32, mode="r").reshape(-1, 1280)
+    y = np.load(label_cache)
+    ids = np.load(stem_cache).tolist()
+    print(f"✅ Loaded valid cache: {len(ids)} samples")
+
+    return X, y, ids
 
 
 def evaluate(y_true, y_pred):
@@ -57,14 +51,18 @@ def main():
 
     X_test, y_test, ids = load_test_set(VALID_IMAGES_DIR, VALID_JSONS_DIR)
     X_sel = selector.transform(X_test) if selector else X_test
+
+    start = time.time()
     y_pred = model.predict(X_sel)
+    elapsed = time.time() - start
+    avg_time = elapsed / len(X_test)
 
     mae, rmse, r2 = evaluate(y_test, y_pred)
     print(f"\n▶ MAE : {mae:.4f}")
     print(f"▶ RMSE: {rmse:.4f}")
     print(f"▶ R2  : {r2:.4f}")
+    print(f"▶ 예측 시간(평균/샘플): {avg_time*1000:.2f} ms")
 
-    # (선택) 결과 CSV로 저장하려면 이 경로를 활성화
     out_path = Path("eval_results.csv")
     import pandas as pd
 

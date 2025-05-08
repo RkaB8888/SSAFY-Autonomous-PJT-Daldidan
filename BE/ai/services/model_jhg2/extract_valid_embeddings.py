@@ -1,21 +1,16 @@
-# ai/services/model_jhg2/extract_embeddings.py
-import json
-import pathlib
-import numpy as np
-import tqdm
+# ai/services/model_jhg2/extract_valid_embeddings.py
+import json, pathlib, glob
+import numpy as np, tqdm
 from PIL import Image
 from torch.utils.data import Dataset, DataLoader
 
-from services.model_jhg2.config import CACHE_DIR, IMAGES_DIR, JSONS_DIR
+from services.model_jhg2.config import CACHE_DIR, VALID_IMAGES_DIR, VALID_JSONS_DIR
 from services.model_jhg2.utils.cnn_feature_extractor import extract_batch
 
 
 class CroppedDataset(Dataset):
     def __init__(
-        self,
-        img_dir: pathlib.Path,
-        json_dir: pathlib.Path,
-        resize: tuple[int, int] = (256, 256),
+        self, img_dir: pathlib.Path, json_dir: pathlib.Path, resize=(256, 256)
     ):
         self.pairs = sorted(
             [
@@ -55,37 +50,30 @@ class CroppedDataset(Dataset):
 
 
 def build_and_cache_embeddings(
-    img_dir: pathlib.Path = IMAGES_DIR,
-    json_dir: pathlib.Path = JSONS_DIR,
-    batch_size: int = 512,
-    num_workers: int = 32,
-    prefetch: int = 2,
+    img_dir: pathlib.Path = pathlib.Path(VALID_IMAGES_DIR),
+    json_dir: pathlib.Path = pathlib.Path(VALID_JSONS_DIR),
 ):
     """
-    1) IMAGE_DIR/JSON_DIR 를 돌면서 CroppedDataset 으로 이미지-당도-파일명 추출
-    2) DataLoader 로 배치 단위 CNN 임베딩 → 메모리맵 + np.save 캐싱
+    • VALID_IMAGES_DIR/VALID_JSONS_DIR 를 순회하며 crop→임베딩 추출→메모리맵+npy로 저장
     """
-    # 캐시 디렉터리 준비
-    CACHE_DIR.mkdir(parents=True, exist_ok=True)
-    feat_path = CACHE_DIR / "train_embeddings.npy"
-    label_path = CACHE_DIR / "train_labels.npy"
-    stems_path = CACHE_DIR / "train_stems.npy"
-
     ds = CroppedDataset(img_dir, json_dir)
     dl = DataLoader(
         ds,
-        batch_size=batch_size,
-        num_workers=num_workers,
+        batch_size=512,
+        num_workers=32,
         collate_fn=lambda x: [s for s in x if s is not None],
-        prefetch_factor=prefetch,
+        prefetch_factor=2,
         pin_memory=False,
         persistent_workers=False,
     )
 
     N = len(ds)
-    D = 1280  # EfficientNet-B0 출력 차원
+    D = 1280
+    CACHE_DIR.mkdir(exist_ok=True, parents=True)
+    feat_path = CACHE_DIR / "valid_embeddings.npy"
+    label_path = CACHE_DIR / "valid_labels.npy"
+    stems_path = CACHE_DIR / "valid_stems.npy"
 
-    # 메모리맵 준비
     feats = np.memmap(feat_path, dtype=np.float32, mode="w+", shape=(N, D))
     labels = np.memmap(label_path, dtype=np.float32, mode="w+", shape=(N,))
     stems = []
@@ -93,23 +81,22 @@ def build_and_cache_embeddings(
     idx = 0
     for batch in tqdm.tqdm(dl, total=len(dl), ncols=80):
         imgs, sugars, batch_stems = zip(*batch)
-        batch_np = np.stack(imgs, axis=0)  # (B,H,W,C)
-        vecs = extract_batch(batch_np)  # (B, D)
+        batch_np = np.stack(imgs, axis=0)
+        vecs = extract_batch(batch_np)
         B = vecs.shape[0]
 
         feats[idx : idx + B] = vecs
         labels[idx : idx + B] = sugars
         stems.extend(batch_stems)
-
         idx += B
 
     feats.flush()
     labels.flush()
     np.save(stems_path, np.array(stems))
-
-    print(f"[Saved] embeddings→{feat_path}, labels→{label_path}, stems→{stems_path}")
+    print(
+        f"[Saved] valid embeddings→{feat_path}, labels→{label_path}, stems→{stems_path}"
+    )
 
 
 if __name__ == "__main__":
-    # 스크립트로 직접 실행할 때만 임베딩 생성
     build_and_cache_embeddings()
