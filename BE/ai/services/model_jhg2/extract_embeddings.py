@@ -4,7 +4,7 @@ import numpy as np, tqdm
 from PIL import Image
 from torch.utils.data import Dataset, DataLoader
 
-from services.model_jhg2.config import CACHE_DIR, IMAGES_DIR, VALID_JSONS_DIR
+from services.model_jhg2.config import CACHE_DIR, IMAGES_DIR, JSONS_DIR
 from services.model_jhg2.utils.cnn_feature_extractor import extract_batch
 
 
@@ -52,7 +52,7 @@ class CroppedDataset(Dataset):
 if __name__ == "__main__":
     BATCH, WORKERS, PREFETCH = 512, 32, 2
 
-    ds = CroppedDataset(pathlib.Path(IMAGES_DIR), pathlib.Path(VALID_JSONS_DIR))
+    ds = CroppedDataset(pathlib.Path(IMAGES_DIR), pathlib.Path(JSONS_DIR))
     dl = DataLoader(
         ds,
         batch_size=BATCH,
