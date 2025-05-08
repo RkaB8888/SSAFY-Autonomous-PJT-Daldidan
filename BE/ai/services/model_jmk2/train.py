@@ -12,6 +12,7 @@ from torch.utils.data import DataLoader, Subset
 import random
 import os
 from datasets.apple_dataset import AppleDataset, custom_collate
+from torch.cuda.amp import GradScaler
 
 
 # === 경로 ===
