@@ -44,11 +44,8 @@ class AppleDataset(Dataset):
 
         img_filename = data['images']['img_file_name']
         # 확장자가 .json이면 → .jpg로 변경
-        if img_filename.endswith('.json'):
-            img_filename = img_filename.replace('.json', '.jpg')
-        # 이미 .jpg면 그대로 둠
-        elif not img_filename.endswith('.jpg'):
-            img_filename += '.jpg'
+        img_filename = data['images']['img_file_name']
+        img_filename = os.path.splitext(img_filename)[0] + '.jpg'
 
 
         img_path = os.path.join(self.image_dir, img_filename)
