@@ -1,26 +1,28 @@
 {
   "expo": {
-    "name": "my-app",
-    "slug": "my-app",
+    "name": "daldidan",
+    "slug": "daldidan",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "myapp",
+    "scheme": "daldidan",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "assetBundlePatterns": ["**/*"],
+    "packagerOpts": {
+      "config": "metro.config.js"
+    },
     "ios": {
       "supportsTablet": true,
-      "infoPlist": {
-        "NSCameraUsageDescription": "이 앱이 카메라를 사용할 수 있도록 허용해주세요.",
-        "NSMicrophoneUsageDescription": "이 앱이 마이크를 사용할 수 있도록 허용해주세요."
-      }
+      "bundleIdentifier": "com.jinmoon23.daldidan"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "permissions": ["CAMERA", "RECORD_AUDIO"]
+
+      "package": "com.jinmoon23.daldidan"
     },
     "web": {
       "bundler": "metro",
@@ -28,6 +30,14 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "minSdkVersion": 26
+          }
+        }
+      ],
       "expo-router",
       [
         "expo-splash-screen",
@@ -39,16 +49,28 @@
         }
       ],
       [
-        "expo-camera",
+        "react-native-vision-camera",
         {
-          "cameraPermission": "이 앱이 카메라를 사용할 수 있도록 허용해주세요.",
-          "microphonePermission": "이 앱이 마이크를 사용할 수 있도록 허용해주세요.",
-          "recordAudioAndroid": true
+          "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera",
+          "microphonePermission": "Allow $(PRODUCT_NAME) to access your microphone"
+        }
+      ],
+      "expo-font",
+      [
+        "react-native-fast-tflite",
+        {
+          "enableAndroidGpuLibraries": ["libOpenCL-pixel.so", "libGLES_mali.so"]
         }
       ]
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "4ee331a2-574e-4e9f-9c65-43ca52d4dbd6"
+      }
     }
   }
 }
