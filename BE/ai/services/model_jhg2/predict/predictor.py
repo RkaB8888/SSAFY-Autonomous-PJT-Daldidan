@@ -3,7 +3,7 @@ from io import BytesIO
 from PIL import Image
 import numpy as np
 from services.model_jhg2.config import MODEL_SAVE_PATH
-from services.model_jhg2.utils.cnn_feature_extractor import extract
+from services.model_jhg2.utils.cnn_feature_extractor import extract_batch
 from services.model_jhg2.utils.loader import load_model_bundle
 
 # ── 모델 & selector 메모리 상주 로딩 ──────────────────
@@ -16,8 +16,8 @@ def _bytes_to_np(img_bytes: bytes) -> np.ndarray:
 
 def predict_bytes(image_bytes: bytes) -> dict:
     np_img = _bytes_to_np(image_bytes)
-    feats = extract(np_img)
-    X_sel = selector.transform(feats.reshape(1, -1))
+    feats = extract_batch(np_img[None, ...])  # (1, 1280)
+    X_sel = selector.transform(feats)  # (1, D)
     sugar = float(model.predict(X_sel)[0])
     return {"label": "sugar_content", "confidence": sugar}
 

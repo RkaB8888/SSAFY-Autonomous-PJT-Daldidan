@@ -12,13 +12,10 @@ async def health_check():
 
 
 @router.post("/predict", response_model=PredictResponse)
-async def predict_image(
-    model_name: str = Form(...),
-    image: UploadFile = File(...),
-):
+async def predict_image(id: int = Form(...), image: UploadFile = File(...)):
     try:
         image_bytes = await image.read()
-        result = predict(model_name, image_bytes)  # ← 바이트 전달
-        return result
-    except ValueError as e:
+        result = predict("model_jhg2", image_bytes)  # ← 바이트 전달
+        return PredictResponse(id=id, predict_sugar_content=float(result["confidence"]))
+    except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))

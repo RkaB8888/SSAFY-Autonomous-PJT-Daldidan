@@ -13,4 +13,4 @@ VALID_JSONS_DIR = VALID_ROOT / "jsons"
 BASE_DIR = Path(__file__).resolve().parent
 CACHE_DIR = BASE_DIR / "cache"
 WEIGHTS_DIR = BASE_DIR / "weights"
-MODEL_SAVE_PATH = WEIGHTS_DIR / "lightgbm_cnn.txt"  # ✅ 파일명 통일
+MODEL_SAVE_PATH = WEIGHTS_DIR / "lightgbm_cnn.pkl"  # ✅ 파일명 통일
