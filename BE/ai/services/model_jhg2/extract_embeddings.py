@@ -28,12 +28,12 @@ class CroppedDataset(Dataset):
         for img_p, js_p in raw_pairs:
             data = json.loads(js_p.read_text(encoding="utf-8"))
             coll = data.get("collection", {})
-            # if (
-            #     coll.get("sugar_content") is not None
-            #     or coll.get("sugar_content_nir") is not None
-            # ):
-            # sugar_content가 존재해야만 추가
-            if data.get("collection", {}).get("sugar_content") is not None:
+            if (
+                coll.get("sugar_content") is not None
+                or coll.get("sugar_content_nir") is not None
+            ):
+                # # sugar_content가 존재해야만 추가
+                # if data.get("collection", {}).get("sugar_content") is not None:
                 self.pairs.append((img_p, js_p))
 
         self.resize = resize
@@ -51,41 +51,41 @@ class CroppedDataset(Dataset):
             with open(js_p, "r", encoding="utf-8") as f:
                 data = json.load(f)
 
-            # 1) COCO 폴리곤 불러오기
-            seg = data["annotations"]["segmentation"]
-            # flat list인지 nested list인지 검사
-            if isinstance(seg[0], list):
-                poly = np.array(seg[0]).reshape(-1, 2)
-            else:
-                poly = np.array(seg).reshape(-1, 2)
+            # # 1) COCO 폴리곤 불러오기
+            # seg = data["annotations"]["segmentation"]
+            # # flat list인지 nested list인지 검사
+            # if isinstance(seg[0], list):
+            #     poly = np.array(seg[0]).reshape(-1, 2)
+            # else:
+            #     poly = np.array(seg).reshape(-1, 2)
 
-            # 2) 마스크 생성
-            mask = Image.new("L", img.size, 0)
-            ImageDraw.Draw(mask).polygon(
-                [tuple(point) for point in poly], outline=1, fill=1
-            )
-            mask_arr = np.array(mask)
-
-            # 3) 이미지에 마스크 적용 (배경을 검정으로)
-            img_arr = np.array(img)
-            img_arr[mask_arr == 0] = 0
-
-            # 4) 마스크 영역의 bounding box로 크롭
-            x0, y0 = poly.min(axis=0).astype(int)
-            x1, y1 = poly.max(axis=0).astype(int)
-            crop = Image.fromarray(img_arr).crop((x0, y0, x1, y1))
-            crop = crop.resize(self.resize, Image.Resampling.LANCZOS)
-
-            # x, y, w, h = map(int, data["annotations"]["bbox"])
-            # crop = img.crop((x, y, x + w, y + h)).resize(
-            #     self.resize, Image.Resampling.LANCZOS
+            # # 2) 마스크 생성
+            # mask = Image.new("L", img.size, 0)
+            # ImageDraw.Draw(mask).polygon(
+            #     [tuple(point) for point in poly], outline=1, fill=1
             # )
+            # mask_arr = np.array(mask)
+
+            # # 3) 이미지에 마스크 적용 (배경을 검정으로)
+            # img_arr = np.array(img)
+            # img_arr[mask_arr == 0] = 0
+
+            # # 4) 마스크 영역의 bounding box로 크롭
+            # x0, y0 = poly.min(axis=0).astype(int)
+            # x1, y1 = poly.max(axis=0).astype(int)
+            # crop = Image.fromarray(img_arr).crop((x0, y0, x1, y1))
+            # crop = crop.resize(self.resize, Image.Resampling.LANCZOS)
+
+            x, y, w, h = map(int, data["annotations"]["bbox"])
+            crop = img.crop((x, y, x + w, y + h)).resize(
+                self.resize, Image.Resampling.LANCZOS
+            )
             arr = np.array(crop, copy=False)
 
             # — 레이블(당도)
             coll = data.get("collection", {})
-            sugar = coll.get("sugar_content")
-            # sugar = coll.get("sugar_content") or coll.get("sugar_content_nir")
+            # sugar = coll.get("sugar_content")
+            sugar = coll.get("sugar_content") or coll.get("sugar_content_nir")
 
             if sugar is None:
                 print(f"[Warning] sugar_content 누락, 건너뜁니다: {js_p.name}")
