@@ -37,8 +37,9 @@ def load_dataset(
         print("✅ 임베딩 캐시 생성 완료.")
 
     # 2) 캐시에서 바로 로드
-    X = np.load(feat_cache)
-    y = np.load(label_cache)
+    X = np.memmap(feat_cache, dtype=np.float32, mode="r").reshape(-1, 1280)
+    y = np.memmap(label_cache, dtype=np.float32, mode="r", shape=(X.shape[0],))
+
     print(f"✅ Loaded cached train set: {len(X)} samples")
 
     # feature_names는 CNN 차원에 맞춰 생성

@@ -30,9 +30,12 @@ def load_test_set(img_dir: Path, json_dir: Path):
         print("✅ 검증 임베딩 캐시 생성 완료.")
 
     # 2) 캐시에서 바로 로드
+    # ── features: raw memmap of float32s of size (N,1280)
     X = np.memmap(feat_cache, dtype=np.float32, mode="r").reshape(-1, 1280)
-    y = np.load(label_cache)
+    # ── ids: real .npy of unicode strings
     ids = np.load(stem_cache).tolist()
+    # ── labels: raw memmap of float32s, so load via memmap with known shape
+    y = np.memmap(label_cache, dtype=np.float32, mode="r", shape=(len(ids),))
     print(f"✅ Loaded valid cache: {len(ids)} samples")
 
     return X, y, ids
