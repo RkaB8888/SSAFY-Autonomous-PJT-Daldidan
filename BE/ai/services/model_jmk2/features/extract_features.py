@@ -12,7 +12,7 @@ JSON_DIR = r"/home/j-k12e206/ai-hub/Fuji/train/jsons"
 OUTPUT_PATH = r"/home/j-k12e206/jmk/S12P31E206/BE/ai/services/model_jmk2/meme/features.npy"
 
 # === feature 추출 함수 ===
-def extract_feature_from_json(json_path):
+def extract_feature(json_path):
     try:
         with open(json_path, 'r', encoding='utf-8') as f:
             data = json.load(f)
