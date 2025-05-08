@@ -43,11 +43,11 @@ class AppleDataset(Dataset):
             data = json.load(f)
 
         img_filename = data['images']['img_file_name']
-        img_path = os.path.join(self.image_dir, img_filename)
+        # img_path = os.path.join(self.image_dir, img_filename)
 
-        image = cv2.imread(img_path)
+        image = cv2.imread(img_filename)
         if image is None:
-            print(f"[WARNING] Image not found: {img_path}")
+            print(f"[WARNING] Image not found: {img_filename}")
             # return None, None, None 대신 dummy tensor 리턴
             dummy_image = torch.zeros(3, 224, 224)  # 224x224 크기
             dummy_manual = torch.zeros(6)           # manual feature 6개

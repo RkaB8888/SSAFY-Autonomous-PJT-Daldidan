@@ -47,16 +47,9 @@ def extract_features_from_json(json_path):
         with open(json_path, 'r', encoding='utf-8') as f:
             data = json.load(f)
 
-        # json 파일명 추출
-        json_filename = os.path.basename(json_path)  # → 파일명.json
-
-        # .json → .jpg로 치환
-        img_filename = os.path.splitext(json_filename)[0] + ".jpg"
-
-        # 이미지 경로 생성
+        img_filename = data['images']['img_file_name']
         img_path = os.path.join(IMG_DIR, img_filename)
         image = cv2.imread(img_path)
-        
 
         if image is None:
             print(f"[WARNING] 이미지 로드 실패: {img_path}")
