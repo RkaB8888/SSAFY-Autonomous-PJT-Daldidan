@@ -42,7 +42,9 @@ class AppleDataset(Dataset):
         with open(json_path, 'r', encoding='utf-8') as f:
             data = json.load(f)
 
-        img_filename =  data['images']['img_file_name'].replace('.json', '.jpg')
+        img_filename = data['images']['img_file_name']
+        if img_filename.endswith('.json'):
+            img_filename = img_filename.replace('.json', '.jpg')
         img_path = os.path.join(self.image_dir, img_filename)
 
         image = cv2.imread(img_path)
