@@ -11,3 +11,4 @@ sympy==1.14.0
 # torch==2.3.1+cu118
 torchvision==0.22.0+cu118
 typing_extensions==4.13.2
+timm
