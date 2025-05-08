@@ -47,7 +47,11 @@ def extract_features_from_json(json_path):
         with open(json_path, 'r', encoding='utf-8') as f:
             data = json.load(f)
 
+
+
         img_filename = data['images']['img_file_name']
+        img_filename = os.path.splitext(img_filename)[0] + '.jpg'
+
         img_path = os.path.join(IMG_DIR, img_filename)
         image = cv2.imread(img_path)
 
