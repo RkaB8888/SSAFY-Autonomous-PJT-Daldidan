@@ -185,6 +185,18 @@ ai/dataset/*
 *.pth
 *.ckpt
 *.joblib
+*.npy
+
+# 실험 결과 캐시
+ai/services/model_jhg2/cache/*
+!ai/services/model_jhg2/cache/.gitkeep
+
+# 로그
+*.log
+*.out
+*.err
+*.bak
+log.txt
 
 # 단, 필요시 .gitkeep 유지 예외는 명시
 !**/weights/.gitkeep
