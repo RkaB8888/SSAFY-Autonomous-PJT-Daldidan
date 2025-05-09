@@ -121,10 +121,8 @@ class AppleDataset(Dataset):
         image = cv2.imread(img_path)
         if image is None:
             print(f"[WARNING] Image not found: {img_path}")
-            dummy_image = torch.zeros(3, 224, 224)
-            dummy_manual = torch.zeros(6)
-            dummy_label = torch.tensor(0.0)
-            return dummy_image, dummy_manual, dummy_label
+            return None  # collate_fn에서 filter
+
 
         points = np.array(data['annotations']['segmentation']).reshape((-1, 2)).astype(np.int32)
         img_h = data['images']['img_height']
