@@ -74,6 +74,7 @@ def train(model, train_loader, val_loader, optimizer, criterion, device, num_epo
         scaler = GradScaler()
 
         for images, manual_features, labels in train_loader:
+            images = images.to(device)
             manual_features = manual_features.to(device)
             labels = labels.to(device)
 
@@ -103,7 +104,7 @@ def train(model, train_loader, val_loader, optimizer, criterion, device, num_epo
 
         with torch.no_grad():
             for images, manual_features, labels in val_loader:
-                # images = images.to(device)
+                images = images.to(device)
                 manual_features = manual_features.to(device)
                 labels = labels.to(device)
 
