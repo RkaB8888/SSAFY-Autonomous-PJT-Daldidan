@@ -1,0 +1,6 @@
+path: /Users/yourname/yolo-apple-project   # 전체 프로젝트 경로 (절대경로 추천)
+train: images/train
+val: images/val
+
+nc: 1            # 클래스 수 (사과 하나니까 1)
+names: ['apple'] # 클래스 이름 (0번 클래스는 'apple')

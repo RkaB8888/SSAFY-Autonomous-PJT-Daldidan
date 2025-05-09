@@ -1,28 +1,35 @@
 {
   "expo": {
-    "name": "daldidan",
-    "slug": "daldidan",
+    "name": "daldidan_wj",
+    "slug": "daldidan_wj",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "daldidan",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "packagerOpts": {
       "config": "metro.config.js"
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.jinmoon23.daldidan"
+      "bundleIdentifier": "com.jinmoon23.daldidan",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Allow $(PRODUCT_NAME) to access your camera"
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-
-      "package": "com.jinmoon23.daldidan"
+      "package": "com.dnjswoc.daldidan",
+      "permissions": [
+        "android.permission.CAMERA"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -59,7 +66,10 @@
       [
         "react-native-fast-tflite",
         {
-          "enableAndroidGpuLibraries": ["libOpenCL-pixel.so", "libGLES_mali.so"]
+          "enableAndroidGpuLibraries": [
+            "libOpenCL-pixel.so",
+            "libGLES_mali.so"
+          ]
         }
       ]
     ],
@@ -67,9 +77,11 @@
       "typedRoutes": true
     },
     "extra": {
-      "router": {},
+      "router": {
+        "origin": false
+      },
       "eas": {
-        "projectId": "4ee331a2-574e-4e9f-9c65-43ca52d4dbd6"
+        "projectId": "4a9d1ebe-f1e0-4594-9ea3-f49b0dc1554e"
       }
     }
   }
