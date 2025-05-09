@@ -113,7 +113,7 @@ def train(model, train_loader, val_loader, optimizer, criterion, device, num_epo
         val_labels = []
 
         with torch.no_grad():
-            for images, manual_features, labels in val_loader:
+            for manual_features, labels in val_loader:
                 images = images.to(device)
                 manual_features = manual_features.to(device)
                 labels = labels.to(device)
