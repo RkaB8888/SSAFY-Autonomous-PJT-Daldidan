@@ -73,7 +73,7 @@ if __name__ == "__main__":
     json_files = glob(os.path.join(JSON_DIR, "*.json"))
     print(f"✅ 총 JSON 파일 수: {len(json_files)}")
 
-    with Pool(processes=6) as pool:
+    with Pool(processes=48) as pool:
         features = list(tqdm(pool.imap(extract_features_from_json, json_files), total=len(json_files)))
 
     features = [f for f in features if f is not None]
