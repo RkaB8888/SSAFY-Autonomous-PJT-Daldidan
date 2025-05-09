@@ -176,7 +176,7 @@ transform = transforms.Compose([
     transforms.Normalize(mean=[0.485,0.456,0.406], std=[0.229,0.224,0.225])
 ])
 
-dataset = AppleDataset(IMAGE_DIR, json_files, transform=transform)
+dataset = AppleDataset(IMG_DIR, json_files, transform=transform)
 val_split = 0.2
 val_size = int(len(dataset) * val_split)
 train_size = len(dataset) - val_size
