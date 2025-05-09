@@ -117,7 +117,7 @@ def train(model, train_loader, val_loader, optimizer, criterion, device, num_epo
                 manual_features = manual_features.to(device)
                 labels = labels.to(device)
 
-                outputs = model(images, manual_features).squeeze()
+                outputs = model(manual_features).squeeze()
                 loss = criterion(outputs, labels)
 
                 val_loss += loss.item()
