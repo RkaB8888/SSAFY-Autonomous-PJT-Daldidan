@@ -70,7 +70,7 @@ export function useObjectDetection(format: any) {
   }, []);
 
   // 상수 조절로 샘플링 빈도 변경 (3 → 2프레임마다 1회 등)
-  const SAMPLE_RATE = 3; // 60FPS 기준 20FPS 처리
+  const SAMPLE_RATE = 6; // 1초에 10번 연산
 
   const frameProcessor = useFrameProcessor(
     (frame) => {
