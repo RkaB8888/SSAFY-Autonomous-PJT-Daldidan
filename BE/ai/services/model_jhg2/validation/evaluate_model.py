@@ -66,7 +66,7 @@ def main():
     print(f"▶ R2  : {r2:.4f}")
     print(f"▶ 예측 시간(평균/샘플): {avg_time*1000:.6f} ms")
 
-    out_path = Path("eval_results.csv")
+    out_path = Path("services/model_jhg2/eval_results.csv")
     import pandas as pd
 
     pd.DataFrame({"id": ids, "true": y_test, "pred": y_pred}).to_csv(
