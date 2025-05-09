@@ -153,7 +153,7 @@ import torch.optim as optim
 from tqdm import tqdm
 from sklearn.metrics import r2_score
 from torch.cuda.amp import autocast, GradScaler
-
+import numpy as np
 from datasets.apple_dataset import AppleDataset
 from models.fusion_model import FusionModel
 from torch.utils.data import DataLoader
