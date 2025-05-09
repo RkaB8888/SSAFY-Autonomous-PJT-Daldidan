@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { Camera, useCameraDevice } from 'react-native-vision-camera';
 import { useObjectDetection } from '../hooks/useObjectDetection';
 import DetectionOverlay from './DetectionOverlay';
@@ -29,18 +29,27 @@ export default function CameraView() {
       }}
     >
       <Camera
-        style={StyleSheet.absoluteFill}
+        style={[
+          StyleSheet.absoluteFill,
+          detections.length === 0 && styles.grayedCamera,
+        ]}
         device={device}
         isActive={true}
         frameProcessor={frameProcessor}
         fps={fps}
         format={format}
       />
-      <DetectionOverlay
-        detections={detections}
-        screenSize={screenSize}
-        format={format}
-      />
+      {detections.length === 0 ? (
+        <View style={styles.noDetectionContainer}>
+          <Text style={styles.noDetectionText}>사과 객체 인식되지 않음</Text>
+        </View>
+      ) : (
+        <DetectionOverlay
+          detections={detections}
+          screenSize={screenSize}
+          format={format}
+        />
+      )}
     </View>
   );
 }
@@ -49,5 +58,23 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: 'black',
+  },
+  grayedCamera: {
+    opacity: 0.7,
+  },
+  noDetectionContainer: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  noDetectionText: {
+    color: 'white',
+    fontSize: 20,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    padding: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    borderRadius: 10,
   },
 });
