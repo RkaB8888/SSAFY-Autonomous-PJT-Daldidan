@@ -40,8 +40,7 @@ transform = transforms.Compose([
     transforms.Normalize(mean=[0.485,0.456,0.406], std=[0.229,0.224,0.225])
 ])
 
-# === features.npy, labels.npy 로드 ===
-features = np.load("/home/j-k12e206/jmk/S12P31E206/BE/ai/services/model_jmk2/meme/features.npy")
+features = np.load("/home/j-k12e206/jmk/S12P31E206/BE/ai/services/model_jmk2/meme/features_scaled.npy")
 labels = np.load("/home/j-k12e206/jmk/S12P31E206/BE/ai/services/model_jmk2/meme/labels.npy")
 
 # === torch tensor로 변환 ===
