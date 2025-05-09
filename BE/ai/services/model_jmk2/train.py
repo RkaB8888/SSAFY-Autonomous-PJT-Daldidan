@@ -47,7 +47,7 @@ val_size = int(len(dataset) * val_split)
 train_size = len(dataset) - val_size
 train_dataset, val_dataset = torch.utils.data.random_split(dataset, [train_size, val_size])
 
-train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=4, pin_memory=True, collate_fn=custom_collate)
+train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=32, pin_memory=True, collate_fn=custom_collate)
 train_loader = tqdm(train_loader, desc="데이터 로딩 진행 상황")
 val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, pin_memory=True, collate_fn=custom_collate)
 
