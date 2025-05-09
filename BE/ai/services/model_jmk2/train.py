@@ -121,6 +121,10 @@ def train(model, train_loader, val_loader, optimizer, criterion, device, num_epo
                 outputs = model(manual_features).squeeze()
                 loss = criterion(outputs, labels)
 
+                       # === 👇 print debug 추가 (여기!) ===
+                print(f"[DEBUG] outputs: {outputs.detach().cpu().numpy()}")
+                print(f"[DEBUG] labels: {labels.detach().cpu().numpy()}")
+
                 val_loss += loss.item()
                 val_preds.extend(outputs.cpu().numpy())
                 val_labels.extend(labels.cpu().numpy())
