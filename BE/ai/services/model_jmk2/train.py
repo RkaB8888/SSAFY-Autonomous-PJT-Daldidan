@@ -10,7 +10,7 @@ from sklearn.metrics import r2_score
 from torch.utils.data import DataLoader, Subset
 import random
 import os
-# from datasets.apple_dataset import AppleDataset, custom_collate
+from datasets.apple_dataset import AppleDataset, custom_collate
 from torch.cuda.amp import autocast, GradScaler
 
 
@@ -40,26 +40,16 @@ transform = transforms.Compose([
     transforms.Normalize(mean=[0.485,0.456,0.406], std=[0.229,0.224,0.225])
 ])
 
-features = np.load("/home/j-k12e206/jmk/S12P31E206/BE/ai/services/model_jmk2/meme/features_scaled.npy")
-labels = np.load("/home/j-k12e206/jmk/S12P31E206/BE/ai/services/model_jmk2/meme/labels.npy")
+dataset = AppleDataset(IMAGE_DIR, json_files, transform=transform)
 
-# === torch tensor로 변환 ===
-features_tensor = torch.from_numpy(features).float()
-labels_tensor = torch.from_numpy(labels).float()
-
-# === dataset 생성 ===
-full_dataset = torch.utils.data.TensorDataset(features_tensor, labels_tensor)
-
-# === train/val split ===
 val_split = 0.2
-val_size = int(len(full_dataset) * val_split)
-train_size = len(full_dataset) - val_size
-train_dataset, val_dataset = torch.utils.data.random_split(full_dataset, [train_size, val_size])
+val_size = int(len(dataset) * val_split)
+train_size = len(dataset) - val_size
+train_dataset, val_dataset = torch.utils.data.random_split(dataset, [train_size, val_size])
 
-# === DataLoader 생성 ===
-train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=4, pin_memory=True)
+train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=4, pin_memory=True, collate_fn=custom_collate)
 train_loader = tqdm(train_loader, desc="데이터 로딩 진행 상황")
-val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, pin_memory=True)
+val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, pin_memory=True, collate_fn=custom_collate)
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -83,14 +73,14 @@ def train(model, train_loader, val_loader, optimizer, criterion, device, num_epo
         
         scaler = GradScaler()
 
-        for manual_features, labels in train_bar:
+        for images, manual_features, labels in train_loader:
             manual_features = manual_features.to(device)
             labels = labels.to(device)
 
             optimizer.zero_grad()
             with autocast():
                 # 이미지 입력이 빠지니까 → model 입력: manual_features만
-                outputs = model(manual_features).squeeze()
+                outputs = model(images, manual_features).squeeze()
                 # None 대신 dummy or 빼기
                 loss = criterion(outputs, labels)
 
@@ -112,12 +102,13 @@ def train(model, train_loader, val_loader, optimizer, criterion, device, num_epo
         val_labels = []
 
         with torch.no_grad():
-            for manual_features, labels in val_loader:
+            for images, manual_features, labels in val_loader:
                 # images = images.to(device)
                 manual_features = manual_features.to(device)
                 labels = labels.to(device)
 
-                outputs = model(manual_features).squeeze()
+                outputs = model(images, manual_features).squeeze()
+
                 loss = criterion(outputs, labels)
 
                        # === 👇 print debug 추가 (여기!) ===
