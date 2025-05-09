@@ -51,9 +51,9 @@ class AppleDataset(Dataset):
         print(f"[DEBUG] img_filename: {img_filename}")
         print(f"[DEBUG] img_path: {img_path}")
 
-        image = cv2.imread(img_filename)
+        image = cv2.imread(img_path)
         if image is None:
-            print(f"[WARNING] Image not found: {img_filename}")
+            print(f"[WARNING] Image not found: {img_path}")
             # return None, None, None 대신 dummy tensor 리턴
             dummy_image = torch.zeros(3, 224, 224)  # 224x224 크기
             dummy_manual = torch.zeros(6)           # manual feature 6개
