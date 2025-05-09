@@ -91,7 +91,8 @@ def train(model, train_loader, val_loader, optimizer, criterion, device, num_epo
             optimizer.zero_grad()
             with autocast():
                 # 이미지 입력이 빠지니까 → model 입력: manual_features만
-                outputs = model(None, manual_features).squeeze()  # None 대신 dummy or 빼기
+                outputs = model(manual_features).squeeze()
+                # None 대신 dummy or 빼기
                 loss = criterion(outputs, labels)
 
             scaler.scale(loss).backward()
