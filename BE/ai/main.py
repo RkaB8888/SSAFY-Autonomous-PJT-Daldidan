@@ -2,7 +2,7 @@
 from fastapi import FastAPI
 from api.v1 import routes
 
-app = FastAPI()
+app = FastAPI(title="Apple Sugar Prediction API")
 
 # /api/v1/predict 엔드포인트 등록
 app.include_router(routes.router)

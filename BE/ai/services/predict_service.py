@@ -2,11 +2,16 @@
 
 
 def predict(model_name: str, image_bytes: bytes):
-    # 예시 분기
     if model_name == "model_jhg1":
         from services.model_jhg1.predictor import predict_bytes as predict_jhg1
 
         return predict_jhg1(image_bytes)
+
+    elif model_name == "model_jhg2":
+        from services.model_jhg2.predict.predictor import predict_bytes as predict_jhg2
+
+        return predict_jhg2(image_bytes)
+
     elif model_name == "model_a":
         from services.model_a.predictor import predict as predict_a
 
@@ -18,4 +23,4 @@ def predict(model_name: str, image_bytes: bytes):
         return predict_b(image_bytes)
 
     else:
-        raise ValueError(f"Unknown model: {model_name}")
+        raise ValueError(f"Unknown model: {model_name!r}")
