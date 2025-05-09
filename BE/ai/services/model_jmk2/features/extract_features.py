@@ -46,9 +46,17 @@ def extract_features_from_json(json_path):
     try:
         with open(json_path, 'r', encoding='utf-8') as f:
             data = json.load(f)
-
+            
+        # 11
         img_filename = data['images']['img_file_name']
+
+        # === 확장자 교체 로직 추가 ===
+        if img_filename.endswith('.json'):
+            img_filename = img_filename.replace('.json', '.jpg')
+
         img_path = os.path.join(IMG_DIR, img_filename)
+        # 11
+
         image = cv2.imread(img_path)
 
         if image is None:
