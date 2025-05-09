@@ -63,7 +63,15 @@ def extract_features_from_json(json_path):
         mask = np.zeros((img_h, img_w), dtype=np.uint8)
         cv2.fillPoly(mask, [points], 255)
 
-        return extract_features(image, mask)
+         # ✅ label 추출
+        label = data['collection'].get('sugar_content_nir')
+        if label is None:
+            print(f"[WARNING] label 값 없음: {json_path}")
+            return None
+
+        feature = extract_features(image, mask)
+
+        return (feature, label)  # ← feature와 label을 tuple로 반환
 
     except Exception as e:
         print(f"[ERROR] {json_path}: {e}")
@@ -78,8 +86,23 @@ if __name__ == "__main__":
     print(f"✅ 총 JSON 파일 수: {len(json_files)}")
 
     with Pool(processes=48) as pool:
-        features = list(tqdm(pool.imap(extract_features_from_json, json_files), total=len(json_files)))
+        results = list(tqdm(pool.imap(extract_features_from_json, json_files), total=len(json_files)))
 
-    features = [f for f in features if f is not None]
-    np.save(OUTPUT_PATH, np.array(features))
-    print(f"✅ feature 저장 완료 → {OUTPUT_PATH}, shape: {np.array(features).shape}")
+    # feature와 label을 각각 리스트에 저장
+    features = []
+    labels = []
+    for res in results:
+        if res is not None:
+            feature, label = res
+            features.append(feature)
+            labels.append(label)
+
+    features = np.array(features)
+    labels = np.array(labels)
+
+    np.save(OUTPUT_PATH, features)
+    np.save("/home/j-k12e206/jmk/S12P31E206/BE/ai/services/model_jmk2/meme/labels.npy", labels)
+
+    print(f"✅ feature 저장 완료 → {OUTPUT_PATH}, shape: {features.shape}")
+    print(f"✅ label 저장 완료 → labels.npy, shape: {labels.shape}")
+

@@ -41,8 +41,8 @@ transform = transforms.Compose([
 ])
 
 # === features.npy, labels.npy 로드 ===
-features = np.load("/경로/features.npy")
-labels = np.load("/경로/labels.npy")
+features = np.load("/home/j-k12e206/jmk/S12P31E206/BE/ai/services/model_jmk2/meme/features.npy")
+labels = np.load("/home/j-k12e206/jmk/S12P31E206/BE/ai/services/model_jmk2/meme/labels.npy")
 
 # === torch tensor로 변환 ===
 features_tensor = torch.from_numpy(features).float()
@@ -119,7 +119,7 @@ def train(model, train_loader, val_loader, optimizer, criterion, device, num_epo
 
                 outputs = model(images, manual_features).squeeze()
                 loss = criterion(outputs, labels)
-                
+
                 val_loss += loss.item()
                 val_preds.extend(outputs.cpu().numpy())
                 val_labels.extend(labels.cpu().numpy())
