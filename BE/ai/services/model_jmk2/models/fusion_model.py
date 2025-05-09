@@ -27,17 +27,12 @@ class FusionModel(nn.Module):
     def __init__(self, manual_feature_dim, output_dim=1):
         super().__init__()
         # CNN layer 삭제
-        self.fc1 = nn.Linear(manual_feature_dim, 128)
-        self.relu = nn.ReLU()
-        self.fc2 = nn.Linear(128, output_dim)
+        self.fc = nn.Sequential(
+            nn.Linear(manual_feature_dim, 128),
+            nn.ReLU(),
+            nn.Linear(128, output_dim)
+        )
 
     def forward(self, manual_features):
-        print(f"[DEBUG] input manual_features: {manual_features}")  # ✅ 입력값 출력
-        x = self.fc1(manual_features)
-        print(f"[DEBUG] after fc1: {x}")  # ✅ fc1 결과 출력
-        x = self.relu(x)
-        print(f"[DEBUG] after relu: {x}")  # ✅ ReLU 결과 출력
-        output = self.fc2(x)
-        print(f"[DEBUG] output: {output}")  # ✅ 최종 출력 출력
+        output = self.fc(manual_features)
         return output
-
