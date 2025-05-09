@@ -22,6 +22,7 @@ export interface Detection {
 export function useObjectDetection(format: any) {
   const modelRef = useRef<TensorflowModel | null>(null);
   const frameCount = Worklets.createSharedValue(0);
+  const lastDetectionsRef = useRef<Detection[]>([]);
   const { resize } = useResizePlugin();
   const [detections, setDetections] = useState<Detection[]>([]);
   const [hasPermission, setHasPermission] = useState(false);
@@ -68,13 +69,16 @@ export function useObjectDetection(format: any) {
     loadModel();
   }, []);
 
-  // frameProcessor 함수
+  // 상수 조절로 샘플링 빈도 변경 (3 → 2프레임마다 1회 등)
+  const SAMPLE_RATE = 3; // 60FPS 기준 20FPS 처리
+
   const frameProcessor = useFrameProcessor(
     (frame) => {
       'worklet';
       if (!modelRef.current) return;
 
-      frameCount.value = (frameCount.value + 1) % 1;
+      // 프레임 카운트 업데이트 (Worklet 내부에서 값 직접 수정)
+      frameCount.value = (frameCount.value + 1) % SAMPLE_RATE;
       if (frameCount.value !== 0) return;
 
       try {
@@ -92,34 +96,46 @@ export function useObjectDetection(format: any) {
 
         const detected: Detection[] = [];
 
+        // 탐지 결과 후처리 최적화
         for (let i = 0; i < totalDetections; i++) {
-          if (scores[i] < CONFIDENCE_THRESHOLD) continue;
+          const score = scores[i];
+          if (score < CONFIDENCE_THRESHOLD) continue;
 
-          const y1 = boxes[i * 4];
-          const x1 = boxes[i * 4 + 1];
-          const y2 = boxes[i * 4 + 2];
-          const x2 = boxes[i * 4 + 3];
+          // 박스 좌표 검증 통합
+          const [y1, x1, y2, x2] = [
+            boxes[i * 4],
+            boxes[i * 4 + 1],
+            boxes[i * 4 + 2],
+            boxes[i * 4 + 3],
+          ];
 
           if ([x1, y1, x2, y2].some((v) => isNaN(v) || v < 0 || v > 1))
             continue;
 
-          const x = Math.min(Math.max(x1 * frame.width, 0), frame.width);
-          const y = Math.min(Math.max(y1 * frame.height, 0), frame.height);
-          const width = Math.min((x2 - x1) * frame.width, frame.width - x);
-          const height = Math.min((y2 - y1) * frame.height, frame.height - y);
+          // 실제 좌표 변환 (Math.min/max 제거 → clamp 함수로 대체)
+          const clamp = (value: number, min: number, max: number) =>
+            Math.max(min, Math.min(value, max));
 
-          const classId = Math.round(classes[i]);
+          const x = clamp(x1 * frame.width, 0, frame.width);
+          const y = clamp(y1 * frame.height, 0, frame.height);
+          const width = clamp((x2 - x1) * frame.width, 0, frame.width - x);
+          const height = clamp((y2 - y1) * frame.height, 0, frame.height - y);
 
           detected.push({
             x,
             y,
             width,
             height,
-            score: scores[i],
-            class_id: classId,
+            score,
+            class_id: Math.round(classes[i]),
           });
         }
-        updateDetectionsWorklet(detected);
+
+        // 상태 업데이트 최소화
+        if (detected.length > 0 || lastDetectionsRef.current.length > 0) {
+          updateDetectionsWorklet(detected);
+          lastDetectionsRef.current = detected;
+        }
       } catch (error) {
         console.error('Frame processing error:', error);
       }
