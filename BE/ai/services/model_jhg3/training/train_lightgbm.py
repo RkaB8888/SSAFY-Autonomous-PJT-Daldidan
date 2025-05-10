@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import List, Tuple
 
 import lightgbm as lgb
+from lightgbm import early_stopping
 import numpy as np
 from sklearn.feature_selection import VarianceThreshold
 
@@ -77,7 +78,7 @@ def train_lightgbm(
         y_train,
         eval_set=[(X_val_sel, y_val)],
         eval_metric="rmse",
-        early_stopping_rounds=50,
+        callbacks=[early_stopping(50)],
         verbose=20,
     )
 
