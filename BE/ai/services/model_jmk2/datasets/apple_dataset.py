@@ -107,7 +107,8 @@ class AppleDataset(Dataset):
         self.json_files = json_files
         self.transform = transform
         # 서버 내 저장된 scaler load
-        self.scaler = joblib.load("/home/j-k12e206/ai-hub/scaler.pkl")
+        self.scaler = joblib.load("/home/j-k12e206/jmk/S12P31E206/BE/ai/services/model_jmk2/meme/scaler.pkl")
+
 
     def __len__(self):
         return len(self.json_files)
