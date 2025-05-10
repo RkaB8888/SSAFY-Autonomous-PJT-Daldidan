@@ -99,12 +99,15 @@ from PIL import Image
 from torchvision import transforms
 import numpy as np
 from features.extract_features import extract_features
+import joblib
 
 class AppleDataset(Dataset):
     def __init__(self, image_dir, json_files, transform=None):
         self.image_dir = image_dir
         self.json_files = json_files
         self.transform = transform
+        # 서버 내 저장된 scaler load
+        self.scaler = joblib.load("/home/j-k12e206/ai-hub/scaler.pkl")
 
     def __len__(self):
         return len(self.json_files)
@@ -130,8 +133,10 @@ class AppleDataset(Dataset):
         mask = np.zeros((img_h, img_w), dtype=np.uint8)
         cv2.fillPoly(mask, [points], 255)
 
-        manual_features = extract_features(image, mask)
-        manual_features = torch.tensor(manual_features, dtype=torch.float32)
+        # manual feature 추출 → scaler로 scaling
+        manual_features_raw = extract_features(image, mask)
+        manual_features_scaled = self.scaler.transform([manual_features_raw])[0]
+        manual_features = torch.tensor(manual_features_scaled, dtype=torch.float32)
 
         image_pil = Image.open(img_path).convert("RGB")
         if self.transform:

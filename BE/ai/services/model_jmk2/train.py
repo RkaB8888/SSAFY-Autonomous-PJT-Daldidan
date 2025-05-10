@@ -167,6 +167,11 @@ batch_size = 64
 num_epochs = 20
 lr = 0.001
 
+def custom_collate(batch):
+    batch = [b for b in batch if b is not None]
+    return torch.utils.data.dataloader.default_collate(batch)
+
+
 json_files = [os.path.join(JSON_DIR, f) for f in os.listdir(JSON_DIR) if f.endswith('.json')]
 print(f"✅ json_files 개수: {len(json_files)}개")
 
@@ -182,8 +187,10 @@ val_size = int(len(dataset) * val_split)
 train_size = len(dataset) - val_size
 train_dataset, val_dataset = random_split(dataset, [train_size, val_size])
 
-train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=32, pin_memory=True)
-val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=32, pin_memory=True)
+train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True,
+                          num_workers=32, pin_memory=True, collate_fn=custom_collate)
+val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False,
+                        num_workers=32, pin_memory=True, collate_fn=custom_collate)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = FusionModel(manual_feature_dim).to(device)
