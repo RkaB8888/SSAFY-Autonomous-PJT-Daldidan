@@ -1,6 +1,6 @@
 import os
 import torch
-from torch.utils.data import DataLoader, random_split
+from torch.utils.data import DataLoader
 from torchvision import transforms
 import torch.nn as nn
 import torch.optim as optim
@@ -13,8 +13,12 @@ from services.model_jmk3.models.fusion_model3 import FusionModel
 
 torch.backends.cudnn.benchmark = True
 
-IMG_DIR = "/home/j-k12e206/ai-hub/Fuji/train/images"
-JSON_DIR = "/home/j-k12e206/ai-hub/Fuji/train/jsons"
+# 경로 설정
+train_img_dir = "/home/j-k12e206/ai-hub/Fuji/train/images"
+train_json_dir = "/home/j-k12e206/ai-hub/Fuji/train/jsons"
+valid_img_dir = "/home/j-k12e206/ai-hub/Fuji/valid/images"
+valid_json_dir = "/home/j-k12e206/ai-hub/Fuji/valid/jsons"
+
 manual_feature_dim = 10
 batch_size = 64
 num_epochs = 10
@@ -24,9 +28,14 @@ def custom_collate(batch):
     batch = [b for b in batch if b is not None]
     return torch.utils.data.dataloader.default_collate(batch)
 
-json_files = [os.path.join(JSON_DIR, f) for f in os.listdir(JSON_DIR) if f.endswith('.json')]
-print(f"✅ json_files 개수: {len(json_files)}개")
+# JSON 파일 리스트
+train_json_files = [os.path.join(train_json_dir, f) for f in os.listdir(train_json_dir) if f.endswith('.json')]
+valid_json_files = [os.path.join(valid_json_dir, f) for f in os.listdir(valid_json_dir) if f.endswith('.json')]
 
+print(f"✅ train json_files 개수: {len(train_json_files)}개")
+print(f"✅ valid json_files 개수: {len(valid_json_files)}개")
+
+# 데이터 증강
 transform = transforms.Compose([
     transforms.RandomHorizontalFlip(),
     transforms.ColorJitter(brightness=0.2, contrast=0.2, hue=0.05),
@@ -36,18 +45,17 @@ transform = transforms.Compose([
     transforms.Normalize(mean=[0.485,0.456,0.406], std=[0.229,0.224,0.225])
 ])
 
-dataset = AppleDataset(IMG_DIR, json_files, transform=transform)
-val_split = 0.2
-val_size = int(len(dataset) * val_split)
-train_size = len(dataset) - val_size
-train_dataset, val_dataset = random_split(dataset, [train_size, val_size])
+# 데이터셋 객체 생성
+train_dataset = AppleDataset(train_img_dir, train_json_files, transform=transform)
+val_dataset = AppleDataset(valid_img_dir, valid_json_files, transform=transform)
 
+# DataLoader
 train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=32, pin_memory=True, collate_fn=custom_collate)
 val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=32, pin_memory=True, collate_fn=custom_collate)
 
+# 모델, 손실함수, 옵티마이저
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = FusionModel(manual_feature_dim).to(device)
-
 criterion = nn.MSELoss()
 optimizer = optim.AdamW(model.parameters(), lr=lr)
 scaler = GradScaler()
