@@ -26,14 +26,6 @@ def _make_feature_names(dim: int) -> List[str]:
     return [f"cnn_{i}" for i in range(dim)]
 
 
-def r2_eval(y_pred: np.ndarray, data: lgb.Dataset):
-    y_true = data.get_label()
-    # 1 - SSR/SST
-    ss_res = np.sum((y_true - y_pred) ** 2)
-    ss_tot = np.sum((y_true - np.mean(y_true)) ** 2)
-    return "r2", 1 - ss_res / ss_tot, True
-
-
 def load_dataset(
     images_dir: Path, jsons_dir: Path, prefix: str
 ) -> Tuple[np.ndarray, np.ndarray, List[str]]:
@@ -74,8 +66,8 @@ def train_lightgbm(
     # ─── LightGBM 설정 ───
     model = lgb.LGBMRegressor(
         n_estimators=3000,
-        learning_rate=0.01,
-        max_depth=-1,
+        learning_rate=0.03,
+        max_depth=8,
         device="gpu",
         gpu_use_dp=True,
         random_state=42,
