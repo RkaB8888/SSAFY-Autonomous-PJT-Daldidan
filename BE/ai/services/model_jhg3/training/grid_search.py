@@ -93,3 +93,7 @@ def main():
                     print(f"  -> 결과 MAE:{mae:.4f}, RMSE:{rmse:.4f}, R2:{r2:.4f}")
 
     print(f"\n✅ 모든 실험 완료. 결과는 {out_csv}에 저장되었습니다.")
+
+
+if __name__ == "__main__":
+    main()
