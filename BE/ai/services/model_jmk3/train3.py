@@ -52,7 +52,7 @@ criterion = nn.MSELoss()
 optimizer = optim.AdamW(model.parameters(), lr=lr)
 scaler = GradScaler()
 
-SAVE_DIR = "/home/j-k12e206/jmk/S12P31E206/BE/ai/services/model_jmk3/meme/checkpoints"
+SAVE_DIR = "/home/j-k12e206/jmk/S12P31E206/BE/ai/services/model_jmk3/me/checkpoints"
 os.makedirs(SAVE_DIR, exist_ok=True)
 
 best_val_loss = float('inf')
