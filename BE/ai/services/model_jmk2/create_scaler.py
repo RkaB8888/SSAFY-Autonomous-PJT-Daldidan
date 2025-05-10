@@ -5,6 +5,8 @@ from sklearn.preprocessing import StandardScaler
 import joblib
 from features.extract_features import extract_features
 import cv2
+from tqdm import tqdm
+import time 
 
 IMG_DIR = "/home/j-k12e206/ai-hub/Fuji/train/images"
 JSON_DIR = "/home/j-k12e206/ai-hub/Fuji/train/jsons"
@@ -12,7 +14,9 @@ JSON_DIR = "/home/j-k12e206/ai-hub/Fuji/train/jsons"
 json_files = [os.path.join(JSON_DIR, f) for f in os.listdir(JSON_DIR) if f.endswith('.json')]
 
 features = []
-for json_path in json_files:
+start_time = time.time()   # 실행 시작 시간 기록
+
+for i, json_path in enumerate(tqdm(json_files, desc="Feature 추출 진행상황")):  # tqdm 추가
     with open(json_path, 'r', encoding='utf-8') as f:
         data = json.load(f)
 
@@ -34,9 +38,16 @@ for json_path in json_files:
     feature = extract_features(image, mask)
     features.append(feature)
 
+    if i % 100 == 0:
+        print(f"[INFO] {i}/{len(json_files)}번째 feature 추출 완료")
+
 features = np.array(features)
 scaler = StandardScaler().fit(features)
 
-SAVE_PATH = "/home/j-k12e206/jmk/S12P31E206/BE/ai/services/model_jmk2/meme"
+SAVE_PATH = "/home/j-k12e206/jmk/S12P31E206/BE/ai/services/model_jmk2/meme/scaler.pkl"
 joblib.dump(scaler, SAVE_PATH)
+
+end_time = time.time()   # 실행 종료 시간 기록
+elapsed = end_time - start_time
 print(f"✅ scaler.pkl 저장 완료 → {SAVE_PATH}")
+print(f"✅ scaler 생성 완료. 총 소요 시간: {elapsed:.2f}초")   # 시간 출력
