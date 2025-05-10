@@ -26,6 +26,14 @@ def _make_feature_names(dim: int) -> List[str]:
     return [f"cnn_{i}" for i in range(dim)]
 
 
+def r2_eval(y_pred: np.ndarray, data: lgb.Dataset):
+    y_true = data.get_label()
+    # 1 - SSR/SST
+    ss_res = np.sum((y_true - y_pred) ** 2)
+    ss_tot = np.sum((y_true - np.mean(y_true)) ** 2)
+    return "r2", 1 - ss_res / ss_tot, True
+
+
 def load_dataset(
     images_dir: Path, jsons_dir: Path, prefix: str
 ) -> Tuple[np.ndarray, np.ndarray, List[str]]:
@@ -65,8 +73,8 @@ def train_lightgbm(
 
     # ─── LightGBM 설정 ───
     model = lgb.LGBMRegressor(
-        n_estimators=1000,
-        learning_rate=0.03,
+        n_estimators=3000,
+        learning_rate=0.01,
         max_depth=-1,
         device="gpu",
         gpu_use_dp=True,
@@ -77,9 +85,10 @@ def train_lightgbm(
         X_train_sel,
         y_train,
         eval_set=[(X_val_sel, y_val)],
-        eval_metric="rmse",
+        eval_metric=["l2_root", "l1", "mape"],
+        feval=r2_eval,
         callbacks=[
-            early_stopping(50),  # 50회 개선 없으면 멈춤
+            early_stopping(100, first_metric_only=False),  # 50회 개선 없으면 멈춤
             log_evaluation(period=20),  # 20라운드마다 로그 출력
         ],
     )
