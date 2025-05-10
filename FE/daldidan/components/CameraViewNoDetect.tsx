@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, Text, View, AppState } from 'react-native';
 import { Camera, useCameraDevice } from 'react-native-vision-camera';
 import { useObjectDetection } from '../hooks/useObjectDetection';
 import DetectionOverlay from './DetectionOverlay';
@@ -7,8 +7,16 @@ import DetectionOverlay from './DetectionOverlay';
 export default function CameraView() {
   const device = useCameraDevice('back');
   const [screenSize, setScreenSize] = useState({ width: 0, height: 0 });
+  const [appState, setAppState] = useState('active');
 
-  // 60fps 포맷 찾기
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (nextAppState) => {
+      console.log('AppState changed:', nextAppState);
+      setAppState(nextAppState);
+    });
+    return () => subscription.remove();
+  }, []);
+
   const format =
     device?.formats.find((f) => f.maxFps >= 60) ?? device?.formats[0];
   const fps = format ? Math.min(60, format.maxFps) : 30;
@@ -28,17 +36,20 @@ export default function CameraView() {
         setScreenSize({ width, height });
       }}
     >
-      <Camera
-        style={[
-          StyleSheet.absoluteFill,
-          detections.length === 0 && styles.grayedCamera,
-        ]}
-        device={device}
-        isActive={true}
-        frameProcessor={frameProcessor}
-        fps={fps}
-        format={format}
-      />
+      {/* appState가 active일 때만 Camera를 마운트 */}
+      {appState === 'active' && (
+        <Camera
+          style={[
+            StyleSheet.absoluteFill,
+            detections.length === 0 && styles.grayedCamera,
+          ]}
+          device={device}
+          isActive={appState === 'active'}
+          frameProcessor={frameProcessor}
+          fps={fps}
+          format={format}
+        />
+      )}
       {detections.length === 0 ? (
         <View style={styles.noDetectionContainer}>
           <Text style={styles.noDetectionText}>사과 객체 인식되지 않음</Text>

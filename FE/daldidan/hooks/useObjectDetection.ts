@@ -67,10 +67,17 @@ export function useObjectDetection(format: any) {
       }
     };
     loadModel();
+
+    // Cleanup function
+    return () => {
+      modelRef.current = null;
+      frameCount.value = 0;
+      lastDetectionsRef.current = [];
+      setDetections([]);
+    };
   }, []);
 
-  // 상수 조절로 샘플링 빈도 변경 (3 → 2프레임마다 1회 등)
-  const SAMPLE_RATE = 6; // 1초에 10번 연산
+  const SAMPLE_RATE = 10; // 1초에 60프레임, 10프레임마다 1회 연산함. 값이 커질수록 연산 빈도가 낮아짐.
 
   const frameProcessor = useFrameProcessor(
     (frame) => {
