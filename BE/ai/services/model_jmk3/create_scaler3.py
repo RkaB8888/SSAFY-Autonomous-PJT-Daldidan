@@ -3,7 +3,7 @@ import json
 import numpy as np
 from sklearn.preprocessing import StandardScaler
 import joblib
-from services.model_jmk3.features.extract_features3 import extract_features_extended
+from features.extract_features3 import extract_features_extended
 import cv2
 from tqdm import tqdm
 import time

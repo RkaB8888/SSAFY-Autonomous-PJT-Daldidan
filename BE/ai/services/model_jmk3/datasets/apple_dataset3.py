@@ -6,7 +6,7 @@ from PIL import Image
 import torch
 from torch.utils.data import Dataset
 from torchvision import transforms
-from services.model_jmk3.features.extract_features3 import extract_features_extended
+from features.extract_features3 import extract_features_extended
 import joblib
 
 class AppleDataset(Dataset):

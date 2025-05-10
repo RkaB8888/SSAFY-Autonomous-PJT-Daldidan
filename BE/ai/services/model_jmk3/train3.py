@@ -8,8 +8,8 @@ from tqdm import tqdm
 from sklearn.metrics import r2_score
 from torch.cuda.amp import autocast, GradScaler
 import numpy as np
-from services.model_jmk3.datasets.apple_dataset3 import AppleDataset
-from services.model_jmk3.models.fusion_model3 import FusionModel
+from datasets.apple_dataset3 import AppleDataset
+from models.fusion_model3 import FusionModel
 
 torch.backends.cudnn.benchmark = True
 
