@@ -18,7 +18,9 @@ def extract_features_extended(image, mask):
     ycbcr_norm = np.mean(Cb) / (np.mean(Cb) + np.mean(Cr) + 1e-5)
 
     xyz = color.rgb2xyz(roi / 255.0)
-    M_CAT02 = np.array([[0.7328,0.4296,-0.1624],[-0.7036,1.6975,0.0061],[0.0030,0.0136,0.9834]])
+    M_CAT02 = np.array([[0.7328, 0.4296, -0.1624],
+                        [-0.7036, 1.6975, 0.0061],
+                        [0.0030, 0.0136, 0.9834]])
     lms = np.dot(xyz, M_CAT02.T)
     cat02_first = np.mean(lms[:, :, 0])
 
@@ -29,6 +31,9 @@ def extract_features_extended(image, mask):
     contrast_90 = feature.graycoprops(glcm, 'contrast')[0, 2]
 
     hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
-    h_mean = np.mean(hsv[:,:,0])
+    h_mean = np.mean(hsv[:, :, 0])
+    s_mean = np.mean(hsv[:, :, 1])   # 추가된 feature
 
-    return np.array([Rn, C, ycbcr_diff, ycbcr_norm, cat02_first, contrast_0, contrast_45, contrast_90, h_mean])
+    # feature 배열에 s_mean 추가
+    return np.array([Rn, C, ycbcr_diff, ycbcr_norm, cat02_first,
+                     contrast_0, contrast_45, contrast_90, h_mean, s_mean])
