@@ -12,6 +12,11 @@ def predict(model_name: str, image_bytes: bytes):
 
         return predict_jhg2(image_bytes)
 
+    elif model_name == "model_jhg3":
+        from services.model_jhg3.predict.predictor import predict_bytes as predict_jhg3
+
+        return predict_jhg3(image_bytes)
+
     elif model_name == "model_a":
         from services.model_a.predictor import predict as predict_a
 
