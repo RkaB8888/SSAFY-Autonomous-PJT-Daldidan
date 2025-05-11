@@ -22,5 +22,5 @@ MODEL_SAVE_PATH = WEIGHTS_DIR / "lightgbm_cnn.pkl"  # ✅ 파일명 통일
 
 # ── 처리 옵션 플래그 ─────────────────────────────────────────
 USE_NIR = True  # False->sugar_content만, True->NIR fallback
-USE_SEGMENTATION = False  # True->segmentation, False->bbox
+USE_SEGMENTATION = True  # True->segmentation, False->bbox
 EMBEDDING_MODE = "handcrafted"  # 'cnn' 또는 'handcrafted'
