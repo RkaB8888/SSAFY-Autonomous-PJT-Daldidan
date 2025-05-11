@@ -24,10 +24,12 @@ def load_cache(prefix: str):
     feat = CACHE_DIR / f"{prefix}_embeddings.npy"
     label = CACHE_DIR / f"{prefix}_labels.npy"
     if not (feat.exists() and label.exists()):
+        print(f"🚀 캐시가 없으므로 {prefix}용 build_and_cache_embeddings() 실행…")
         if prefix == "train":
             build_and_cache_embeddings(IMAGES_DIR, JSONS_DIR)
         else:
             build_valid_cache(VALID_IMAGES_DIR, VALID_JSONS_DIR)
+        print("✅ 캐시 생성 완료.")
     X = np.memmap(feat, dtype=np.float32, mode="r").reshape(-1, 1280)
     y = np.memmap(label, dtype=np.float32, mode="r", shape=(len(X),))
     return X, y
