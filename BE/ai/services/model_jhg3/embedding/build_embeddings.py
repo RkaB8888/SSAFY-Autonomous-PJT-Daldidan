@@ -7,17 +7,10 @@ import tqdm
 from PIL import Image
 from torch.utils.data import Dataset, DataLoader
 
-from services.model_jhg3.config import (
-    CACHE_DIR,
-    IMAGES_DIR,
-    JSONS_DIR,
-    VALID_IMAGES_DIR,
-    VALID_JSONS_DIR,
-    USE_NIR,
-    USE_SEGMENTATION,
-)
-from services.model_jhg3.embedding.embedding_dispatcher import extract_embedding
+import services.model_jhg3.config as cfg
 from services.model_jhg3.utils.cropper import crop_apple
+from services.model_jhg3.extractor.feature_extractors import extract_features
+from services.model_jhg3.embedding.embedding_dispatcher import extract_embedding
 
 
 class CroppedDataset(Dataset):
@@ -36,7 +29,7 @@ class CroppedDataset(Dataset):
             data = json.loads(js_p.read_text(encoding="utf-8"))
             coll = data.get("collection", {})
             # 레이블 필터
-            if USE_NIR:
+            if cfg.USE_NIR:
                 if (
                     coll.get("sugar_content") is None
                     and coll.get("sugar_content_nir") is None
@@ -47,14 +40,13 @@ class CroppedDataset(Dataset):
                     continue
             # 크롭 유효성 필터
             ann = data.get("annotations", {})
-            if USE_SEGMENTATION:
+            if cfg.USE_SEGMENTATION:
                 if not ann.get("segmentation"):
                     continue
             else:
                 bb = ann.get("bbox", [])
                 if len(bb) != 4 or bb[2] <= 0 or bb[3] <= 0:
                     continue
-            # (경로, JSON 매핑 dict) 캐싱
             self.items.append((img_p, data))
         self.resize = resize
 
@@ -64,34 +56,39 @@ class CroppedDataset(Dataset):
     def __getitem__(self, idx):
         img_p, data = self.items[idx]
         img = Image.open(img_p).convert("RGB")
-        crop = crop_apple(
-            img, data.get("annotations", {}), USE_SEGMENTATION, self.resize
-        )
+        crop = crop_apple(img, data["annotations"], cfg.USE_SEGMENTATION, self.resize)
         if crop is None:
             return None
-        arr = np.array(crop, copy=False)
-        coll = data.get("collection", {})
+
+        coll = data["collection"]
         sugar = (
             coll.get("sugar_content")
-            if not USE_NIR
+            if not cfg.USE_NIR
             else coll.get("sugar_content") or coll.get("sugar_content_nir")
         )
         if sugar is None:
             return None
-        return arr, float(sugar), img_p.stem
+
+        arr = np.array(crop, copy=False)
+
+        if cfg.EMBEDDING_MODE == "handcrafted":
+            feat_vec, _ = extract_features(arr)
+            return feat_vec.astype(np.float32), float(sugar), img_p.stem
+        else:
+            return arr, float(sugar), img_p.stem
 
 
 def build_and_cache_embeddings(
     mode: str, cache_dir: pathlib.Path, batch_size=1024, num_workers=32, prefetch=4
 ):
-    # 모드에 따라 디렉터리/파일명 선택
+    # 경로/파일 결정
     if mode == "train":
-        img_dir, json_dir = IMAGES_DIR, JSONS_DIR
+        img_dir, json_dir = cfg.IMAGES_DIR, cfg.JSONS_DIR
         feat_file = cache_dir / "train_embeddings.npy"
         label_file = cache_dir / "train_labels.npy"
         stem_file = cache_dir / "train_stems.npy"
     else:
-        img_dir, json_dir = VALID_IMAGES_DIR, VALID_JSONS_DIR
+        img_dir, json_dir = cfg.VALID_IMAGES_DIR, cfg.VALID_JSONS_DIR
         feat_file = cache_dir / "valid_embeddings.npy"
         label_file = cache_dir / "valid_labels.npy"
         stem_file = cache_dir / "valid_stems.npy"
@@ -116,15 +113,24 @@ def build_and_cache_embeddings(
     for batch in tqdm.tqdm(dl, total=len(dl), ncols=80, desc=f"{mode} embedding"):
         if not batch:
             continue
-        imgs, sugars, bs = zip(*batch)
-        arrs = np.stack(imgs, axis=0)
-        vecs = extract_embedding(arrs)  # (B, D)
+
+        if cfg.EMBEDDING_MODE == "handcrafted":
+            # batch = [(feat_vec, sugar, stem), ...]
+            vecs, sugars, batch_stems = zip(*batch)
+            vecs = np.stack(vecs, axis=0)
+        else:
+            # batch = [(img_arr, sugar, stem), ...]
+            imgs, sugars, batch_stems = zip(*batch)
+            arrs = np.stack(imgs, axis=0)
+            vecs = extract_embedding(arrs)
+
         B, D = vecs.shape
         if feats is None:
             feats = np.memmap(feat_file, dtype=np.float32, mode="w+", shape=(N, D))
+
         feats[idx : idx + B] = vecs
         labels[idx : idx + B] = sugars
-        stems.extend(bs)
+        stems.extend(batch_stems)
         idx += B
 
     feats.flush()
@@ -139,4 +145,4 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--mode", choices=["train", "valid"], required=True)
     args = parser.parse_args()
-    build_and_cache_embeddings(args.mode, CACHE_DIR)
+    build_and_cache_embeddings(args.mode, cfg.CACHE_DIR)
