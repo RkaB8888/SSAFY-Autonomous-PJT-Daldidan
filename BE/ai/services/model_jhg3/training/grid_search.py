@@ -1,6 +1,7 @@
 # services/model_jhg3/training/grid_search.py
-import csv, itertools, importlib
+import csv
 from pathlib import Path
+
 import numpy as np
 import lightgbm as lgb
 from lightgbm import early_stopping, log_evaluation
@@ -8,37 +9,31 @@ from sklearn.feature_selection import VarianceThreshold
 
 import services.model_jhg3.config as cfg
 from services.model_jhg3.utils.metrics import evaluate
-from services.model_jhg3.embedding.build_embeddings import build_and_cache_embeddings
+import services.model_jhg3.embedding.build_embeddings as beb
 
 
 def load_cache(prefix: str, cache_dir: Path):
     feat = cache_dir / f"{prefix}_embeddings.npy"
     label = cache_dir / f"{prefix}_labels.npy"
+
     if not (feat.exists() and label.exists()):
         print(f"🚀 캐시가 없으므로 {prefix}용 build_and_cache_embeddings() 실행…")
-        build_and_cache_embeddings(prefix, cache_dir)
+        beb.build_and_cache_embeddings(prefix, cache_dir)
         print("✅ 캐시 생성 완료.")
+
     flat = np.memmap(feat, dtype=np.float32, mode="r")
-    y = np.memmap(
-        label, dtype=np.float32, mode="r", shape=(flat.size // 1280,)
-    )  # 1280→동적 계산
-    D = flat.size // y.size
-    X = flat.reshape(-1, D)
+    y = np.memmap(label, dtype=np.float32, mode="r")  # shape 생략 → 1D 전체 읽기
+    N = y.size
+    D = flat.size // N
+    X = flat.reshape(N, D)
     return X, y
 
 
-def run_experiment(embed_mode, use_nir, use_seg):
-    # 1. config 플래그 설정
-    cfg.EMBEDDING_MODE = embed_mode
-    cfg.USE_NIR = use_nir
-    cfg.USE_SEGMENTATION = use_seg
-
-    # reload dispatcher so extract_embedding picks correct mode
-    import services.model_jhg3.embedding.embedding_dispatcher as edisp
-    import services.model_jhg3.embedding.build_embeddings as beb
-
-    importlib.reload(edisp)
-    importlib.reload(beb)
+def run_experiment():
+    # 1. config 플래그에서 모드 읽기
+    embed_mode = cfg.EMBEDDING_MODE
+    use_nir = cfg.USE_NIR
+    use_seg = cfg.USE_SEGMENTATION
 
     # 2. 실험 전용 캐시 디렉터리
     exp_name = f"{embed_mode}_nir{int(use_nir)}_seg{int(use_seg)}"
@@ -57,7 +52,7 @@ def run_experiment(embed_mode, use_nir, use_seg):
     # 5. Hyperparam grid
     param_grid = {
         "learning_rate": [0.01, 0.03],
-        "n_estimators": [1000, 1500, 2000, 2500, 3000],
+        "n_estimators": [1000, 2000, 3000],
         "max_depth": [-1, 8, 12],
     }
 
@@ -98,12 +93,5 @@ def run_experiment(embed_mode, use_nir, use_seg):
     print(f"✅ 실험 완료: {exp_name}, 결과: {out_csv}\n")
 
 
-def main():
-    for embed_mode, use_nir, use_seg in itertools.product(
-        ["cnn", "handcrafted"], [False, True], [False, True]
-    ):
-        run_experiment(embed_mode, use_nir, use_seg)
-
-
 if __name__ == "__main__":
-    main()
+    run_experiment()
