@@ -2,7 +2,7 @@
 from services.model_jhg3.config import EMBEDDING_MODE
 
 if EMBEDDING_MODE == "handcrafted":
-    from services.model_jhg3.extractor.feature_extractors import (
+    from services.model_jhg3.extractor.feature_extractors_v2 import (
         extract_batch_handcrafted as extract_embedding,
     )
 else:

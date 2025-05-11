@@ -9,7 +9,7 @@ from torch.utils.data import Dataset, DataLoader
 
 import services.model_jhg3.config as cfg
 from services.model_jhg3.utils.cropper import crop_apple
-from services.model_jhg3.extractor.feature_extractors import extract_features
+from services.model_jhg3.extractor.feature_extractors_v2 import extract_features
 from services.model_jhg3.embedding.embedding_dispatcher import extract_embedding
 
 
