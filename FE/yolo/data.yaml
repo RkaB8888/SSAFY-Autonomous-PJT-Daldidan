@@ -1,6 +1,6 @@
-path: /Users/yourname/yolo-apple-project   # 전체 프로젝트 경로 (절대경로 추천)
+# 예: data.yaml 파일 내용
+path: C:/Users/SSAFY/Desktop/S12P31E206/FE/yolo
 train: images/train
-val: images/val
-
-nc: 1            # 클래스 수 (사과 하나니까 1)
-names: ['apple'] # 클래스 이름 (0번 클래스는 'apple')
+val: images/train
+nc: 1
+names: ['apple']

@@ -4,8 +4,8 @@ from PIL import Image
 from shutil import copy2
 
 # 폴더 경로 설정
-json_dir = "./json"             # JSON 300개 있는 폴더
-image_dir = "./raw_image"      # 원본 이미지 폴더
+json_dir = "./json/"             # JSON 300개 있는 폴더
+image_dir = "./raw_img/"      # 원본 이미지 폴더
 yolo_image_dir = "./images/train"
 yolo_label_dir = "./labels/train"
 
