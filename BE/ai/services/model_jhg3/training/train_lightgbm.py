@@ -79,7 +79,7 @@ def train_lightgbm(
         eval_set=[(X_val_sel, y_val)],
         eval_metric=["l2_root", "l1", "mape"],
         callbacks=[
-            early_stopping(100, first_metric_only=False),  # 50회 개선 없으면 멈춤
+            early_stopping(100, first_metric_only=False),  # 100회 개선 없으면 멈춤
             log_evaluation(period=20),  # 20라운드마다 로그 출력
         ],
     )

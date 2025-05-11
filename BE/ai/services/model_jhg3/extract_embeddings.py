@@ -28,12 +28,12 @@ class CroppedDataset(Dataset):
         for img_p, js_p in raw_pairs:
             data = json.loads(js_p.read_text(encoding="utf-8"))
             coll = data.get("collection", {})
-            if (
-                coll.get("sugar_content") is not None
-                or coll.get("sugar_content_nir") is not None
-            ):
-                # # sugar_content가 존재해야만 추가
-                # if data.get("collection", {}).get("sugar_content") is not None:
+            # if (
+            #     coll.get("sugar_content") is not None
+            #     or coll.get("sugar_content_nir") is not None
+            # ):
+            # sugar_content가 존재해야만 추가
+            if coll.get("sugar_content") is not None:
                 self.pairs.append((img_p, js_p))
 
         self.resize = resize
@@ -84,8 +84,9 @@ class CroppedDataset(Dataset):
 
             # — 레이블(당도)
             coll = data.get("collection", {})
-            # sugar = coll.get("sugar_content")
-            sugar = coll.get("sugar_content") or coll.get("sugar_content_nir")
+            # sugar_content가 존재해야만 추가
+            sugar = coll.get("sugar_content")
+            # sugar = coll.get("sugar_content") or coll.get("sugar_content_nir")
 
             if sugar is None:
                 print(f"[Warning] sugar_content 누락, 건너뜁니다: {js_p.name}")
