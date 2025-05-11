@@ -9,6 +9,7 @@ export const useObjectAnalysis = () => {
   ): Promise<any> => {
     const formData = new FormData();
     formData.append('image_base64', base64String);
+    console.log(base64String);
     formData.append('id', classId?.toString() ?? '1');
 
     const response = await fetch(API_ENDPOINTS.OBJECT_ANALYSIS, {
@@ -35,11 +36,11 @@ export const useObjectAnalysis = () => {
   const processImageData = async (
     uint8Array: Uint8Array,
     detection: any,
-    timestamp: number
+    timestamp: number,
+    isJPEG: boolean = false
   ): Promise<DetectionResult | null> => {
     try {
       const base64String = base64.fromByteArray(uint8Array);
-      // console.log('base64String', base64String);
       if (!base64String || base64String.length === 0) {
         console.warn('[JS] Invalid base64 string generated');
         return null;
@@ -56,7 +57,9 @@ export const useObjectAnalysis = () => {
             ...detection,
             sugar_content: result.sugar_content,
           },
-          imageData: `data:image/png;base64,${base64String}`,
+          imageData: `data:image/${
+            isJPEG ? 'jpeg' : 'png'
+          };base64,${base64String}`,
           result,
           timestamp,
         };
@@ -68,7 +71,51 @@ export const useObjectAnalysis = () => {
     }
   };
 
+  const processBatch = async (
+    items: Array<{
+      detection: any;
+      croppedData: { data: number[]; isJPEG?: boolean } | null;
+      timestamp: number;
+    }>
+  ): Promise<DetectionResult[]> => {
+    const promises = items.map(async (item) => {
+      if (
+        !item.croppedData ||
+        !item.croppedData.data ||
+        !Array.isArray(item.croppedData.data)
+      ) {
+        return null;
+      }
+
+      const uint8Array = new Uint8Array(item.croppedData.data);
+      if (uint8Array.length === 0) return null;
+
+      try {
+        return await processImageData(
+          uint8Array,
+          item.detection,
+          item.timestamp,
+          item.croppedData.isJPEG
+        );
+      } catch (error) {
+        console.error('[JS] Processing error:', error);
+        return null;
+      }
+    });
+
+    const results = await Promise.allSettled(promises);
+    const validResults = results
+      .filter(
+        (result): result is PromiseFulfilledResult<DetectionResult> =>
+          result.status === 'fulfilled' && result.value !== null
+      )
+      .map((result) => result.value);
+
+    return validResults;
+  };
+
   return {
     processImageData,
+    processBatch,
   };
 };

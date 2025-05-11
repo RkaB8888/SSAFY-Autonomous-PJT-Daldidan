@@ -21,8 +21,13 @@ export default function CameraView() {
     device?.formats.find((f) => f.maxFps >= 60) ?? device?.formats[0];
   const fps = format ? Math.min(60, format.maxFps) : 30;
 
-  const { hasPermission, detections, frameProcessor } =
-    useObjectDetection(format);
+  const {
+    hasPermission,
+    detections,
+    frameProcessor,
+    cameraRef,
+    detectionResults,
+  } = useObjectDetection(format);
 
   if (!hasPermission || !device || !format) {
     return <View style={styles.container} />;
@@ -39,6 +44,7 @@ export default function CameraView() {
       {/* appState가 active일 때만 Camera를 마운트 */}
       {appState === 'active' && (
         <Camera
+          ref={cameraRef}
           style={[
             StyleSheet.absoluteFill,
             detections.length === 0 && styles.grayedCamera,
@@ -48,6 +54,7 @@ export default function CameraView() {
           frameProcessor={frameProcessor}
           fps={fps}
           format={format}
+          photo={true}
         />
       )}
       {detections.length === 0 ? (
@@ -57,6 +64,7 @@ export default function CameraView() {
       ) : (
         <DetectionOverlay
           detections={detections}
+          detectionResults={detectionResults}
           screenSize={screenSize}
           format={format}
         />

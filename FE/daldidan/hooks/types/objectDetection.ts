@@ -19,4 +19,5 @@ export interface CroppedImageData {
   data: number[];
   width: number;
   height: number;
+  isJPEG?: boolean;
 }

@@ -23,10 +23,10 @@ export const useImageProcessing = () => {
     });
   };
 
-  const extractCroppedData = (
+  const extractCroppedData = async (
     frame: any,
     detection: Detection
-  ): CroppedImageData | null => {
+  ): Promise<CroppedImageData | null> => {
     'worklet';
     try {
       const { x, y, width, height } = detection;
@@ -72,6 +72,7 @@ export const useImageProcessing = () => {
         data: dataArray,
         width: Math.min(safeWidth, maxSize),
         height: Math.min(safeHeight, maxSize),
+        isJPEG: false,
       };
     } catch (error) {
       logWorklet(`[Worklet] Extraction error: ${error}`);
