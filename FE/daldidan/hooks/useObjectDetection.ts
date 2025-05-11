@@ -82,34 +82,49 @@ export function useObjectDetection(format: any) {
       return [];
     }
   };
+  function getGridKey(detection: Detection) {
+    const grid = 10; // 10픽셀 단위
+    return [
+      detection.class_id,
+      Math.round(detection.x / grid) * grid,
+      Math.round(detection.y / grid) * grid,
+      Math.round(detection.width / grid) * grid,
+      Math.round(detection.height / grid) * grid,
+    ].join('_');
+  }
+
+  const recentRequests = new Map();
+  const DUPLICATE_TIMEOUT = 5000; // 5초
 
   const processExtractedData = async (extractedDataArray: any[]) => {
-    for (const item of extractedDataArray) {
+    const now = Date.now();
+    const promises = extractedDataArray.map(async (item) => {
       const { detection, croppedData, timestamp } = item;
-      if (!croppedData) {
-        console.warn('[JS] No cropped data received');
-        continue;
+      if (!croppedData || !croppedData.data || !Array.isArray(croppedData.data))
+        return null;
+      const uint8Array = new Uint8Array(croppedData.data);
+      if (uint8Array.length === 0) return null;
+
+      const uniqueKey = getGridKey(detection);
+      // 일정 시간 내 중복 방지
+      if (
+        recentRequests.has(uniqueKey) &&
+        now - recentRequests.get(uniqueKey) < DUPLICATE_TIMEOUT
+      ) {
+        return null;
       }
+      recentRequests.set(uniqueKey, now);
+
       try {
-        if (!croppedData.data || !Array.isArray(croppedData.data)) {
-          console.warn('[JS] Invalid data structure received:', croppedData);
-          continue;
-        }
-
-        const uint8Array = new Uint8Array(croppedData.data);
-        if (uint8Array.length === 0) {
-          console.warn('[JS] Empty data received');
-          continue;
-        }
-
         const result = await processImageData(uint8Array, detection, timestamp);
-        if (result) {
-          setDetectionResults((prev) => [...prev, result]);
-        }
-      } catch (error) {
-        console.error('[JS] API request error:', error);
+        if (result) setDetectionResults((prev) => [...prev, result]);
+        return result;
+      } finally {
+        // 필요에 따라 recentRequests에서 삭제하지 않고 일정 시간 유지
       }
-    }
+    });
+
+    await Promise.all(promises); // 병렬 처리
   };
 
   const runOnJSThread = Worklets.createRunOnJS(processExtractedData);
@@ -186,6 +201,29 @@ export function useObjectDetection(format: any) {
       setDetectionResults([]);
     };
   }, []);
+
+  // detectionResults가 변경될 때마다 detections 업데이트
+  useEffect(() => {
+    if (detectionResults.length > 0) {
+      const latestResult = detectionResults[detectionResults.length - 1];
+      setDetections((prev) => {
+        const updatedDetections = [...prev];
+        const index = updatedDetections.findIndex(
+          (d) =>
+            d.class_id === latestResult.detection.class_id &&
+            Math.abs(d.x - latestResult.detection.x) < 10 &&
+            Math.abs(d.y - latestResult.detection.y) < 10
+        );
+        if (index !== -1) {
+          updatedDetections[index] = {
+            ...updatedDetections[index],
+            sugar_content: latestResult.detection.sugar_content,
+          };
+        }
+        return updatedDetections;
+      });
+    }
+  }, [detectionResults]);
 
   return {
     hasPermission,

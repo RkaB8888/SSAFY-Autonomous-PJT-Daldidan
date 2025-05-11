@@ -5,6 +5,7 @@ export interface Detection {
   height: number;
   score?: number;
   class_id?: number;
+  sugar_content?: number;
 }
 
 export interface DetectionResult {

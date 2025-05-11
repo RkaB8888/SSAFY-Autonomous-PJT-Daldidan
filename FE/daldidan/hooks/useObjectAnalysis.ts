@@ -17,14 +17,17 @@ export const useObjectAnalysis = () => {
     });
 
     const text = await response.text();
-    console.log('text', text);
+    console.log('API Response:', text);
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}, body: ${text}`);
     }
 
     try {
-      return JSON.parse(text);
+      const parsedResult = JSON.parse(text);
+      console.log('Parsed API Result:', parsedResult);
+      return parsedResult;
     } catch (e) {
+      console.error('JSON Parse Error:', e);
       throw new Error('Response is not valid JSON');
     }
   };
@@ -49,7 +52,10 @@ export const useObjectAnalysis = () => {
 
       if (result) {
         return {
-          detection,
+          detection: {
+            ...detection,
+            sugar_content: result.sugar_content,
+          },
           imageData: `data:image/png;base64,${base64String}`,
           result,
           timestamp,

@@ -2,7 +2,7 @@ import { Canvas, Group, Rect } from '@shopify/react-native-skia';
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { COCO_CLASS_NAMES } from '../constants/cocoClassNames';
-import { Detection } from '../hooks/useObjectDetection';
+import { Detection } from '../hooks/types/objectDetection';
 
 interface Props {
   detections: Detection[];
@@ -65,11 +65,13 @@ export default function DetectionOverlay({
             ]}
           >
             <Text style={styles.text} numberOfLines={1}>
-              {detection.class_id !== undefined &&
+              {/* {detection.class_id !== undefined &&
               detection.class_id < COCO_CLASS_NAMES.length
                 ? COCO_CLASS_NAMES[detection.class_id]
                 : 'unknown'}{' '}
-              ({Math.round((detection.score ?? 0) * 100)}%)
+              ({Math.round((detection.score ?? 0) * 100)}%) */}
+              {detection.sugar_content !== undefined &&
+                `당도: ${detection.sugar_content}Bx`}
             </Text>
           </View>
         );
