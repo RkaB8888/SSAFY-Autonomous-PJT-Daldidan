@@ -8,7 +8,7 @@ export const useObjectAnalysis = () => {
     classId: number | undefined
   ): Promise<any> => {
     const formData = new FormData();
-    formData.append('image', base64String);
+    formData.append('image_base64', base64String);
     formData.append('id', classId?.toString() ?? '1');
 
     const response = await fetch(API_ENDPOINTS.OBJECT_ANALYSIS, {
@@ -17,6 +17,7 @@ export const useObjectAnalysis = () => {
     });
 
     const text = await response.text();
+    console.log('text', text);
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}, body: ${text}`);
     }
@@ -35,7 +36,7 @@ export const useObjectAnalysis = () => {
   ): Promise<DetectionResult | null> => {
     try {
       const base64String = base64.fromByteArray(uint8Array);
-      console.log('base64String', base64String);
+      // console.log('base64String', base64String);
       if (!base64String || base64String.length === 0) {
         console.warn('[JS] Invalid base64 string generated');
         return null;
