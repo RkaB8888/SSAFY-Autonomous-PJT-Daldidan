@@ -1,7 +1,7 @@
 # services/model_jhg3/training/grid_search.py
 import csv
 from pathlib import Path
-
+import itertools
 import numpy as np
 import lightgbm as lgb
 from lightgbm import early_stopping, log_evaluation
