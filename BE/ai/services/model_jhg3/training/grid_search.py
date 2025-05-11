@@ -67,10 +67,15 @@ def main():
             for ne in param_grid["n_estimators"]:
                 for md in param_grid["max_depth"]:
                     print(f"\n▶ 실험: lr={lr}, n_est={ne}, max_depth={md}")
+                    if md == -1:
+                        num_leaves = 4096  # 제한 없음이면 적절히 넉넉한 값 지정
+                    else:
+                        num_leaves = 2**md
                     model = lgb.LGBMRegressor(
                         learning_rate=lr,
                         n_estimators=ne,
                         max_depth=md,
+                        num_leaves=num_leaves,
                         device="gpu",
                         gpu_use_dp=True,
                         random_state=42,

@@ -29,6 +29,6 @@ def extract_batch(imgs: np.ndarray) -> np.ndarray:
     """
     x = torch.from_numpy(imgs).permute(0, 3, 1, 2)  # BHWC → BCHW
     x = preproc(x).to(device, non_blocking=True)
-    with torch.cuda.amp.autocast():
+    with torch.amp.autocast(device_type="cuda"):
         vec = model(x).cpu().numpy().astype(np.float32)
     return vec

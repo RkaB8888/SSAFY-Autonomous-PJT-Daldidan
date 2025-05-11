@@ -64,10 +64,17 @@ def train_lightgbm(
     X_val_sel = selector.transform(X_val)
 
     # ─── LightGBM 설정 ───
+    max_depth = 8
+    if max_depth == -1:
+        num_leaves = 4096
+    else:
+        num_leaves = 2**max_depth
+
     model = lgb.LGBMRegressor(
         n_estimators=3000,
         learning_rate=0.03,
-        max_depth=8,
+        max_depth=max_depth,
+        num_leaves=num_leaves,
         device="gpu",
         gpu_use_dp=True,
         random_state=42,
