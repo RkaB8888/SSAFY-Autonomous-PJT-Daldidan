@@ -1,4 +1,4 @@
-# ai>services>model_jhg3>utils>cnn_feature_extractor.py
+# ai>services>model_jhg3>extractor>cnn_feature_extractor.py
 import torch
 import numpy as np
 from torchvision import models, transforms
@@ -14,6 +14,7 @@ model.to(device).eval()
 # 이미지 전처리 파이프라인
 preproc = transforms.Compose(
     [
+        transforms.Resize(256),
         transforms.CenterCrop(224),
         transforms.ConvertImageDtype(torch.float32),
         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
@@ -24,11 +25,11 @@ preproc = transforms.Compose(
 @torch.inference_mode()
 def extract_batch(imgs: np.ndarray) -> np.ndarray:
     """
-    imgs : (B, H, W, C) uint8
+    imgs: (B, H, W, C) uint8
     return: (B, 1280) float32
     """
-    x = torch.from_numpy(imgs).permute(0, 3, 1, 2)  # BHWC → BCHW
+    x = torch.from_numpy(imgs).permute(0, 3, 1, 2)
     x = preproc(x).to(device, non_blocking=True)
     with torch.amp.autocast(device_type="cuda"):
-        vec = model(x).cpu().numpy().astype(np.float32)
-    return vec
+        out = model(x).cpu().numpy().astype(np.float32)
+    return out
