@@ -11,11 +11,15 @@ from pathlib import Path
 # VALID_JSONS_DIR = VALID_ROOT / "jsons"
 
 # ──  Local 고정 절대경로 ───────────────────────────────
-TRAIN_ROOT = Path("C:\Users\SSAFY\Desktop\SSAFY-Autonomous-PJT\dataset\ai-hub\Fuji\train")
+TRAIN_ROOT = Path(
+    r"C:\Users\SSAFY\Desktop\SSAFY-Autonomous-PJT\dataset\ai-hub\Fuji\train"
+)
 IMAGES_DIR = TRAIN_ROOT / "images"
 JSONS_DIR = TRAIN_ROOT / "jsons"
 
-VALID_ROOT = Path("C:\Users\SSAFY\Desktop\SSAFY-Autonomous-PJT\dataset\ai-hub\Fuji\valid")
+VALID_ROOT = Path(
+    r"C:\Users\SSAFY\Desktop\SSAFY-Autonomous-PJT\dataset\ai-hub\Fuji\valid"
+)
 VALID_IMAGES_DIR = VALID_ROOT / "images"
 VALID_JSONS_DIR = VALID_ROOT / "jsons"
 

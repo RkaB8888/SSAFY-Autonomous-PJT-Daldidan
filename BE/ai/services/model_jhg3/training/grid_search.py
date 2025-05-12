@@ -1,7 +1,4 @@
 # services/model_jhg3/training/grid_search.py
-import warnings
-
-warnings.filterwarnings("ignore")
 import csv
 from pathlib import Path
 from tqdm import tqdm
@@ -80,7 +77,6 @@ def run_experiment():
                 num_leaves=num_leaves,
                 device="gpu",
                 gpu_use_dp=False,
-                n_jobs=4,
                 random_state=42,
             )
             model.fit(
