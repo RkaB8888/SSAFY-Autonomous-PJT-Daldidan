@@ -1,4 +1,4 @@
-path: home/j-k12e206/ai-hub/Apple_train/
+path: /home/j-k12e206/ai-hub/Apple_train/
 train: images/train
 val: images/val  # 검증 데이터 따로 만들면 변경 가능
 
