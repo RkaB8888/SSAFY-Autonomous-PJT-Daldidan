@@ -12,5 +12,5 @@ model.train(
     name='apple_detector_v21', # 출력 폴더명 (runs/detect/apple_detector_v1)
     project='runs/detect',    # 저장될 루트 폴더
     workers=2,                # 데이터 로딩 스레드 수
-    device=0                  # 0번 GPU 사용, CPU일 경우 'cpu'
+    device=3                  # 0번 GPU 사용, CPU일 경우 'cpu'
 )
