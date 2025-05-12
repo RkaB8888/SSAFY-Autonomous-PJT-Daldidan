@@ -27,10 +27,13 @@ def load_valid_set():
         beb.build_and_cache_embeddings("valid", cfg.CACHE_DIR)
         print("✅ valid 캐시 생성 완료")
 
-    X = np.memmap(feat_f, dtype=np.float32, mode="r").reshape(-1, 1280)
     y = np.memmap(label_f, dtype=np.float32, mode="r")
+    flat = np.memmap(feat_f, dtype=np.float32, mode="r")
+    D = flat.size // y.size  # 자동 차원 추론
+    X = flat.reshape(y.size, D)
     stems = np.load(stem_f).tolist()
-    print(f"✔ Loaded valid set: {len(stems)} samples")
+
+    print(f"✔ Loaded valid set: {len(stems)} samples, dim={D}")
     return X, y, stems
 
 
