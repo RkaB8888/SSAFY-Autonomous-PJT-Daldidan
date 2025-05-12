@@ -1,4 +1,7 @@
 # services/model_jhg3/training/grid_search.py
+import warnings
+
+warnings.filterwarnings("ignore")
 import csv
 from pathlib import Path
 from tqdm import tqdm
