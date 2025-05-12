@@ -77,6 +77,7 @@ def run_experiment():
                 num_leaves=num_leaves,
                 device="gpu",
                 gpu_use_dp=False,
+                n_jobs=8,
                 random_state=42,
             )
             model.fit(

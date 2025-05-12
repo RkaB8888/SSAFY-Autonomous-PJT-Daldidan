@@ -79,7 +79,7 @@ class CroppedDataset(Dataset):
 
 
 def build_and_cache_embeddings(
-    mode: str, cache_dir: pathlib.Path, batch_size=512, num_workers=4, prefetch=2
+    mode: str, cache_dir: pathlib.Path, batch_size=256, num_workers=2, prefetch=1
 ):
     # 경로/파일 결정
     if mode == "train":
