@@ -14,19 +14,27 @@ os.makedirs(yolo_image_dir, exist_ok=True)
 os.makedirs(yolo_label_dir, exist_ok=True)
 
 # JSON 파일 300개만 처리
-json_files = sorted([f for f in os.listdir(json_dir) if f.endswith(".json")])[:300]
+json_files = sorted([f for f in os.listdir(json_dir) if f.endswith(".json")])[:500]
+
+# 인덱스 초기화
+index = 1
 
 for jf in json_files:
     json_path = os.path.join(json_dir, jf)
     with open(json_path, 'r', encoding='utf-8') as f:
         data = json.load(f)
 
-    # 이미지 파일명
+    # 원본 이미지 이름
     img_name = data['images']['img_file_name']
     img_path = os.path.join(image_dir, img_name)
     if not os.path.exists(img_path):
         print(f"이미지 없음: {img_path}")
         continue
+
+    # 새 파일 이름 생성
+    new_name = f"apple{index:03d}"  # apple001, apple002, ...
+    new_img_name = new_name + ".jpg"
+    new_txt_name = new_name + ".txt"
 
     # 이미지 사이즈
     img_w = data['images']['img_width']
@@ -39,11 +47,12 @@ for jf in json_files:
     w /= img_w
     h /= img_h
 
-    # YOLO .txt 파일 저장
-    txt_name = img_name.replace(".jpg", ".txt")
-    txt_path = os.path.join(yolo_label_dir, txt_name)
+    # YOLO 라벨 저장
+    txt_path = os.path.join(yolo_label_dir, new_txt_name)
     with open(txt_path, "w") as f:
         f.write(f"0 {x_center:.6f} {y_center:.6f} {w:.6f} {h:.6f}\n")
 
-    # 이미지도 YOLO images/train 디렉토리로 복사
-    copy2(img_path, os.path.join(yolo_image_dir, img_name))
+    # 이미지 복사 및 이름 변경
+    copy2(img_path, os.path.join(yolo_image_dir, new_img_name))
+
+    index += 1

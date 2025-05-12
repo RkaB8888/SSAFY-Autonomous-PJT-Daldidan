@@ -1,6 +1,6 @@
-# 예: data.yaml 파일 내용
-path: C:/Users/SSAFY/Desktop/S12P31E206/FE/yolo
+path: ./
 train: images/train
-val: images/train
-nc: 1
-names: ['apple']
+val: images/train  # 검증 데이터 따로 만들면 변경 가능
+
+names:
+  0: apple
