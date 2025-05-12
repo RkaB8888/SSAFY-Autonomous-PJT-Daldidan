@@ -1,0 +1,27 @@
+# Python 기본
+__pycache__/
+*.py[cod]
+*.ipynb_checkpoints/
+
+# 가상환경
+venv/
+
+# 모델 파일
+models/*.pkl
+
+# 학습 결과 데이터
+features/*.csv
+
+# 이미지/크롭/원본 데이터
+data/images/
+data/json/
+crops/
+data/sample.png
+
+# 결과 시각화 (예: SHAP plot 저장 시)
+*.png
+*.jpg
+
+# 기타 편집기 설정
+.vscode/
+.DS_Store
