@@ -60,8 +60,8 @@ def _train(
     max_depth = 12
     model = lgb.LGBMRegressor(
         boosting_type="gbdt",
-        n_estimators=2000,
-        learning_rate=0.03,
+        n_estimators=3000,
+        learning_rate=0.01,
         max_depth=max_depth,
         num_leaves=2**max_depth,
         feature_fraction=0.8,
