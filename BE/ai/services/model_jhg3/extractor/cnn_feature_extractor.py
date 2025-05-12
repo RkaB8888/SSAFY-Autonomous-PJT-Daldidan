@@ -35,6 +35,7 @@ def extract_batch(imgs: np.ndarray) -> np.ndarray:
         torch.from_numpy(imgs)
         .permute(0, 3, 1, 2)
         .to(device, dtype=torch.float16, non_blocking=True)
+        / 255.0
     )
     x = preproc(x)
     with torch.amp.autocast(device_type="cuda", dtype=torch.float16):
