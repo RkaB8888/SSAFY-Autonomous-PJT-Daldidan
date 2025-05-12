@@ -9,7 +9,7 @@ model.train(
     epochs=50,                # 학습 epoch 수
     imgsz=640,                # 입력 이미지 크기
     batch=16,                 # 배치 사이즈 (메모리에 따라 조정)
-    name='apple_detector_v1', # 출력 폴더명 (runs/detect/apple_detector_v1)
+    name='apple_detector_v21', # 출력 폴더명 (runs/detect/apple_detector_v1)
     project='runs/detect',    # 저장될 루트 폴더
     workers=2,                # 데이터 로딩 스레드 수
     device=0                  # 0번 GPU 사용, CPU일 경우 'cpu'

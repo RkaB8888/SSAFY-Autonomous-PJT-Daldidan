@@ -4,17 +4,17 @@ from PIL import Image
 from shutil import copy2
 
 # 폴더 경로 설정
-json_dir = "./json/"             # JSON 300개 있는 폴더
-image_dir = "./raw_img/"      # 원본 이미지 폴더
-yolo_image_dir = "./images/train"
-yolo_label_dir = "./labels/train"
+json_dir = "./val_json/"             # JSON 300개 있는 폴더
+image_dir = "./val_img/"      # 원본 이미지 폴더
+yolo_image_dir = "./images/val"
+yolo_label_dir = "./labels/val"
 
 # YOLO 학습 폴더 구성
 os.makedirs(yolo_image_dir, exist_ok=True)
 os.makedirs(yolo_label_dir, exist_ok=True)
 
 # JSON 파일 300개만 처리
-json_files = sorted([f for f in os.listdir(json_dir) if f.endswith(".json")])[:500]
+json_files = sorted([f for f in os.listdir(json_dir) if f.endswith(".json")])[:19]
 
 # 인덱스 초기화
 index = 1

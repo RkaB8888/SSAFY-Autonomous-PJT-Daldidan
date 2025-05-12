@@ -5,3 +5,5 @@
 /images
 /labels
 /non_apple_raw
+/val_img
+/val_json
