@@ -17,7 +17,7 @@ model.to(device).eval()
 # 전처리 파이프라인 (GPU friendly) – Kornia 사용 예
 preproc = torch.nn.Sequential(
     K.geometry.Resize(256, interpolation="bilinear"),
-    K.geometry.CenterCrop(224, 224),
+    K.augmentation.CenterCrop(224, 224),
     K.enhance.Normalize(
         mean=torch.tensor([0.485, 0.456, 0.406]),
         std=torch.tensor([0.229, 0.224, 0.225]),
