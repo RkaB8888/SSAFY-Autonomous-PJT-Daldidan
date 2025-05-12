@@ -1,6 +1,7 @@
 # services/model_jhg3/training/grid_search.py
 import csv
 from pathlib import Path
+from tqdm import tqdm
 import itertools
 import numpy as np
 import lightgbm as lgb
@@ -55,13 +56,18 @@ def run_experiment():
         "n_estimators": [1000, 2000, 3000],
         "max_depth": [-1, 8, 12],
     }
+    # 모든 조합 리스트 생성 및 개수 계산
+    param_list = list(itertools.product(*param_grid.values()))
+    total = len(param_list)
 
     out_csv = exp_cache / "hp_tuning_results.csv"
     with open(out_csv, "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["lr", "n_est", "max_depth", "best_iter", "MAE", "RMSE", "R2"])
 
-        for lr, ne, md in itertools.product(*param_grid.values()):
+        for lr, ne, md in tqdm(
+            param_list, total=total, desc=f"Grid Search ({exp_name})"
+        ):
             print(f"▶ 실험 ({exp_name}): lr={lr}, n_est={ne}, max_depth={md}")
             num_leaves = 2**md if md > 0 else 4096
             model = lgb.LGBMRegressor(
@@ -70,7 +76,7 @@ def run_experiment():
                 max_depth=md,
                 num_leaves=num_leaves,
                 device="gpu",
-                gpu_use_dp=True,
+                gpu_use_dp=False,
                 n_jobs=4,
                 random_state=42,
             )
