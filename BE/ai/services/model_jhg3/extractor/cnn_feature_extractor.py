@@ -5,7 +5,6 @@ from torchvision import models, transforms
 
 # ── 환경 설정 ────────────────────────────────────────────────
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-torch.set_num_threads(4)
 
 # 사전학습 EfficientNet‑B0 로드
 model = models.efficientnet_b0(weights="IMAGENET1K_V1")
