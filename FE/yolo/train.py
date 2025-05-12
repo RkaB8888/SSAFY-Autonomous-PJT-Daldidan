@@ -7,7 +7,7 @@ model = YOLO('yolov8n.pt')  # 또는 yolov8n.yaml로 처음부터 학습 가능
 model.train(
     data='data.yaml',         # 학습 데이터 구성 yaml
     epochs=50,                # 학습 epoch 수
-    imgsz=640,                # 입력 이미지 크기
+    imgsz=640,                # 입력 이미지 크기(416 도전!)
     batch=16,                 # 배치 사이즈 (메모리에 따라 조정)
     name='apple_detector_v21', # 출력 폴더명 (runs/detect/apple_detector_v1)
     project='runs/detect',    # 저장될 루트 폴더
