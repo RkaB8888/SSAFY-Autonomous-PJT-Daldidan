@@ -2,7 +2,7 @@ import numpy as np
 import tensorflow as tf
 
 # 모델 로딩
-interpreter = tf.lite.Interpreter(model_path="../daldidan/assets/model2.tflite")
+interpreter = tf.lite.Interpreter(model_path="../daldidan/assets/model3.tflite")
 interpreter.allocate_tensors()
 
 # 입력 정보

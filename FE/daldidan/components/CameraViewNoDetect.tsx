@@ -8,13 +8,11 @@ export default function CameraView() {
   const device = useCameraDevice('back');
   const [screenSize, setScreenSize] = useState({ width: 0, height: 0 });
 
-  // 60fps 포맷 찾기
   const format =
     device?.formats.find((f) => f.maxFps >= 60) ?? device?.formats[0];
   const fps = format ? Math.min(60, format.maxFps) : 30;
 
-  const { hasPermission, detections, frameProcessor } =
-    useObjectDetection(format);
+  const { hasPermission, detections, frameProcessor } = useObjectDetection(format);
 
   if (!hasPermission || !device || !format) {
     return <View style={styles.container} />;
@@ -38,8 +36,6 @@ export default function CameraView() {
       />
       <DetectionOverlay
         detections={detections}
-        screenSize={screenSize}
-        format={format}
       />
     </View>
   );

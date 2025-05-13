@@ -5,7 +5,8 @@
     "jsx": "react-native",
     "paths": {
       "@/*": ["./*"]
-    }
+    },
+    "types": ["expo-camera"],  // ← 없으면 추가!
   },
   "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"]
 }

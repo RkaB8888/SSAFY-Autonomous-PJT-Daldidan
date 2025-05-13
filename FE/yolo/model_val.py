@@ -1,7 +1,7 @@
 from ultralytics import YOLO
 
 # 모델 로드
-model = YOLO('../runs/detect/apple-detector-v14/weights/best.pt')
+model = YOLO('./runs/detect/apple_detector_v214/weights/best.pt')
 
 # 평가할 데이터셋 경로 (val dataset)
 metrics = model.val(data="data.yaml")

@@ -16,28 +16,46 @@ export interface Detection {
   width: number;
   height: number;
   score?: number;
-  class_id?: number;
 }
 
 export function useObjectDetection(format: any) {
   const modelRef = useRef<TensorflowModel | null>(null);
   const frameCount = Worklets.createSharedValue(0);
-  const lastDetectionsRef = useRef<Detection[]>([]);
   const { resize } = useResizePlugin();
   const [detections, setDetections] = useState<Detection[]>([]);
   const [hasPermission, setHasPermission] = useState(false);
 
-  // 입력 전처리 함수
-  const preprocessFrame = (frame: any, targetSize: number) => {
-    'worklet';
-    return resize(frame, {
-      scale: { width: targetSize, height: targetSize },
-      pixelFormat: 'rgb',
-      dataType: 'uint8',
-    });
-  };
+const preprocessFrame = (frame: any, targetSize: number) => {
+  'worklet';
 
-  // 감지 결과 처리 함수
+  const resized = resize(frame, {
+    scale: { width: targetSize, height: targetSize },
+    pixelFormat: 'rgb',
+    dataType: 'float32',
+    rotation: '90deg',
+    // resizeMode: 'contain', // ← 핵심! letterbox (패딩 유지 리사이즈)
+    // background: [0, 0, 0], // 검은 패딩
+  });
+
+  for (let i = 0; i < resized.length; i++) {
+    resized[i] /= 255.0;
+  }
+
+    // RGB → BGR 변환 실험
+  for (let i = 0; i < resized.length; i += 3) {
+    const r = resized[i];
+    const g = resized[i + 1];
+    const b = resized[i + 2];
+    resized[i] = b;
+    resized[i + 1] = g;
+    resized[i + 2] = r;
+  }
+
+  return resized;
+};
+
+
+
   const updateDetections = (data: Detection[]) => {
     setDetections(data);
   };
@@ -54,12 +72,10 @@ export function useObjectDetection(format: any) {
   useEffect(() => {
     const loadModel = async () => {
       try {
-        console.log('Attempting to load model...');
         const model = await loadTensorflowModel(
-          require('../assets/model.tflite'),
+          require('../assets/model3.tflite'),
           'gpu' as TensorflowModelDelegate
         );
-        console.log('Model loaded successfully');
         modelRef.current = model;
       } catch (error: any) {
         console.error('Model loading error:', error);
@@ -69,79 +85,67 @@ export function useObjectDetection(format: any) {
     loadModel();
   }, []);
 
-  // 상수 조절로 샘플링 빈도 변경 (3 → 2프레임마다 1회 등)
-  const SAMPLE_RATE = 3; // 60FPS 기준 20FPS 처리
+  const frameProcessor = useFrameProcessor((frame) => {
+    'worklet';
 
-  const frameProcessor = useFrameProcessor(
-    (frame) => {
-      'worklet';
-      if (!modelRef.current) return;
+    if (!modelRef.current) return;
 
-      // 프레임 카운트 업데이트 (Worklet 내부에서 값 직접 수정)
-      frameCount.value = (frameCount.value + 1) % SAMPLE_RATE;
-      if (frameCount.value !== 0) return;
+    frameCount.value = (frameCount.value + 1) % 3;
+    if (frameCount.value !== 0) return;
 
-      try {
-        const resized = preprocessFrame(frame, MODEL_INPUT_SIZE);
-        const outputs = modelRef.current.runSync([resized]);
-        const boxes = outputs[0] as Float32Array;
-        const classes = outputs[1] as Float32Array;
-        const scores = outputs[2] as Float32Array;
-        const numDetections = outputs[3] as Float32Array;
+    try {
+      const resized = preprocessFrame(frame, MODEL_INPUT_SIZE);
+      const outputs = modelRef.current.runSync([resized]);
+      const output = outputs[0] as Float32Array; // [1, 5, 8400] flatten
+      console.log('📦 output.length:', output.length);
+      console.log('📦 sample:', Array.from(output.slice(0, 20)));
+      console.log("📸 frame ID:", frame.timestamp); // VisionCamera 프레임마다 고유 ID
+      console.log("🎨 frame hash sample:", resized[0], resized[10], resized[100]); // 입력 일부
+      console.log("📷 입력 hash:", resized[0], resized[10], resized[100]);
 
-        const totalDetections = Math.min(
-          Math.round(numDetections[0] || 0),
-          scores.length
-        );
 
-        const detected: Detection[] = [];
 
-        // 탐지 결과 후처리 최적화
-        for (let i = 0; i < totalDetections; i++) {
-          const score = scores[i];
-          if (score < CONFIDENCE_THRESHOLD) continue;
+      const numAnchors = 8400;
+      const screenRatioX = frame.width / MODEL_INPUT_SIZE;
+      const screenRatioY = frame.height / MODEL_INPUT_SIZE;
 
-          // 박스 좌표 검증 통합
-          const [y1, x1, y2, x2] = [
-            boxes[i * 4],
-            boxes[i * 4 + 1],
-            boxes[i * 4 + 2],
-            boxes[i * 4 + 3],
-          ];
+const detected: Detection[] = [];
 
-          if ([x1, y1, x2, y2].some((v) => isNaN(v) || v < 0 || v > 1))
-            continue;
+for (let i = 0; i < 300; i++) {
+  const offset = i * 6;
+  const x_center = output[offset + 0];
+  const y_center = output[offset + 1];
+  const w = output[offset + 2];
+  const h = output[offset + 3];
+  const score = output[offset + 4];
+  const classProb = output[offset + 5]; // class 확률 (1.0에 가까울수록 확실)
 
-          // 실제 좌표 변환 (Math.min/max 제거 → clamp 함수로 대체)
-          const clamp = (value: number, min: number, max: number) =>
-            Math.max(min, Math.min(value, max));
+  console.log("score: ", score)
 
-          const x = clamp(x1 * frame.width, 0, frame.width);
-          const y = clamp(y1 * frame.height, 0, frame.height);
-          const width = clamp((x2 - x1) * frame.width, 0, frame.width - x);
-          const height = clamp((y2 - y1) * frame.height, 0, frame.height - y);
 
-          detected.push({
-            x,
-            y,
-            width,
-            height,
-            score,
-            class_id: Math.round(classes[i]),
-          });
-        }
+  if (score > CONFIDENCE_THRESHOLD) {
+    const box = {
+      x: (x_center - w / 2) * screenRatioX,
+      y: (y_center - h / 2) * screenRatioY,
+      width: w * screenRatioX,
+      height: h * screenRatioY,
+      score,
+    };
+    detected.push(box);
 
-        // 상태 업데이트 최소화
-        if (detected.length > 0 || lastDetectionsRef.current.length > 0) {
-          updateDetectionsWorklet(detected);
-          lastDetectionsRef.current = detected;
-        }
-      } catch (error) {
-        console.error('Frame processing error:', error);
-      }
-    },
-    [updateDetectionsWorklet]
-  );
+    // 📦 로그 찍기
+    console.log(`🍎 사과 탐지됨 → [x: ${box.x.toFixed(1)}, y: ${box.y.toFixed(1)}, w: ${box.width.toFixed(1)}, h: ${box.height.toFixed(1)}, score: ${score.toFixed(3)}]`);
+  }
+}
+
+
+
+
+      updateDetectionsWorklet(detected);
+    } catch (error: any) {
+      console.error('Frame processing error:', error);
+    }
+  }, [updateDetectionsWorklet]);
 
   return { hasPermission, detections, frameProcessor };
 }

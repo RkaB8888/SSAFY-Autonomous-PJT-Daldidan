@@ -1,0 +1,27 @@
+# 캐시/빌드 산출물
+.expo
+.expo-shared
+build
+dist
+web-build
+coverage
+
+# 로그 파일
+*.log
+
+# 압축 파일
+*.zip
+*.tar.gz
+*.tgz
+
+# IDE 관련
+.vscode
+.idea
+
+# 환경 설정
+.env
+
+# 무거운 리소스 직접 지정 (중요)
+assets/model.tflite
+assets/model2.tflite
+assets/model3.tflite
