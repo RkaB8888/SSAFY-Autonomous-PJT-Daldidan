@@ -9,7 +9,6 @@ BASE_DIR = os.path.dirname(__file__)
 MODEL_PATH = os.path.join(BASE_DIR, "outputs", "checkpoints", "best_val_r2.pth")
 SCALER_PATH = os.path.join(BASE_DIR, "outputs", "checkpoints", "scaler.pkl")
 
-
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 manual_feature_dim = 6

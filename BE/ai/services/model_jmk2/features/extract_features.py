@@ -119,7 +119,6 @@ from skimage import color, feature
 
 # def extract_features(image, mask): 
 # 의 속도 개선 버전( 이미지 입력시 당도 출력에 사용 )
-
 def extract_features(image, mask):
     x, y, w, h = cv2.boundingRect(mask)
     roi = image[y:y+h, x:x+w]
@@ -224,6 +223,7 @@ def extract_features(image, mask):
 #     return np.array([Rn, C, ycbcr_diff, ycbcr_norm, cat02_first, cluster_shadow])
 
 
+# 속도 최적화(정확도 저하하)
 def extract_fast_features(image, mask):
     x, y, w, h = cv2.boundingRect(mask)
     roi = image[y:y+h, x:x+w]

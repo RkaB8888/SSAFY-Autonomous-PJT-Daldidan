@@ -8,8 +8,6 @@ from .model_loader import model, scaler, transform
 # from .features.extract_features import extract_fast_features
 from .features.extract_features import extract_features
 
-
-
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 def predict_bytes(image_bytes: bytes) -> float:
