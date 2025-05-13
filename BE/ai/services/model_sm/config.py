@@ -31,8 +31,8 @@ WEIGHTS_DIR = BASE_DIR / "weights"
 # 디렉터리가 없으면 자동 생성
 WEIGHTS_DIR.mkdir(parents=True, exist_ok=True)
 
-MODEL_SAVE_PATH = WEIGHTS_DIR / "xgb_bbox.pkl"  # ✅ 파일명 통일
+MODEL_SAVE_PATH = WEIGHTS_DIR / "xgb_seg.pkl"  # ✅ 파일명 통일
 
 # ── 처리 옵션 플래그 ─────────────────────────────────────────
-USE_SEGMENTATION = False  # True->segmentation, False->bbox
+USE_SEGMENTATION = True  # True->segmentation, False->bbox
 EMBEDDING_MODE = "handcrafted"  # 'cnn' 또는 'handcrafted'
