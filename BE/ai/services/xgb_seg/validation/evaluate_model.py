@@ -1,4 +1,4 @@
-# ai/services/model_sm/validation/evaluate_model.py
+# ai/services/xgb_seg/validation/evaluate_model.py
 
 import joblib
 from pathlib import Path
@@ -7,8 +7,8 @@ from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
 import numpy as np
 import pandas as pd
 
-from services.model_sm.embedding.build_embeddings import load_cache
-from services.model_sm.config import MODEL_SAVE_PATH
+from services.xgb_seg.embedding.build_embeddings import load_cache
+from services.xgb_seg.config import MODEL_SAVE_PATH
 
 # ─────────────────────────────────────────────
 # 1. 모델 로드
@@ -53,7 +53,7 @@ print(f"📊 Accuracy@1.0: {acc_10:.2%}")
 # ─────────────────────────────────────────────
 # 5. 예측 결과 저장
 # ─────────────────────────────────────────────
-out_csv = Path("services/model_sm/eval_results.csv")
+out_csv = Path("services/xgb_seg/eval_results.csv")
 pd.DataFrame({"stem": stems, "y_true": y, "y_pred": y_pred}).to_csv(
     out_csv, index=False
 )

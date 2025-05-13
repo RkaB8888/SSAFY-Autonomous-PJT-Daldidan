@@ -1,12 +1,12 @@
-# services/model_sm/predict/predictor.py
+# services/xgb_seg/predict/predictor.py
 from io import BytesIO
 from PIL import Image
 import numpy as np
 import base64
 import joblib
 from typing import Union
-from services.model_sm.config import MODEL_SAVE_PATH
-from services.model_sm.extractor.common_features import extract_features
+from services.xgb_seg.config import MODEL_SAVE_PATH
+from services.xgb_seg.extractor.common_features import extract_features
 
 # ── 모델 로딩 ────────────────────────────────────────
 model = joblib.load(MODEL_SAVE_PATH)

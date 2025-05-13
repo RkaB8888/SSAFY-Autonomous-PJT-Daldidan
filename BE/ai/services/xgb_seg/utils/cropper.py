@@ -1,4 +1,4 @@
-# services/model_sm/utils/cropper.py
+# services/xgb_seg/utils/cropper.py
 from PIL import Image, ImageDraw
 import numpy as np
 

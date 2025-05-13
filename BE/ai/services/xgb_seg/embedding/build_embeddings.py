@@ -1,4 +1,4 @@
-# ai/services/model_sm/embedding/build_embeddings.py
+# ai/services/xgb_seg/embedding/build_embeddings.py
 
 from pathlib import Path
 import json
@@ -7,7 +7,7 @@ from tqdm import tqdm
 from PIL import Image
 from joblib import Parallel, delayed
 
-from services.model_sm.config import (
+from services.xgb_seg.config import (
     IMAGES_DIR,
     JSONS_DIR,
     VALID_IMAGES_DIR,
@@ -15,8 +15,8 @@ from services.model_sm.config import (
     CACHE_DIR,
     USE_SEGMENTATION,
 )
-from services.model_sm.utils.cropper import crop_apple
-from services.model_sm.extractor.common_features import extract_features
+from services.xgb_seg.utils.cropper import crop_apple
+from services.xgb_seg.extractor.common_features import extract_features
 
 import os
 import cv2

@@ -1,4 +1,4 @@
-# services/model_sm/extractor/common_features.py
+# services/xgb_seg/extractor/common_features.py
 import numpy as np
 import cv2
 from skimage.feature import graycomatrix, graycoprops

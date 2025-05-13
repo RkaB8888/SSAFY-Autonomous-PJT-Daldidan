@@ -41,6 +41,13 @@ def predict(model_name: str, image_bytes: bytes):
 
         return predict_xgb_bbox(image_bytes)
 
+    elif model_name == "xgb_seg":
+        from services.xgb_seg.predict.predictor import (
+            predict_bytes as predict_xgb_seg,
+        )
+
+        return predict_xgb_seg(image_bytes)
+
     elif model_name == "model_a":
         from services.model_a.predictor import predict as predict_a
 

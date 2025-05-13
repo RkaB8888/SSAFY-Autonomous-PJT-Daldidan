@@ -1,12 +1,12 @@
-# ai/services/model_sm/training/train.py
+# ai/services/xgb_seg/training/train.py
 import joblib
 from pathlib import Path
 from math import sqrt
 from sklearn.metrics import r2_score, mean_squared_error
 from xgboost import XGBRegressor
 
-from services.model_sm.embedding.build_embeddings import load_cache
-from services.model_sm.config import WEIGHTS_DIR, MODEL_SAVE_PATH
+from services.xgb_seg.embedding.build_embeddings import load_cache
+from services.xgb_seg.config import WEIGHTS_DIR, MODEL_SAVE_PATH
 
 # ─────────────────────────────────────────────
 # 1. 데이터 로드
