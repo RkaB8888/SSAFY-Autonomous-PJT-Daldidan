@@ -51,7 +51,7 @@ export const COCO_CLASS_NAMES = [
   'orange',
   'broccoli',
   'carrot',
-  'hot dog',
+  'apple',
   'pizza',
   'donut',
   'cake',

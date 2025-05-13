@@ -13,6 +13,7 @@ import {
 import { Worklets } from 'react-native-worklets-core';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { CONFIDENCE_THRESHOLD, MODEL_INPUT_SIZE } from '../constants/model';
+import { COCO_CLASS_NAMES } from '../constants/cocoClassNames';
 import { Detection, DetectionResult } from './types/objectDetection';
 import { useImageProcessing } from './useImageProcessing';
 import { useObjectAnalysis } from './useObjectAnalysis';
@@ -48,6 +49,17 @@ export function useObjectDetection(format: any) {
       const scores = outputs[2] as Float32Array;
       const numDetections = outputs[3] as Float32Array;
 
+      logWorklet('[Worklet] Model outputs debug:');
+      logWorklet(`[Worklet] Boxes shape: ${boxes.length}`);
+      logWorklet(`[Worklet] Classes shape: ${classes.length}`);
+      logWorklet(`[Worklet] Scores shape: ${scores.length}`);
+      logWorklet(
+        `[Worklet] First few classes: ${Array.from(classes.slice(0, 5))}`
+      );
+      logWorklet(
+        `[Worklet] First few scores: ${Array.from(scores.slice(0, 5))}`
+      );
+
       const totalDetections = Math.min(
         Math.round(numDetections[0] || 0),
         scores.length
@@ -55,9 +67,24 @@ export function useObjectDetection(format: any) {
 
       const detected: Detection[] = [];
 
+      logWorklet(`[Worklet] Total detections: ${totalDetections}`);
+
       for (let i = 0; i < totalDetections; i++) {
         const score = scores[i];
-        if (score < CONFIDENCE_THRESHOLD) continue;
+        const classId = Math.round(classes[i]);
+        const className = COCO_CLASS_NAMES[classId] || 'unknown';
+        logWorklet(
+          `[Worklet] Detection ${i} - Score: ${score.toFixed(
+            4
+          )}, Class: ${classId} (${className})`
+        );
+
+        if (score < CONFIDENCE_THRESHOLD) {
+          logWorklet(
+            `[Worklet] Detection ${i} skipped - Score below threshold`
+          );
+          continue;
+        }
 
         const [y1, x1, y2, x2] = [
           boxes[i * 4],
@@ -343,7 +370,7 @@ export function useObjectDetection(format: any) {
       try {
         console.log('Attempting to load model...');
         const model = await loadTensorflowModel(
-          require('../assets/model.tflite'),
+          require('../assets/1.tflite'),
           'gpu' as TensorflowModelDelegate
         );
         console.log('Model loaded successfully');
