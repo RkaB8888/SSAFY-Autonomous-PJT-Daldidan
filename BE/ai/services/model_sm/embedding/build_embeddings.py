@@ -87,7 +87,7 @@ def build_and_cache_embeddings(prefix: str):
     all_jsons = sorted(jsons_dir.glob("*.json"))
     print(f"🚀 {prefix} ({suffix}) 병렬 임베딩 시작 - {len(all_jsons)}개")
 
-    results = Parallel(n_jobs=8)(
+    results = Parallel(n_jobs=16)(
         delayed(process_one_json)(json_path, images_dir)
         for json_path in tqdm(all_jsons, desc="병렬 임베딩 진행률")
     )
