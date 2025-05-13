@@ -1,4 +1,4 @@
-# ai>services>model_jhg3>extractor>cnn_feature_extractor.py
+# ai>services>cnn_lgbm_bbox>extractor>cnn_feature_extractor.py
 import torch
 import numpy as np
 from torchvision import models, transforms

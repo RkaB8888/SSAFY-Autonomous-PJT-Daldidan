@@ -1,4 +1,4 @@
-# services/model_jhg3/utils/cropper.py
+# services/cnn_lgbm_bbox/utils/cropper.py
 from PIL import Image, ImageDraw
 import numpy as np
 

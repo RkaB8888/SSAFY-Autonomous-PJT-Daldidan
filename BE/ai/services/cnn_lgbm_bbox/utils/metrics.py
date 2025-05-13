@@ -1,4 +1,4 @@
-# services/model_jhg3/utils/metrics.py
+# services/cnn_lgbm_bbox/utils/metrics.py
 """
 유틸: 회귀 모델 평가 지표 계산
 """

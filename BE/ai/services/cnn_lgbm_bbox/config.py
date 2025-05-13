@@ -1,4 +1,4 @@
-# services/model_jhg3/config.py
+# services/cnn_lgbm_bbox/config.py
 from pathlib import Path
 
 # ── GPU 서버 고정 절대경로 ───────────────────────────────

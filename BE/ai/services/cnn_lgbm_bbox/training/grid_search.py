@@ -1,4 +1,4 @@
-# services/model_jhg3/training/grid_search.py
+# services/cnn_lgbm_bbox/training/grid_search.py
 import csv
 from pathlib import Path
 from tqdm import tqdm
@@ -8,9 +8,9 @@ import lightgbm as lgb
 from lightgbm import early_stopping, log_evaluation
 from sklearn.feature_selection import VarianceThreshold
 
-import services.model_jhg3.config as cfg
-from services.model_jhg3.utils.metrics import evaluate
-import services.model_jhg3.embedding.build_embeddings as beb
+import services.cnn_lgbm_bbox.config as cfg
+from services.cnn_lgbm_bbox.utils.metrics import evaluate
+import services.cnn_lgbm_bbox.embedding.build_embeddings as beb
 
 
 def load_cache(prefix: str, cache_dir: Path):

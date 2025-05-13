@@ -1,10 +1,10 @@
-# ai>services/model_jhg3/predict/predictor.py
+# ai>services/cnn_lgbm_bbox/predict/predictor.py
 from io import BytesIO
 from PIL import Image
 import numpy as np
-from services.model_jhg3.config import MODEL_SAVE_PATH
-from services.model_jhg3.utils.cnn_feature_extractor import extract_batch
-from services.model_jhg3.utils.loader import load_model_bundle
+from services.cnn_lgbm_bbox.config import MODEL_SAVE_PATH
+from services.cnn_lgbm_bbox.utils.cnn_feature_extractor import extract_batch
+from services.cnn_lgbm_bbox.utils.loader import load_model_bundle
 
 # ── 모델 & selector 메모리 상주 로딩 ──────────────────
 model, selector = load_model_bundle(MODEL_SAVE_PATH)

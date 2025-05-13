@@ -1,4 +1,4 @@
-# services/model_jhg3/validation/evaluate_model.py
+# services/cnn_lgbm_bbox/validation/evaluate_model.py
 """
 학습된 LightGBM-CNN 모델을 검증(valid 셋)하고
 MAE·RMSE·R²·평균 추론시간을 출력 / CSV 저장
@@ -9,9 +9,9 @@ import pandas as pd
 import numpy as np
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
-import services.model_jhg3.config as cfg
-from services.model_jhg3.utils.loader import load_model_bundle
-from services.model_jhg3.embedding import build_embeddings as beb  # ⬅️ 새 임베딩 모듈
+import services.cnn_lgbm_bbox.config as cfg
+from services.cnn_lgbm_bbox.utils.loader import load_model_bundle
+from services.cnn_lgbm_bbox.embedding import build_embeddings as beb  # ⬅️ 새 임베딩 모듈
 
 
 # ──────────────────────────────────────────
@@ -63,7 +63,7 @@ def main():
     print(f"▶ R²   : {r2:.4f}")
     print(f"▶ 평균 추론시간/샘플 : {avg_ms:.6f} ms")
 
-    out_csv = Path("services/model_jhg3/eval_results.csv")
+    out_csv = Path("services/cnn_lgbm_bbox/eval_results.csv")
     pd.DataFrame({"id": ids, "true": y, "pred": preds}).to_csv(out_csv, index=False)
     print(f"✅ 결과 저장 → {out_csv}")
 

@@ -1,4 +1,4 @@
-# services/model_jhg3/extractor/feature_extractors_v2.py
+# services/cnn_lgbm_bbox/extractor/feature_extractors_v2.py
 import cv2
 import numpy as np
 from skimage.feature import graycomatrix

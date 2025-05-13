@@ -1,4 +1,4 @@
-# services/model_jhg3/training/train_lightgbm.py
+# services/cnn_lgbm_bbox/training/train_lightgbm.py
 """
 CNN 임베딩 캐시(embedding/build_embeddings.py)만 활용해
 LightGBM 회귀 모델을 학습 → 저장하는 스크립트
@@ -11,8 +11,8 @@ import lightgbm as lgb
 from lightgbm import early_stopping, log_evaluation
 from sklearn.feature_selection import VarianceThreshold
 
-import services.model_jhg3.config as cfg
-from services.model_jhg3.embedding import build_embeddings as beb
+import services.cnn_lgbm_bbox.config as cfg
+from services.cnn_lgbm_bbox.embedding import build_embeddings as beb
 
 
 # ──────────────────────────────

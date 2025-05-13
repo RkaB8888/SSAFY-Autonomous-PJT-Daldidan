@@ -1,10 +1,10 @@
-# services/model_jhg3/training/analyze_feature_importance.py
+# services/cnn_lgbm_bbox/training/analyze_feature_importance.py
 import joblib
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from pathlib import Path
-from services.model_jhg3.config import MODEL_SAVE_PATH
+from services.cnn_lgbm_bbox.config import MODEL_SAVE_PATH
 
 BASE_DIR = Path(__file__).resolve().parent
 

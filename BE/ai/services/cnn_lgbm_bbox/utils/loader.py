@@ -1,4 +1,4 @@
-# BE/ai/services/model_jhg3/utils/loader.py
+# BE/ai/services/cnn_lgbm_bbox/utils/loader.py
 from pathlib import Path
 import joblib
 

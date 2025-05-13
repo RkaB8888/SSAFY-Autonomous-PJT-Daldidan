@@ -1,4 +1,4 @@
-# services/model_jhg3/embedding/build_embeddings.py
+# services/cnn_lgbm_bbox/embedding/build_embeddings.py
 import argparse
 import json
 import pathlib
@@ -7,10 +7,10 @@ import tqdm
 from PIL import Image
 from torch.utils.data import Dataset, DataLoader
 
-import services.model_jhg3.config as cfg
-from services.model_jhg3.utils.cropper import crop_apple
-from services.model_jhg3.extractor.feature_extractors import extract_features
-from services.model_jhg3.embedding.embedding_dispatcher import extract_embedding
+import services.cnn_lgbm_bbox.config as cfg
+from services.cnn_lgbm_bbox.utils.cropper import crop_apple
+from services.cnn_lgbm_bbox.extractor.feature_extractors import extract_features
+from services.cnn_lgbm_bbox.embedding.embedding_dispatcher import extract_embedding
 
 
 class CroppedDataset(Dataset):
