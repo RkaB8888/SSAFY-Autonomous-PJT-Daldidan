@@ -1,47 +1,46 @@
-#!/usr/bin/env python
 # services/model_jhg3/validation/evaluate_model.py
-
+"""
+학습된 LightGBM-CNN 모델을 검증(valid 셋)하고
+MAE·RMSE·R²·평균 추론시간을 출력 / CSV 저장
+"""
 from pathlib import Path
 import time
-
+import pandas as pd
 import numpy as np
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
+import services.model_jhg3.config as cfg
 from services.model_jhg3.utils.loader import load_model_bundle
-from services.model_jhg3.config import (
-    MODEL_SAVE_PATH,
-    VALID_IMAGES_DIR,
-    VALID_JSONS_DIR,
-    CACHE_DIR,
-)
-
-from services.model_jhg3.extract_valid_embeddings import build_and_cache_embeddings
+from services.model_jhg3.embedding import build_embeddings as beb  # ⬅️ 새 임베딩 모듈
 
 
-def load_test_set(img_dir: Path, json_dir: Path):
-    feat_cache = CACHE_DIR / "valid_embeddings.npy"
-    label_cache = CACHE_DIR / "valid_labels.npy"
-    stem_cache = CACHE_DIR / "valid_stems.npy"
+# ──────────────────────────────────────────
+# 1. 검증 캐시 로드(없으면 자동 생성)
+# ──────────────────────────────────────────
+def load_valid_set():
+    feat_f = cfg.CACHE_DIR / "valid_embeddings.npy"
+    label_f = cfg.CACHE_DIR / "valid_labels.npy"
+    stem_f = cfg.CACHE_DIR / "valid_stems.npy"
 
-    # 1) 캐시가 없으면 자동 생성
-    if not (feat_cache.exists() and label_cache.exists() and stem_cache.exists()):
-        print("🚀 검증용 임베딩 캐시가 없으므로 build_and_cache_embeddings() 실행…")
-        build_and_cache_embeddings(img_dir, json_dir)
-        print("✅ 검증 임베딩 캐시 생성 완료.")
+    if not (feat_f.exists() and label_f.exists() and stem_f.exists()):
+        print("🚀 valid 캐시가 없어 build_and_cache_embeddings() 실행…")
+        beb.build_and_cache_embeddings("valid", cfg.CACHE_DIR)
+        print("✅ valid 캐시 생성 완료")
 
-    # 2) 캐시에서 바로 로드
-    # ── features: raw memmap of float32s of size (N,1280)
-    X = np.memmap(feat_cache, dtype=np.float32, mode="r").reshape(-1, 1280)
-    # ── ids: real .npy of unicode strings
-    ids = np.load(stem_cache).tolist()
-    # ── labels: raw memmap of float32s, so load via memmap with known shape
-    y = np.memmap(label_cache, dtype=np.float32, mode="r", shape=(len(ids),))
-    print(f"✅ Loaded valid cache: {len(ids)} samples")
+    y = np.memmap(label_f, dtype=np.float32, mode="r")
+    flat = np.memmap(feat_f, dtype=np.float32, mode="r")
+    D = flat.size // y.size  # 자동 차원 추론
+    X = flat.reshape(y.size, D)
+    stems = np.load(stem_f).tolist()
 
-    return X, y, ids
+    print(f"✔ Loaded valid set: {len(stems)} samples, dim={D}")
+    return X, y, stems
 
 
-def evaluate(y_true, y_pred):
+# ──────────────────────────────────────────
+# 2. 평가 함수
+# ──────────────────────────────────────────
+def metrics(y_true, y_pred):
     return (
         mean_absolute_error(y_true, y_pred),
         np.sqrt(mean_squared_error(y_true, y_pred)),
@@ -50,29 +49,23 @@ def evaluate(y_true, y_pred):
 
 
 def main():
-    model, selector = load_model_bundle(MODEL_SAVE_PATH)
+    model, selector = load_model_bundle(cfg.MODEL_SAVE_PATH)
+    X, y, ids = load_valid_set()
+    X_sel = selector.transform(X)
 
-    X_test, y_test, ids = load_test_set(VALID_IMAGES_DIR, VALID_JSONS_DIR)
-    X_sel = selector.transform(X_test) if selector else X_test
+    t0 = time.time()
+    preds = model.predict(X_sel)
+    avg_ms = (time.time() - t0) * 1000 / len(X)
 
-    start = time.time()
-    y_pred = model.predict(X_sel)
-    elapsed = time.time() - start
-    avg_time = elapsed / len(X_test)
+    mae, rmse, r2 = metrics(y, preds)
+    print(f"\n▶ MAE  : {mae:.4f}")
+    print(f"▶ RMSE : {rmse:.4f}")
+    print(f"▶ R²   : {r2:.4f}")
+    print(f"▶ 평균 추론시간/샘플 : {avg_ms:.6f} ms")
 
-    mae, rmse, r2 = evaluate(y_test, y_pred)
-    print(f"\n▶ MAE : {mae:.4f}")
-    print(f"▶ RMSE: {rmse:.4f}")
-    print(f"▶ R2  : {r2:.4f}")
-    print(f"▶ 예측 시간(평균/샘플): {avg_time*1000:.6f} ms")
-
-    out_path = Path("services/model_jhg3/eval_results.csv")
-    import pandas as pd
-
-    pd.DataFrame({"id": ids, "true": y_test, "pred": y_pred}).to_csv(
-        out_path, index=False
-    )
-    print(f"✅ Saved results to {out_path}")
+    out_csv = Path("services/model_jhg3/eval_results.csv")
+    pd.DataFrame({"id": ids, "true": y, "pred": preds}).to_csv(out_csv, index=False)
+    print(f"✅ 결과 저장 → {out_csv}")
 
 
 if __name__ == "__main__":

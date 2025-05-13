@@ -188,8 +188,8 @@ ai/dataset/*
 *.npy
 
 # 실험 결과 캐시
-ai/services/model_jhg2/cache/*
-!ai/services/model_jhg2/cache/.gitkeep
+ai/services/**/cache/**
+!ai/services/**/cache/.gitkeep
 
 # 로그
 *.log
