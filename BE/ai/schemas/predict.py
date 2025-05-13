@@ -1,13 +1,11 @@
 # ai/schemas/predict.py
-
 from pydantic import BaseModel
 
 
 class PredictRequest(BaseModel):
-    model_name: str
-    image_base64: str
+    id: int
 
 
 class PredictResponse(BaseModel):
-    label: str
-    confidence: float
+    id: int
+    predict_sugar_content: float

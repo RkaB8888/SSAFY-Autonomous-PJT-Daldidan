@@ -1,6 +1,7 @@
-from fastapi import APIRouter, HTTPException
-from ai.schemas.predict import PredictRequest, PredictResponse
-from ai.services.predict_service import predict
+# ai>api>v1>routes.py
+from fastapi import APIRouter, HTTPException, UploadFile, File, Form
+from schemas.predict import PredictResponse
+from services.predict_service import predict
 
 router = APIRouter()
 
@@ -11,9 +12,10 @@ async def health_check():
 
 
 @router.post("/predict", response_model=PredictResponse)
-async def predict_image(request: PredictRequest):
+async def predict_image(id: int = Form(...), image: UploadFile = File(...)):
     try:
-        result = predict(request.model_name, request.image_base64)
-        return result
-    except ValueError as e:
+        image_bytes = await image.read()
+        result = predict("lgbm_seg", image_bytes)  # ← 바이트 전달
+        return PredictResponse(id=id, predict_sugar_content=float(result["confidence"]))
+    except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))

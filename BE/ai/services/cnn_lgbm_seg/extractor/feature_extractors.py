@@ -1,47 +1,9 @@
+# services/cnn_lgbm_seg/extractor/feature_extractors.py
 import cv2
 import numpy as np
-from pathlib import Path
-from skimage import feature
+from skimage.color import rgb2lab
+from skimage.feature import graycomatrix, graycoprops, local_binary_pattern
 from typing import Tuple, List
-from PIL import Image, ExifTags
-from skimage.feature import graycomatrix, graycoprops, local_binary_pattern, hog
-
-"""
-기능: 이미지 파일을 RGB로 읽어서 numpy array로 반환
-- OpenCV로 읽기 시도
-- 실패하면 Pillow + EXIF 회전 정보까지 고려해 보정
-
-이유: 스마트폰 촬영 이미지는 회전 정보가 EXIF에 저장됨 → 시각화나 특징 왜곡 방지
-"""
-
-
-def load_image(image_path: Path) -> np.ndarray:
-    try:
-        image = cv2.imdecode(np.fromfile(image_path, dtype=np.uint8), cv2.IMREAD_COLOR)
-        if image is not None:
-            return cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-    except Exception:
-        pass
-
-    # Fallback: PIL + EXIF
-    pil_img = Image.open(image_path)
-    try:
-        for orientation in ExifTags.TAGS.keys():
-            if ExifTags.TAGS[orientation] == "Orientation":
-                break
-        exif = pil_img._getexif()
-        if exif is not None:
-            orientation_val = exif.get(orientation, None)
-            if orientation_val == 3:
-                pil_img = pil_img.rotate(180, expand=True)
-            elif orientation_val == 6:
-                pil_img = pil_img.rotate(270, expand=True)
-            elif orientation_val == 8:
-                pil_img = pil_img.rotate(90, expand=True)
-    except Exception:
-        pass
-    return np.array(pil_img.convert("RGB"))
-
 
 """
 기능: 정규화된 RGB 성분의 평균값 추출
@@ -54,12 +16,10 @@ def load_image(image_path: Path) -> np.ndarray:
 
 
 def extract_normalized_rgb(image: np.ndarray) -> Tuple[np.ndarray, List[str]]:
-    image = image.astype(np.float32)
-    sum_channels = np.sum(image, axis=2, keepdims=True) + 1e-5  # avoid division by zero
-    normalized = image / sum_channels
-    mean_vals = normalized.mean(axis=(0, 1))
-    names = ["norm_R", "norm_G", "norm_B"]
-    return mean_vals, names
+    img = image.astype(np.float32)
+    s = img.sum(axis=2, keepdims=True) + 1e-5
+    norm = img / s
+    return norm.mean(axis=(0, 1)), ["norm_R", "norm_G", "norm_B"]
 
 
 """
@@ -73,10 +33,9 @@ def extract_normalized_rgb(image: np.ndarray) -> Tuple[np.ndarray, List[str]]:
 
 
 def extract_cmy_first_component(image: np.ndarray) -> Tuple[np.ndarray, List[str]]:
-    image = image.astype(np.float32) / 255.0
-    cmy = 1 - image
-    mean_c = cmy[:, :, 0].mean()
-    return np.array([mean_c]), ["mean_C_from_CMY"]
+    img = image.astype(np.float32) / 255.0
+    cmy = 1 - img
+    return np.array([cmy[:, :, 0].mean()]), ["mean_C_from_CMY"]
 
 
 """
@@ -87,9 +46,7 @@ def extract_cmy_first_component(image: np.ndarray) -> Tuple[np.ndarray, List[str
 
 def extract_hsv_means(image: np.ndarray) -> Tuple[np.ndarray, List[str]]:
     hsv = cv2.cvtColor(image, cv2.COLOR_RGB2HSV)
-    mean_vals = hsv.mean(axis=(0, 1))
-    names = ["mean_H", "mean_S", "mean_V"]
-    return mean_vals, names
+    return hsv.mean(axis=(0, 1)), ["mean_H", "mean_S", "mean_V"]
 
 
 """
@@ -108,8 +65,7 @@ def extract_glcm_texture(image: np.ndarray) -> Tuple[np.ndarray, List[str]]:
         symmetric=True,
         normed=True,
     )
-    corr = graycoprops(glcm, "correlation")[0, 0]
-    return np.array([corr]), ["glcm_correlation_135"]
+    return np.array([graycoprops(glcm, "correlation")[0, 0]]), ["glcm_correlation_135"]
 
 
 """
@@ -127,8 +83,7 @@ def extract_glcm_contrast(image: np.ndarray) -> Tuple[np.ndarray, List[str]]:
         symmetric=True,
         normed=True,
     )
-    contrast = graycoprops(glcm, "contrast")[0, 0]
-    return np.array([contrast]), ["glcm_contrast_135"]
+    return np.array([graycoprops(glcm, "contrast")[0, 0]]), ["glcm_contrast_135"]
 
 
 """
@@ -154,14 +109,13 @@ def extract_lbp_histogram(
 def extract_rgb_histogram(
     image: np.ndarray, bins: int = 16
 ) -> Tuple[np.ndarray, List[str]]:
-    hist_features = []
-    names = []
-    for i, color in enumerate(["R", "G", "B"]):
-        hist = cv2.calcHist([image], [i], None, [bins], [0, 256])
-        hist = cv2.normalize(hist, hist).flatten()
-        hist_features.append(hist)
-        names.extend([f"hist_{color}_{j}" for j in range(bins)])
-    return np.concatenate(hist_features), names
+    feats, names = [], []
+    for i, c in enumerate(["R", "G", "B"]):
+        h = cv2.calcHist([image], [i], None, [bins], [0, 256])
+        h = cv2.normalize(h, h).flatten()
+        feats.append(h)
+        names += [f"hist_{c}_{j}" for j in range(bins)]
+    return np.concatenate(feats), names
 
 
 """
@@ -178,26 +132,39 @@ def extract_crop_image_shape_features(
     image: np.ndarray,
 ) -> Tuple[np.ndarray, List[str]]:
     h, w = image.shape[:2]
-    aspect_ratio = w / h if h != 0 else 0
-    return np.array([aspect_ratio], dtype=np.float32), ["bbox_aspect_ratio"]
+    ar = w / h if h != 0 else 0
+    return np.array([ar], dtype=np.float32), ["bbox_aspect_ratio"]
+
+
+def extract_cielab_means(image: np.ndarray) -> Tuple[np.ndarray, List[str]]:
+    lab = rgb2lab(image)
+    return lab.mean(axis=(0, 1)), ["mean_L_lab", "mean_a_lab", "mean_b_lab"]
+
+
+def extract_colorfulness(image: np.ndarray) -> Tuple[np.ndarray, List[str]]:
+    R, G, B = cv2.split(image.astype("float"))
+    rg = np.abs(R - G)
+    yb = np.abs(0.5 * (R + G) - B)
+    std_rg, std_yb = np.std(rg), np.std(yb)
+    mean_rg, mean_yb = np.mean(rg), np.mean(yb)
+    col = np.sqrt(std_rg**2 + std_yb**2) + 0.3 * np.sqrt(mean_rg**2 + mean_yb**2)
+    return np.array([col]), ["colorfulness"]
 
 
 """
 기능: 위의 모든 feature 추출 함수를 통합 실행
-- 이미지 (crop 상태)를 받아 최종 특징 벡터 반환
+- 입력된 이미지(ndarray)에 대해 모든 시각적 특징을 추출하고 연결
 
-입력: 
-- 이미지 경로
+입력:
+- image: crop된 사과 이미지 (numpy.ndarray)
 
 출력:
-- feature_vec: np.ndarray 형식의 특징 벡터
-- feature_names: 각 특징의 이름 목록 (debug, logging 등에 유용)
+- feature_vec: np.ndarray 형식의 특징 벡터 (모델 입력값)
+- feature_names: 각 특징의 이름 목록 (디버깅 및 시각화용)
 """
 
 
-def extract_features(image_path: Path) -> Tuple[np.ndarray, List[str]]:
-    image = load_image(image_path)
-
+def extract_features(image: np.ndarray) -> Tuple[np.ndarray, List[str]]:
     f1, n1 = extract_normalized_rgb(image)
     f2, n2 = extract_cmy_first_component(image)
     f3, n3 = extract_hsv_means(image)
@@ -206,7 +173,17 @@ def extract_features(image_path: Path) -> Tuple[np.ndarray, List[str]]:
     f6, n6 = extract_lbp_histogram(image)
     f7, n7 = extract_rgb_histogram(image)
     f8, n8 = extract_crop_image_shape_features(image)
+    f9, n9 = extract_cielab_means(image)
+    f10, n10 = extract_colorfulness(image)
+    vec = np.concatenate([f1, f2, f3, f4, f5, f6, f7, f8, f9, f10])
+    names = n1 + n2 + n3 + n4 + n5 + n6 + n7 + n8 + n9 + n10
+    return vec, names
 
-    feature_vec = np.concatenate([f1, f2, f3, f4, f5, f6, f7, f8])
-    feature_names = n1 + n2 + n3 + n4 + n5 + n6 + n7 + n8
-    return feature_vec, feature_names
+
+# ─────────── 배치 처리용 핸드크래프트 함수 ───────────
+def extract_batch_handcrafted(imgs: np.ndarray) -> np.ndarray:
+    feats = []
+    for img in imgs:
+        f, _ = extract_features(img)
+        feats.append(f.astype(np.float32))
+    return np.stack(feats, axis=0)
