@@ -3,7 +3,7 @@
 import joblib
 from pathlib import Path
 from math import sqrt
-from sklearn.metrics import r2_score, mean_squared_error
+from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
 import numpy as np
 import pandas as pd
 
@@ -26,12 +26,12 @@ X, y, stems = load_cache("valid")
 # ─────────────────────────────────────────────
 y_pred = model.predict(X)
 r2 = r2_score(y, y_pred)
-mse = mean_squared_error(y, y_pred)
-rmse = sqrt(mse)
+mae = mean_absolute_error(y, y_pred)
+rmse = sqrt(mean_squared_error(y, y_pred))
 
 print("\n✅ 검증 데이터 평가 결과")
 print(f"R² Score: {r2:.4f}")
-print(f"MSE: {mse:.4f}")
+print(f"MAE: {mae:.4f}")
 print(f"RMSE: {rmse:.4f}")
 
 
