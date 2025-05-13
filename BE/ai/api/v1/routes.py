@@ -15,7 +15,7 @@ async def health_check():
 async def predict_image(id: int = Form(...), image: UploadFile = File(...)):
     try:
         image_bytes = await image.read()
-        result = predict("cnn_lgbm_bbox", image_bytes)  # ← 바이트 전달
+        result = predict("cnn_lgbm_seg", image_bytes)  # ← 바이트 전달
         return PredictResponse(id=id, predict_sugar_content=float(result["confidence"]))
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))

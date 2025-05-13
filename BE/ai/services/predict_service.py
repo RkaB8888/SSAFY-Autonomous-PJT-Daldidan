@@ -9,6 +9,13 @@ def predict(model_name: str, image_bytes: bytes):
 
         return predict_cnn_lgbm_bbox(image_bytes)
 
+    elif model_name == "cnn_lgbm_seg":
+        from services.cnn_lgbm_seg.predict.predictor import (
+            predict_bytes as predict_cnn_lgbm_seg,
+        )
+
+        return predict_cnn_lgbm_seg(image_bytes)
+
     elif model_name == "model_a":
         from services.model_a.predictor import predict as predict_a
 
