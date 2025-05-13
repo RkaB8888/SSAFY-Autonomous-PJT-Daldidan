@@ -26,6 +26,14 @@ def predict(model_name: str, image_bytes: bytes):
         print("lgbm_bbox 모델 사용")
         return predict_lgbm_bbox(image_bytes)
 
+    elif model_name == "lgbm_seg":
+        from services.lgbm_bbox.predict.predictor import (
+            predict_bytes as predict_lgbm_seg,
+        )
+
+        print("lgbm_seg 모델 사용")
+        return predict_lgbm_seg(image_bytes)
+
     elif model_name == "model_a":
         from services.model_a.predictor import predict as predict_a
 
