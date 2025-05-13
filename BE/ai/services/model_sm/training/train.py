@@ -16,7 +16,9 @@ X, y, stems = load_cache("train")
 # ─────────────────────────────────────────────
 # 2. 모델 정의 및 학습
 # ─────────────────────────────────────────────
-model = XGBRegressor(n_estimators=100, max_depth=6, learning_rate=0.1, random_state=42)
+model = XGBRegressor(
+    n_estimators=100, max_depth=6, learning_rate=0.1, random_state=42, n_jobs=8
+)
 model.fit(X, y)
 
 # ─────────────────────────────────────────────

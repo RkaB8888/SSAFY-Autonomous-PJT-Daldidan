@@ -18,6 +18,18 @@ from services.model_sm.config import (
 from services.model_sm.utils.cropper import crop_apple
 from services.model_sm.extractor.common_features import extract_features
 
+import os
+import cv2
+
+# 내부 라이브러리 쓰레드 수 제한
+os.environ["OMP_NUM_THREADS"] = "1"
+os.environ["OPENBLAS_NUM_THREADS"] = "1"
+os.environ["MKL_NUM_THREADS"] = "1"
+os.environ["NUMEXPR_NUM_THREADS"] = "1"
+os.environ["VECLIB_MAXIMUM_THREADS"] = "1"
+os.environ["OPENMP_NUM_THREADS"] = "1"
+cv2.setNumThreads(1)
+
 
 def get_seg_suffix() -> str:
     return "seg" if USE_SEGMENTATION else "bbox"
@@ -76,7 +88,8 @@ def build_and_cache_embeddings(prefix: str):
     print(f"🚀 {prefix} ({suffix}) 병렬 임베딩 시작 - {len(all_jsons)}개")
 
     results = Parallel(n_jobs=8)(
-        delayed(process_one_json)(json_path, images_dir) for json_path in all_jsons
+        delayed(process_one_json)(json_path, images_dir)
+        for json_path in tqdm(all_jsons, desc="병렬 임베딩 진행률")
     )
 
     feat_list, label_list, stems = [], [], []
