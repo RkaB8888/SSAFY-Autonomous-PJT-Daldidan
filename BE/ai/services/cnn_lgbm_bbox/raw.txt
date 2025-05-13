@@ -16,6 +16,8 @@ imageio==2.37.0
 Jinja2==3.1.4
 joblib==1.5.0
 kiwisolver==1.4.8
+kornia==0.8.1
+kornia_rs==0.1.9
 lazy_loader==0.4
 lightgbm==4.3.0
 MarkupSafe==2.1.5
