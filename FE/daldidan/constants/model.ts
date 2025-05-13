@@ -1,2 +1,2 @@
 export const MODEL_INPUT_SIZE = 448;
-export const CONFIDENCE_THRESHOLD = 0.8;
+export const CONFIDENCE_THRESHOLD = 0.6;
