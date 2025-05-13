@@ -5,3 +5,7 @@ Thumbs.db
 # IDE 설정
 .vscode/
 .idea/
+
+# Expo 관련 캐시/설정 파일 무시
+.expo/
+.expo-shared/
