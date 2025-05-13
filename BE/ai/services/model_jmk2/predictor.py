@@ -3,7 +3,12 @@ import cv2
 import torch
 from PIL import Image
 from .model_loader import model, scaler, transform
-from .features.extract_features import extract_fast_features
+
+# .features.extract_features에서 가져오는 모델 수정
+# from .features.extract_features import extract_fast_features
+from .features.extract_features import extract_features
+
+
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -18,7 +23,10 @@ def predict_bytes(image_bytes: bytes) -> float:
         h, w = img.shape[:2]
         mask = np.ones((h, w), dtype=np.uint8) * 255
 
-        manual_feat = extract_fast_features(img, mask)
+        # .features.extract_features에서 가져오는 모델 수정
+        # manual_feat = extract_fast_features(img, mask)
+        manual_feat = extract_features(img, mask)
+
         manual_feat = scaler.transform([manual_feat])[0]
         manual_feat_tensor = torch.tensor(manual_feat, dtype=torch.float32).unsqueeze(0).to(device)
         image_tensor = transform(img).unsqueeze(0).to(device)
