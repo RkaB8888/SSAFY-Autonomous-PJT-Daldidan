@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "daldidan",
-    "slug": "daldidan",
+    "name": "daldidan_wj",
+    "slug": "daldidan_wj",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -22,7 +22,7 @@
         "backgroundColor": "#ffffff"
       },
 
-      "package": "com.jinmoon23.daldidan"
+      "package": "com.dnjswoc.daldidan"
     },
     "web": {
       "bundler": "metro",
@@ -67,10 +67,7 @@
       "typedRoutes": true
     },
     "extra": {
-      "router": {},
-      "eas": {
-        "projectId": "4ee331a2-574e-4e9f-9c65-43ca52d4dbd6"
-      }
+      "router": {}
     }
   }
 }
