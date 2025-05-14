@@ -39,6 +39,7 @@ def predict(model_name: str, image_bytes: bytes):
             predict_bytes as predict_xgb_bbox,
         )
 
+        print("xgb_bbox 모델 사용")
         return predict_xgb_bbox(image_bytes)
 
     elif model_name == "xgb_seg":
@@ -46,6 +47,7 @@ def predict(model_name: str, image_bytes: bytes):
             predict_bytes as predict_xgb_seg,
         )
 
+        print("xgb_seg 모델 사용")
         return predict_xgb_seg(image_bytes)
 
     elif model_name == "model_a":
