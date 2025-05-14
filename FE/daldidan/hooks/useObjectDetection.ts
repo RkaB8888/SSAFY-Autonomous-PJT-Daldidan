@@ -185,7 +185,9 @@ export function useObjectDetection(format: any) {
 
   const runOnJSThread = Worklets.createRunOnJS(processExtractedData);
 
-  const SAMPLE_RATE = 120;
+  // 이걸 늘리면 프레임별 연산이 느려집니다.
+  // 이걸 낮추면 더 많은 프레임별 연산을 처리합니다.
+  const SAMPLE_RATE = 1;
 
   const frameProcessor = useFrameProcessor(
     async (frame) => {
@@ -234,7 +236,7 @@ export function useObjectDetection(format: any) {
       try {
         console.log('Attempting to load model...');
         const model = await loadTensorflowModel(
-          require('../assets/model.tflite'),
+          require('../assets/2.tflite'),
           'gpu' as TensorflowModelDelegate
         );
         console.log('Model loaded successfully');
