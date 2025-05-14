@@ -59,7 +59,7 @@ def kfold_train(k: int = 5):
         )
 
         pred = model.predict(X_va, num_iteration=model.best_iteration_)
-        rmse = mean_squared_error(y_va, pred, squared=False)
+        rmse = np.sqrt(mean_squared_error(y_va, pred))
         mae = mean_absolute_error(y_va, pred)
         rmse_list.append(rmse)
         mae_list.append(mae)
