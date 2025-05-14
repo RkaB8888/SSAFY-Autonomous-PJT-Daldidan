@@ -10,11 +10,35 @@ import services.lgbm_seg.config as cfg
 from services.lgbm_seg.embedding import build_embeddings as beb
 
 
-def load_dataset():
-    X, y, _ = beb._load_dataset("train")  # train+valid 전체 사용
-    selector = VarianceThreshold(0.0).fit(X)
-    X_sel = selector.transform(X)
-    return X_sel, y, selector
+# ──────────────────────────────
+# 데이터 로딩/캐시 유틸 (train_lightgbm.py에서 복사)
+# ──────────────────────────────
+def _feat_names(dim: int):
+    return [f"cnn_{i}" for i in range(dim)]
+
+
+def _load_dataset(prefix: str):
+    """
+    prefix: "train" or "valid"
+    없으면 build_and_cache_embeddings() 호출 후
+    memmap 으로 X, y, feature_names 반환
+    """
+    feat_f = cfg.CACHE_DIR / f"{prefix}_embeddings.npy"
+    label_f = cfg.CACHE_DIR / f"{prefix}_labels.npy"
+
+    if not (feat_f.exists() and label_f.exists()):
+        print(f"🚀 {prefix} 캐시가 없어 build_and_cache_embeddings() 실행…")
+        beb.build_and_cache_embeddings(prefix, cfg.CACHE_DIR)
+        print("✅ 캐시 생성 완료")
+
+    flat = np.memmap(feat_f, dtype=np.float32, mode="r")
+    y = np.memmap(label_f, dtype=np.float32, mode="r")
+    n_samples = y.size
+    dim = flat.size // n_samples
+    X = flat.reshape(n_samples, dim)
+
+    print(f"✔ Loaded {prefix}: {n_samples} samples, dim={dim}")
+    return X, y, _feat_names(dim)
 
 
 params = dict(
@@ -38,7 +62,9 @@ params = dict(
 
 
 def kfold_train(k: int = 5):
-    X, y, selector = load_dataset()
+    X, y, fnames = _load_dataset("train")
+    selector = VarianceThreshold(0.0)
+    X = selector.fit_transform(X)
     kf = KFold(n_splits=k, shuffle=True, random_state=42)
 
     rmse_list, mae_list = [], []
