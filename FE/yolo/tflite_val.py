@@ -4,13 +4,13 @@ import cv2
 
 # 1. 사과 이미지 로드
 image = cv2.imread('./images/val/apple_1.jpg')
-image = cv2.resize(image, (640, 640))
+image = cv2.resize(image, (448, 448))
 image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 input_data = image_rgb.astype(np.float32) / 255.0
 input_data = np.expand_dims(input_data, axis=0)  # [1, 640, 640, 3]
 
 # 2. 모델 로딩
-interpreter = tf.lite.Interpreter(model_path='model3.tflite')
+interpreter = tf.lite.Interpreter(model_path='apple_detector.tflite')
 interpreter.allocate_tensors()
 
 # 3. 추론 실행
