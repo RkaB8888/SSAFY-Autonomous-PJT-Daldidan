@@ -5,15 +5,9 @@ import {
   TensorflowModel,
   TensorflowModelDelegate,
 } from 'react-native-fast-tflite';
-import {
-  Camera,
-  useFrameProcessor,
-  useCameraDevice,
-} from 'react-native-vision-camera';
+import { Camera, useFrameProcessor } from 'react-native-vision-camera';
 import { Worklets } from 'react-native-worklets-core';
-import * as ImageManipulator from 'expo-image-manipulator';
 import { CONFIDENCE_THRESHOLD, MODEL_INPUT_SIZE } from '../constants/model';
-import { COCO_CLASS_NAMES } from '../constants/cocoClassNames';
 import { Detection, DetectionResult } from './types/objectDetection';
 import { useImageProcessing } from './useImageProcessing';
 import { useObjectAnalysis } from './useObjectAnalysis';
@@ -27,7 +21,7 @@ export function useObjectDetection(format: any) {
     []
   );
   const [hasPermission, setHasPermission] = useState(false);
-  const device = useCameraDevice('back');
+  // const device = useCameraDevice('back');
 
   const { preprocessFrame, extractCroppedData, clamp, logWorklet } =
     useImageProcessing();
@@ -45,20 +39,21 @@ export function useObjectDetection(format: any) {
       const resized = preprocessFrame(frame, MODEL_INPUT_SIZE);
       const outputs = model.runSync([resized]);
       const boxes = outputs[0] as Float32Array;
+      logWorklet(`[Worklet] Boxes: ${boxes}`);
       const classes = outputs[1] as Float32Array;
       const scores = outputs[2] as Float32Array;
       const numDetections = outputs[3] as Float32Array;
 
-      logWorklet('[Worklet] Model outputs debug:');
-      logWorklet(`[Worklet] Boxes shape: ${boxes.length}`);
-      logWorklet(`[Worklet] Classes shape: ${classes.length}`);
-      logWorklet(`[Worklet] Scores shape: ${scores.length}`);
-      logWorklet(
-        `[Worklet] First few classes: ${Array.from(classes.slice(0, 5))}`
-      );
-      logWorklet(
-        `[Worklet] First few scores: ${Array.from(scores.slice(0, 5))}`
-      );
+      // logWorklet('[Worklet] Model outputs debug:');
+      // logWorklet(`[Worklet] Boxes shape: ${boxes.length}`);
+      // logWorklet(`[Worklet] Classes shape: ${classes.length}`);
+      // logWorklet(`[Worklet] Scores shape: ${scores.length}`);
+      // logWorklet(
+      //   // `[Worklet] First few classes: ${Array.from(classes.slice(0, 5))}`
+      // );
+      // logWorklet(
+      //   `[Worklet] First few scores: ${Array.from(scores.slice(0, 5))}`
+      // );
 
       const totalDetections = Math.min(
         Math.round(numDetections[0] || 0),
@@ -67,22 +62,22 @@ export function useObjectDetection(format: any) {
 
       const detected: Detection[] = [];
 
-      logWorklet(`[Worklet] Total detections: ${totalDetections}`);
+      // logWorklet(`[Worklet] Total detections: ${totalDetections}`);
 
       for (let i = 0; i < totalDetections; i++) {
         const score = scores[i];
         const classId = Math.round(classes[i]);
-        const className = COCO_CLASS_NAMES[classId] || 'unknown';
-        logWorklet(
-          `[Worklet] Detection ${i} - Score: ${score.toFixed(
-            4
-          )}, Class: ${classId} (${className})`
-        );
+        // const className = COCO_CLASS_NAMES[classId] || 'unknown';
+        // logWorklet(
+        //   `[Worklet] Detection ${i} - Score: ${score.toFixed(
+        //     4
+        //   )}, Class: ${classId} (${className})`
+        // );
 
         if (score < CONFIDENCE_THRESHOLD) {
-          logWorklet(
-            `[Worklet] Detection ${i} skipped - Score below threshold`
-          );
+          // logWorklet(
+          //   `[Worklet] Detection ${i} skipped - Score below threshold`
+          // );
           continue;
         }
 
@@ -129,77 +124,9 @@ export function useObjectDetection(format: any) {
   const recentRequests = new Map();
   const DUPLICATE_TIMEOUT = 5000; // 5초
 
-  const capturePhoto = async (detection: Detection): Promise<string | null> => {
-    try {
-      if (!cameraRef.current) {
-        console.log('[JS] Camera ref is not available');
-        return null;
-      }
-
-      console.log('[JS] Starting photo capture for detection:', {
-        x: detection.x,
-        y: detection.y,
-        width: detection.width,
-        height: detection.height,
-        class_id: detection.class_id,
-      });
-
-      const photo = await cameraRef.current.takePhoto({
-        flash: 'off',
-        enableShutterSound: false,
-      });
-
-      console.log('[JS] Photo captured successfully:', {
-        path: photo.path,
-        width: photo.width,
-        height: photo.height,
-      });
-
-      // 이미지 크기 조정
-      const manipResult = await ImageManipulator.manipulateAsync(
-        photo.path,
-        [{ resize: { width: 800 } }],
-        { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
-      );
-
-      console.log('[JS] Image resized:', {
-        originalPath: photo.path,
-        newPath: manipResult.uri,
-        width: manipResult.width,
-        height: manipResult.height,
-      });
-
-      // 이미지 데이터를 base64로 변환
-      const response = await fetch(manipResult.uri);
-      const blob = await response.blob();
-
-      console.log('[JS] Image blob created:', {
-        size: blob.size,
-        type: blob.type,
-      });
-
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => {
-          const base64data = reader.result as string;
-          const base64String = base64data.split(',')[1];
-          console.log('[JS] Base64 conversion completed:', {
-            length: base64String.length,
-            preview: base64String.substring(0, 50) + '...',
-          });
-          resolve(base64String);
-        };
-        reader.onerror = (error) => {
-          console.error('[JS] Base64 conversion error:', error);
-          reject(error);
-        };
-        reader.readAsDataURL(blob);
-      });
-    } catch (error) {
-      console.error('[JS] Photo capture error:', error);
-      return null;
-    }
-  };
+  // const capturePhoto = async (detection: Detection): Promise<string | null> => {
+  //   ...
+  // };
 
   const processExtractedData = async (extractedDataArray: any[]) => {
     const now = Date.now();
@@ -240,80 +167,17 @@ export function useObjectDetection(format: any) {
     if (uniqueItems.length === 0) return;
 
     try {
-      const promises = uniqueItems.map(async (item) => {
-        const { detection, timestamp } = item;
-        console.log('[JS] Processing item:', {
-          detection,
-          timestamp,
-        });
-
-        const base64String = await capturePhoto(detection);
-        if (!base64String) {
-          console.log('[JS] Failed to capture photo for detection');
-          return null;
-        }
-
-        // Convert base64 string to Uint8Array
-        const binaryString = atob(base64String);
-        const bytes = new Uint8Array(binaryString.length);
-        for (let i = 0; i < binaryString.length; i++) {
-          bytes[i] = binaryString.charCodeAt(i);
-        }
-
-        const result = await processImageData(
-          bytes,
-          detection,
-          timestamp,
-          true
-        );
-
-        if (!result) {
-          console.log('[JS] Failed to process image data');
-          return null;
-        }
-
-        console.log('[JS] Successfully processed detection:', {
-          class_id: detection.class_id,
-          sugar_content: result.detection.sugar_content,
-        });
-
-        return {
-          ...result,
-          imageData: `data:image/jpeg;base64,${base64String}`,
-        };
-      });
-
-      const results = await Promise.allSettled(promises);
-      console.log('[JS] All promises settled:', {
-        total: results.length,
-        fulfilled: results.filter((r) => r.status === 'fulfilled').length,
-        rejected: results.filter((r) => r.status === 'rejected').length,
-      });
-
-      const validResults = results
-        .filter(
-          (result): result is PromiseFulfilledResult<DetectionResult> =>
-            result.status === 'fulfilled' && result.value !== null
-        )
-        .map((result) => result.value);
-
-      console.log('[JS] Valid results:', {
-        count: validResults.length,
-        results: validResults.map((r) => ({
-          class_id: r.detection.class_id,
-          sugar_content: r.detection.sugar_content,
-        })),
-      });
-
-      if (validResults.length > 0) {
-        setDetectionResults((prev) => {
-          const prevKeys = new Set(prev.map((r) => getGridKey(r.detection)));
-          const newUnique = validResults.filter(
-            (r) => !prevKeys.has(getGridKey(r.detection))
-          );
-          return [...prev, ...newUnique];
-        });
-      }
+      // const promises = uniqueItems.map(async (item) => {
+      //   ...
+      //   return null;
+      // });
+      // const results = await Promise.allSettled(promises);
+      // const validResults = results
+      //   .filter(...)
+      //   .map(...);
+      // if (validResults.length > 0) {
+      //   setDetectionResults(...);
+      // }
     } catch (error) {
       console.error('[JS] Batch processing error:', error);
     }
@@ -321,7 +185,7 @@ export function useObjectDetection(format: any) {
 
   const runOnJSThread = Worklets.createRunOnJS(processExtractedData);
 
-  const SAMPLE_RATE = 10;
+  const SAMPLE_RATE = 120;
 
   const frameProcessor = useFrameProcessor(
     async (frame) => {
@@ -370,7 +234,7 @@ export function useObjectDetection(format: any) {
       try {
         console.log('Attempting to load model...');
         const model = await loadTensorflowModel(
-          require('../assets/1.tflite'),
+          require('../assets/model.tflite'),
           'gpu' as TensorflowModelDelegate
         );
         console.log('Model loaded successfully');
