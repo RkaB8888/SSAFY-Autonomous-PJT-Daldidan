@@ -1,8 +1,10 @@
 # services/xgb_bbox/training/grid_search.py
 from pathlib import Path
 import joblib
-from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import GridSearchCV, ParameterGrid
 from xgboost import XGBRegressor
+from tqdm import tqdm
+from tqdm_joblib import tqdm_joblib
 
 from services.xgb_bbox.embedding.build_embeddings import load_cache
 
@@ -23,16 +25,16 @@ param_grid = {
     "colsample_bytree": [0.7, 0.9, 1.0],
 }
 
+# GridSearch 전체 fit 횟수 계산 (후에 tqdm total로 사용)
+total_fits = len(list(ParameterGrid(param_grid))) * 3  # cv=3
+
 # ─────────────────────────────────────────────
 # 3) GridSearchCV (train 세트 내부 3-fold)
 # ─────────────────────────────────────────────
 base_model = XGBRegressor(
     random_state=42,
-    n_jobs=8,
-    # tree_method="gpu_hist",
-    # predictor="gpu_predictor",
+    n_jobs=1,
     tree_method="hist",
-    predictor="auto",
     eval_metric="rmse",
     early_stopping_rounds=50,
 )
@@ -43,7 +45,7 @@ search = GridSearchCV(
     scoring="r2",
     cv=3,
     n_jobs=8,
-    verbose=2,
+    verbose=0,
     refit=True,
     error_score="raise",
 )
@@ -53,10 +55,16 @@ fit_params = {
     "verbose": False,
 }
 
-search.fit(X_train, y_train, **fit_params)
+# ─────────────────────────────────────────────
+# 4) tqdm_joblib로 진행도 표시
+# ─────────────────────────────────────────────
+with tqdm_joblib(
+    tqdm(desc="GridSearch 진행", total=total_fits, ncols=80)
+) as progress_bar:
+    search.fit(X_train, y_train, **fit_params)
 
 # ─────────────────────────────────────────────
-# 4) 결과 출력 & 모델 저장
+# 5) 결과 출력 & 모델 저장
 # ─────────────────────────────────────────────
 print("\n✅ 하이퍼파라미터 탐색 완료")
 print("🧩 Best Params :", search.best_params_)
