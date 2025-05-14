@@ -186,6 +186,7 @@ ai/dataset/*
 *.ckpt
 *.joblib
 *.npy
+*.dat
 
 # 실험 결과 캐시
 ai/services/**/cache/**
