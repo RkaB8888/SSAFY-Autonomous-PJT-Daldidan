@@ -3,6 +3,8 @@ from pathlib import Path
 import joblib
 from sklearn.model_selection import GridSearchCV
 from xgboost import XGBRegressor
+from xgboost.callback import EarlyStopping
+
 from services.xgb_bbox.embedding.build_embeddings import load_cache
 
 # ─────────────────────────────────────────────
@@ -48,7 +50,7 @@ search = GridSearchCV(
 
 fit_params = {
     "eval_set": [(X_valid, y_valid)],
-    "early_stopping_rounds": 50,
+    "callbacks": [EarlyStopping(rounds=50, save_best=True)],  # ← 수정
     "verbose": False,
 }
 
