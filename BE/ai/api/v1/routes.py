@@ -20,13 +20,15 @@ async def health_check():
 #     except Exception as e:
 #         raise HTTPException(status_code=400, detail=str(e))
 
+
 @router.post("/predict", response_model=PredictResponse)
-async def predict_image(id: int = Form(...),  image_base64: str = Form(...)):
+async def predict_image(id: int = Form(...), image_base64: str = Form(...)):
     try:
         import base64
+
         image_bytes = base64.b64decode(image_base64)
         # image_bytes = await image.read()
-        result = predict("model_jmk2", image_bytes)  # ← 바이트 전달
+        result = predict("xgb_bbox", image_bytes)  # ← 바이트 전달
         return PredictResponse(id=id, predict_sugar_content=float(result))
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
