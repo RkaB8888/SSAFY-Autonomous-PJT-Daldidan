@@ -28,8 +28,11 @@ param_grid = {
 base_model = XGBRegressor(
     random_state=42,
     n_jobs=8,
-    tree_method="gpu_hist",  # GPU 없으면 삭제
-    predictor="gpu_predictor",  # GPU 없으면 삭제
+    # tree_method="gpu_hist",
+    # predictor="gpu_predictor",
+    tree_method="hist",
+    predictor="auto",
+    eval_metric="rmse",
 )
 
 search = GridSearchCV(
@@ -40,11 +43,11 @@ search = GridSearchCV(
     n_jobs=8,
     verbose=2,
     refit=True,
+    error_score="raise",
 )
 
 fit_params = {
     "eval_set": [(X_valid, y_valid)],
-    "eval_metric": "rmse",
     "early_stopping_rounds": 50,
     "verbose": False,
 }
