@@ -57,33 +57,32 @@ def _train(
     X_tr_sel = selector.fit_transform(X_tr)
     X_va_sel = selector.transform(X_va)
 
-    max_depth = 12
-    model = lgb.LGBMRegressor(
-        boosting_type="gbdt",
-        n_estimators=2400,
-        learning_rate=0.025,
-        max_depth=max_depth,
-        num_leaves=2**max_depth,
-        feature_fraction=0.8,
-        subsample=0.8,
-        subsample_freq=1,
-        min_child_samples=20,
-        reg_lambda=1.0,
-        device="gpu",
+    params = dict(
+        objective="regression",
+        metric="rmse",
+        device_type="gpu",
         gpu_use_dp=False,
+        boosting_type="gbdt",
+        max_depth=10,
+        num_leaves=1023,  # 2^10 - 1
+        learning_rate=0.05,
+        num_iterations=2000,
+        max_bin=255,
+        min_data_in_leaf=200,
+        feature_fraction=0.8,
+        bagging_fraction=0.8,
+        bagging_freq=1,
+        lambda_l1=0.2,
+        lambda_l2=1.0,
         random_state=42,
-        n_jobs=8,
     )
-
+    model = lgb.LGBMRegressor(**params)
     model.fit(
         X_tr_sel,
         y_tr,
         eval_set=[(X_va_sel, y_va)],
         eval_metric=["l2_root", "l1", "mape"],
-        callbacks=[
-            early_stopping(120, first_metric_only=False),
-            log_evaluation(period=20),
-        ],
+        callbacks=[early_stopping(100), log_evaluation(100)],
     )
     print(f"▶ Best iteration : {model.best_iteration_}")
 
