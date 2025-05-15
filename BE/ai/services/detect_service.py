@@ -1,16 +1,28 @@
 # ai/services/detect_service.py
-
-from typing import Union
+"""
+플러그인 기반 디스패처 구조의 정석 구현
+"""
+from typing import Union, Callable
 from PIL import Image
 import numpy as np
 
+# 모델 이름 → predictor class or callable
+model_registry: dict[str, Callable] = {}
 
-def detect(model_name: str, image: Union[Image.Image, np.ndarray]):
-    if model_name == "yolov8_tflite":
-        from services.yolov8_tflite.core.infer import detect_apples
 
-        print("yolov8_tflite 인식 모델 사용")
-        return detect_apples(image)
+def register_model(name: str, version: str, predictor_cls: Callable):
+    key = f"{name}:{version}"
+    model_registry[key] = predictor_cls
 
-    else:
-        raise ValueError(f"Unknown detection model: {model_name!r}")
+
+def detect(
+    model_name: str, image: Union[Image.Image, np.ndarray], version: str = "default"
+):
+    key = f"{model_name}:{version}"
+    if key not in model_registry:
+        raise ValueError(f"[detect_service] Unknown model: {key}")
+
+    predictor_cls = model_registry[key]
+    predictor = predictor_cls()  # 필요 시 config 넣어줄 수도 있음
+    raw_boxes = predictor.predict(image)
+    return [{"bbox": box, "seg": None} for box in raw_boxes]
