@@ -16,10 +16,10 @@ class AppleDataset(Dataset):
         self.json_files = json_files
         self.transform = transform
         # 서버 내 저장된 scaler load
-        self.scaler = joblib.load(r"C:\Users\SSAFY\Desktop\emodel_result\scaler.pkl")
+        # self.scaler = joblib.load(r"C:\Users\SSAFY\Desktop\emodel_result\scaler.pkl")
 
         # gpu서버용용
-        # self.scaler = joblib.load("/home/j-k12e206/jmk/S12P31E206/BE/ai/services/cnn_feature_enhanced_seg/me/scaler.pkl")
+        self.scaler = joblib.load("/home/j-k12e206/jmk/S12P31E206/BE/ai/services/cnn_feature_enhanced_seg/me/scaler.pkl")
 
 
     def __len__(self):
