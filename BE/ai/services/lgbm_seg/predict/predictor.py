@@ -27,12 +27,12 @@ def _bytes_to_np(image_input: bytes | str) -> np.ndarray:
         raise ValueError(f"이미지 디코딩 실패: {e}")
 
 
-def predict_bytes(image_input: Union[bytes, str]) -> dict:
+def predict_bytes(image_input: Union[bytes, str]) -> float:
     np_img = _bytes_to_np(image_input)  # (H, W, C)
     feats = extract_batch_handcrafted(np_img[None, ...])  # (1, D) ← 1장짜리 배치로 처리
     X_sel = selector.transform(feats)  # (1, D')
     sugar = float(model.predict(X_sel)[0])  # → scalar 예측값
-    return {"label": "sugar_content", "confidence": sugar}
+    return sugar
 
 
 # ── CLI 테스트용 -------------------------------------------------

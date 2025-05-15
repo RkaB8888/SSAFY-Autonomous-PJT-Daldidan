@@ -17,6 +17,7 @@ class CroppedDataset(Dataset):
     def __init__(
         self, img_dir: pathlib.Path, json_dir: pathlib.Path, resize=(256, 256)
     ):
+        self.resize = None if cfg.EMBEDDING_MODE == "handcrafted" else (256, 256)
         raw = sorted(
             [
                 (p, json_dir / f"{p.stem}.json")
@@ -48,7 +49,6 @@ class CroppedDataset(Dataset):
                 if len(bb) != 4 or bb[2] <= 0 or bb[3] <= 0:
                     continue
             self.items.append((img_p, data))
-        self.resize = resize
 
     def __len__(self):
         return len(self.items)

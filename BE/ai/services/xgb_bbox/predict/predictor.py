@@ -23,9 +23,9 @@ def _bytes_to_np(image_input: bytes | str) -> np.ndarray:
         raise ValueError(f"이미지 디코딩 실패: {e}")
 
 
-def predict_bytes(image_input: Union[bytes, str]) -> dict:
+def predict_bytes(image_input: Union[bytes, str]) -> float:
     np_img = _bytes_to_np(image_input)
     feats = extract_features(np_img)
     X = np.array([list(feats.values())])
     sugar = float(model.predict(X)[0])
-    return {"label": "sugar_content", "confidence": sugar}
+    return sugar
