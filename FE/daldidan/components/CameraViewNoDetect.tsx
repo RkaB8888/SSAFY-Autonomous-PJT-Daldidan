@@ -260,7 +260,7 @@ export default function CameraView() {
                        // 이 상태 변경으로 인해 Camera의 isActive prop이 true로 바뀌면서 카메라가 다시 켜짐.
                    }} />
               </View>
-         ) : null} {/* ★★★ 조건부 렌더링 수정 ★★★ */}
+         ) : null} {/* ★★★ 조건부 렌더링 수정 ★★★ */}ㄴ
 
 
       </React.Fragment> 
