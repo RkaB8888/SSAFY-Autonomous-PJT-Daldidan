@@ -111,20 +111,12 @@ export function useObjectDetection(format: any) {
       for (const i of keepIdx) {
         const score = scores[i];
         const classId = Math.round(classes[i]);
-        // const className = COCO_CLASS_NAMES[classId] || 'unknown';
-        // logWorklet(
-        //   `[Worklet] Detection ${i} - Score: ${score.toFixed(
-        //     4
-        //   )}, Class: ${classId} (${className})`
-        // );
+        // 1. 점수가 기준보다 낮으면 제외
+        if (score < CONFIDENCE_THRESHOLD) continue;
 
-        if (score < CONFIDENCE_THRESHOLD) {
-          // logWorklet(
-          //   `[Worklet] Detection ${i} skipped - Score below threshold`
-          // );
-          if (Math.round(classes[i]) !== 52)
-          continue;
-        }
+        // 2. 사과가 아니면 제외
+        if (classId !== 52) continue;
+
 
         const [y1, x1, y2, x2] = [
           boxes[i * 4],

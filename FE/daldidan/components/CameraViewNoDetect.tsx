@@ -18,6 +18,8 @@ import { AnalyzedObjectResult } from '../hooks/types/objectDetection'; // API �
 // 이 컴포넌트를 위에서 새로 만들었습니다.
 import AnalyzedResultOverlay from './AnalyzedResultOverlay';
 
+import AppleProcessing from './AppleProcessing';
+import AppleBar from './AppleBar';
 
 export default function CameraView() {
   const device = useCameraDevice('back');
@@ -196,7 +198,7 @@ export default function CameraView() {
            ) : null} {/* ★★★ 조건부 렌더링 수정 ★★★ */}
 
             {/* API 분석 완료 후 결과는 없지만 카메라는 정지 상태인 경우 (예: 빈 화면에 분석 버튼 누름) */}
-            {analysisFinished && analyzedResults !== null && analyzedResults.length === 0 ? ( // 분석 완료 상태이고 결과가 없을 때
+            {analysisFinished && analyzedResults !== null && analyzedResults.length === 0 ? (
                  <View style={styles.noDetectionMessage}><Text style={styles.noDetectionText}>객체 인식 결과 없음</Text></View>
             ) : null} {/* ★★★ 조건부 렌더링 수정 ★★★ */}
 
