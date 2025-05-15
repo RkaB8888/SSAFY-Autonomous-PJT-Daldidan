@@ -1,6 +1,0 @@
-path: ../S12P31E206/FE/yolo/
-train: images/train
-val: images/val  # 검증 데이터 따로 만들면 변경 가능
-
-names:
-  0: apple
