@@ -1,4 +1,4 @@
-# ai/services/tflite_topython/draw_boundingbox.py
+# ai/services/yolov8/scripts/draw_boundingbox.py
 import cv2
 import numpy as np
 import tensorflow as tf

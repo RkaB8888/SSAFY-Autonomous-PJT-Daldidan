@@ -1,4 +1,4 @@
-# ai/services/tflite_topython/bbox_crop_test.py
+# ai/services/yolov8/scripts/bbox_crop_test2.py
 import cv2
 import numpy as np
 import tensorflow as tf
@@ -9,7 +9,7 @@ import json  # JSON 출력을 위해 추가
 
 # --- 모델 및 설정 값 (사용자 환경에 맞게 반드시 수정!) ---
 # TODO: 실제 백엔드 환경에 맞는 경로로 수정해야 합니다.
-TFLITE_MODEL_PATH = "./yolov8n_int8.tflite"  # ★★★ 실제 TFLite 모델 파일 경로로 수정 ★★★
+TFLITE_MODEL_PATH = "./services/yolov8/models/yolov8n_coco_int8.tflite"  # ★★★ 실제 TFLite 모델 파일 경로로 수정 ★★★
 IMAGE_PATH = (
     "C:\\Users\\SSAFY\\Desktop\\phone.png"  # ★★★ 테스트할 입력 이미지 경로로 수정 ★★★
 )

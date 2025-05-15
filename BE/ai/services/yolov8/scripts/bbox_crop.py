@@ -1,4 +1,4 @@
-# ai/services/tflite_topython/bbox_crop.py
+# ai/services/yolov8/scripts/bbox_crop.py
 import cv2
 import numpy as np
 import tensorflow as tf
