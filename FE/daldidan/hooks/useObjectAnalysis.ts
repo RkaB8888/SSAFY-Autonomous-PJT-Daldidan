@@ -1,112 +1,58 @@
-import { DetectionResult } from './types/objectDetection';
+// daldidan/hooks/useObjectAnalysis.ts
+
+// API 응답 타입 임포트 또는 정의 (동일하게 유지)
+import { AnalyzedObjectResult } from './types/objectDetection';
+import { API_ENDPOINTS } from '../constants/api'; // API 엔드포인트 임포트
 
 export const useObjectAnalysis = () => {
-  const sendDetectionToServer = async (
-    base64String: string,
-    classId: number | undefined
-  ): Promise<any> => {
-    // const formData = new FormData();
-    // formData.append('image_base64', base64String);
-    // console.log(base64String);
-    // formData.append('id', classId?.toString() ?? '1');
-    // const response = await fetch(API_ENDPOINTS.OBJECT_ANALYSIS, {
-    //   method: 'POST',
-    //   body: formData,
-    // });
-    // const text = await response.text();
-    // console.log('API Response:', text);
-    // if (!response.ok) {
-    //   throw new Error(`HTTP error! status: ${response.status}, body: ${text}`);
-    // }
-    // try {
-    //   const parsedResult = JSON.parse(text);
-    //   console.log('Parsed API Result:', parsedResult);
-    //   return parsedResult;
-    // } catch (e) {
-    //   console.error('JSON Parse Error:', e);
-    //   throw new Error('Response is not valid JSON');
-    // }
-  };
+  // 기존 주석 코드는 이미 이전 수정에서 제거했다고 가정합니다.
 
-  const processImageData = async (
-    uint8Array: Uint8Array,
-    detection: any,
-    timestamp: number,
-    isJPEG: boolean = false
-  ): Promise<DetectionResult | null> => {
-    // try {
-    //   const base64String = base64.fromByteArray(uint8Array);
-    //   if (!base64String || base64String.length === 0) {
-    //     console.warn('[JS] Invalid base64 string generated');
-    //     return null;
-    //   }
-    //   const result = await sendDetectionToServer(
-    //     base64String,
-    //     detection.class_id
-    //   );
-    //   if (result) {
-    //     return {
-    //       detection: {
-    //         ...detection,
-    //         sugar_content: result.sugar_content,
-    //       },
-    //       imageData: `data:image/${
-    //         isJPEG ? 'jpeg' : 'png'
-    //       };base64,${base64String}`,
-    //       result,
-    //       timestamp,
-    //     };
-    //   }
-    //   return null;
-    // } catch (error) {
-    //   console.error('[JS] API request error:', error);
-    //   return null;
-    // }
-    return null;
-  };
+  /**
+   * 준비된 FormData (이미지 파일 URI 포함)를 받아 API에 POST 요청을 보내고,
+   * 백엔드로부터 탐지된 객체 정보 (id, bbox, 당도 등)를 받아옵니다.
+   * @param formData API 요청에 사용할 FormData 객체 (이미지 파일 및 기타 데이터 포함)
+   * @returns API 응답으로 받은 분석 결과 배열 Promise
+   * @throws Error API 요청 실패 시 예외 발생
+   */
+  const sendAnalysisRequest = async ( // 함수 이름 변경 (analyzeScreenshot -> sendAnalysisRequest)
+    formData: FormData // FormData 객체를 인자로 받음
+  ): Promise<AnalyzedObjectResult[]> => { // AnalyzedObjectResult[] 타입 반환
 
-  const processBatch = async (
-    items: Array<{
-      detection: any;
-      croppedData: { data: number[]; isJPEG?: boolean } | null;
-      timestamp: number;
-    }>
-  ): Promise<DetectionResult[]> => {
-    // const promises = items.map(async (item) => {
-    //   if (
-    //     !item.croppedData ||
-    //     !item.croppedData.data ||
-    //     !Array.isArray(item.croppedData.data)
-    //   ) {
-    //     return null;
-    //   }
-    //   const uint8Array = new Uint8Array(item.croppedData.data);
-    //   if (uint8Array.length === 0) return null;
-    //   try {
-    //     return await processImageData(
-    //       uint8Array,
-    //       item.detection,
-    //       item.timestamp,
-    //       item.croppedData.isJPEG
-    //     );
-    //   } catch (error) {
-    //     console.error('[JS] Processing error:', error);
-    //     return null;
-    //   }
-    // });
-    // const results = await Promise.allSettled(promises);
-    // const validResults = results
-    //   .filter(
-    //     (result): result is PromiseFulfilledResult<DetectionResult> =>
-    //       result.status === 'fulfilled' && result.value !== null
-    //   )
-    //   .map((result) => result.value);
-    // return validResults;
-    return [];
+    console.log('[API] Sending analysis request with FormData...');
+
+    try {
+      // 이 엔드포인트가 multipart/form-data를 받는 백엔드 API 주소여야 합니다.
+      const response = await fetch(API_ENDPOINTS.OBJECT_ANALYSIS, {
+        method: 'POST',
+        body: formData, // FormData 객체 전달
+        // FormData 사용 시 'Content-Type' 헤더는 fetch가 자동으로 설정합니다.
+        // 따라서 별도로 'Content-Type': 'multipart/form-data' 헤더를 설정할 필요 없습니다.
+      });
+
+      if (!response.ok) {
+        const errorBody = await response.text();
+        console.error(`[API] HTTP Error: ${response.status} ${response.statusText}`, errorBody);
+        throw new Error(`API request failed with status ${response.status}: ${errorBody}`);
+      }
+
+      // 백엔드 응답 JSON 파싱
+      const result: AnalyzedObjectResult[] = await response.json();
+
+      console.log('[API] Analysis Result Received:', result);
+
+      // Optional: 응답 구조 검증 (필요시 유지)
+
+      return result; // 분석 결과 배열 반환
+
+    } catch (error: any) {
+      console.error('[API] Analysis API request failed:', error);
+      throw error; // 호출하는 컴포넌트에서 처리하도록 오류 다시 던지기
+    }
   };
 
   return {
-    processImageData,
-    processBatch,
+    // 함수 이름 변경하여 노출
+    // analyzeScreenshot, // 기존 함수 (이제 필요 없음)
+    sendAnalysisRequest, // 새 함수
   };
 };
