@@ -56,4 +56,7 @@ def crop_apple(img: Image.Image, ann: dict, use_seg: bool, resize: tuple):
             return None
         cropped = img.crop((x0, y0, x1, y1))
 
-    return cropped.resize(resize, Image.Resampling.LANCZOS)
+    if resize is None:
+        return cropped  # 원본 크롭 그대로 반환
+    else:
+        return cropped.resize(resize, Image.Resampling.LANCZOS)

@@ -201,3 +201,5 @@ log.txt
 
 # 단, 필요시 .gitkeep 유지 예외는 명시
 !**/weights/.gitkeep
+
+*.tflite
