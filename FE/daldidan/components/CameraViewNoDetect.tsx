@@ -198,7 +198,7 @@ export default function CameraView() {
            ) : null} {/* ★★★ 조건부 렌더링 수정 ★★★ */}
 
             {/* API 분석 완료 후 결과는 없지만 카메라는 정지 상태인 경우 (예: 빈 화면에 분석 버튼 누름) */}
-            {analysisFinished && analyzedResults !== null && analyzedResults.length === 0 ? ( // 분석 완료 상태이고 결과가 없을 때
+            {analysisFinished && analyzedResults !== null && analyzedResults.length === 0 ? (
                  <View style={styles.noDetectionMessage}><Text style={styles.noDetectionText}>객체 인식 결과 없음</Text></View>
             ) : null} {/* ★★★ 조건부 렌더링 수정 ★★★ */}
 
@@ -260,7 +260,7 @@ export default function CameraView() {
                        // 이 상태 변경으로 인해 Camera의 isActive prop이 true로 바뀌면서 카메라가 다시 켜짐.
                    }} />
               </View>
-         ) : null} {/* ★★★ 조건부 렌더링 수정 ★★★ */}ㄴ
+         ) : null} {/* ★★★ 조건부 렌더링 수정 ★★★ */}
 
 
       </React.Fragment> 
