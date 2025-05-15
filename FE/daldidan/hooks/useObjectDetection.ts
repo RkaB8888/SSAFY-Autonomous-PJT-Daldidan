@@ -41,7 +41,7 @@ export function useObjectDetection(format: any) {
   function nonMaxSuppression(
   boxes: { x1: number; y1: number; x2: number; y2: number }[],
   scores: number[],
-  iouThreshold = 0.5
+  iouThreshold = 1
 ) {
   'worklet';
   // 점수 내림차순 인덱스

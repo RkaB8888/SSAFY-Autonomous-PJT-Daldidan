@@ -96,7 +96,7 @@ export default function DetectionOverlay({
                   y={y}
                   width={width}
                   height={height}
-                  color='rgba(250, 198, 198, 0.8)'
+                  color='rgba(255, 255, 255, 0.8)'
                   style='stroke'
                   strokeWidth={strokeWidth}
                 />
