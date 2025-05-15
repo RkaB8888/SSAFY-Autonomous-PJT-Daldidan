@@ -61,6 +61,7 @@ def _train(
         objective="regression",
         metric="rmse",
         device_type="gpu",
+        n_jobs=8,
         gpu_use_dp=False,
         boosting_type="gbdt",
         max_depth=10,
