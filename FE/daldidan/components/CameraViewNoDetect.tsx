@@ -6,6 +6,8 @@ import DetectionOverlay from './DetectionOverlay';
 import AppleButton from './AppleButton';
 import ViewShot, { captureRef } from 'react-native-view-shot';
 import AppleHint from './AppleHint'
+import AppleProcessing from './AppleProcessing';
+import AppleBar from './AppleBar';
 
 export default function CameraView() {
   const device = useCameraDevice('back');
@@ -19,10 +21,12 @@ export default function CameraView() {
     // 🔁 다시 카메라 켜기
     console.log('[🎥 재시작]');
     setCameraPaused(false);
+    setProcessingStage('none');
     return;
   }
       try {
         setCameraPaused(true); // 🔸 카메라 정지
+        setProcessingStage('juicing');
 
         const uri = await captureRef(viewShotRef, {
           format: 'jpg',
@@ -30,11 +34,22 @@ export default function CameraView() {
         });
 
         console.log('[🍎 캡처 완료] 이미지 경로:', uri);
+        setTimeout(() => {
+          setProcessingStage('none');
+          setCameraPaused(false);
+          console.log('[🎬 애니메이션 종료, 카메라 재개]');
+        }, 3000);
+
         // 🔜 다음: 애니메이션 표시 + 서버 전송
       } catch (err) {
         console.error('캡처 실패:', err);
         setCameraPaused(false);
       }
+    };
+
+    const [processingStage, setProcessingStage] = useState<'none' | 'juicing'>('none');
+    const handlePause = () => {
+      setProcessingStage('juicing');
     };
 
   useEffect(() => {
@@ -85,8 +100,11 @@ export default function CameraView() {
           format={format}
           photo={true}
         />
+        
       )}
+         <AppleBar detections={detections} />
       {detections.length === 0 ? (
+        
         <AppleHint />
         // <View style={styles.noDetectionContainer}>
         //   <Text style={styles.noDetectionText}>🍎사과를 비춰주세요🍎</Text>
@@ -105,6 +123,9 @@ export default function CameraView() {
     />
     </>
       )}
+      {processingStage !== 'none' && (
+      <AppleProcessing status={processingStage} />
+    )}
     </View>
   </ViewShot>
   );
