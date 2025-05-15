@@ -1,2 +1,2 @@
-export const MODEL_INPUT_SIZE = 640; // model: 320 / 1: 448 / 2: 640
-export const CONFIDENCE_THRESHOLD = 0.6;
+export const MODEL_INPUT_SIZE = 320;
+export const CONFIDENCE_THRESHOLD = 0.4;

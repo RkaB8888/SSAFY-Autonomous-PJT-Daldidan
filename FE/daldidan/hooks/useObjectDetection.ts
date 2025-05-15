@@ -21,17 +21,61 @@ export function useObjectDetection(format: any) {
     []
   );
   const [hasPermission, setHasPermission] = useState(false);
-  // const device = useCameraDevice('back');
 
   const { preprocessFrame, extractCroppedData, clamp, logWorklet } =
     useImageProcessing();
   const { processImageData } = useObjectAnalysis();
 
-  const updateDetections = (data: Detection[]) => {
-    setDetections(data);
-  };
+  // const updateDetections = (data: Detection[]) => {
+  //   setDetections(data);
+  // };
 
-  const updateDetectionsWorklet = Worklets.createRunOnJS(updateDetections);
+  // const updateDetectionsWorklet = Worklets.createRunOnJS(updateDetections);
+
+  const updateDetectionsWorklet = useRef(
+    Worklets.createRunOnJS((data: Detection[]) => {
+      setDetections(data);
+    })
+  ).current;
+
+  function nonMaxSuppression(
+  boxes: { x1: number; y1: number; x2: number; y2: number }[],
+  scores: number[],
+  iouThreshold = 0.5
+) {
+  'worklet';
+  // 점수 내림차순 인덱스
+  const idxs = boxes
+    .map((_, i) => i)
+    .sort((a, b) => scores[b] - scores[a]);
+  const keep: number[] = [];
+
+  for (let _i = 0; _i < idxs.length; _i++) {
+    const i = idxs[_i];
+    const bi = boxes[i];
+    let shouldKeep = true;
+    for (let j = 0; j < keep.length; j++) {
+      const bj = boxes[keep[j]];
+      // IoU 계산
+      const xx1 = Math.max(bi.x1, bj.x1);
+      const yy1 = Math.max(bi.y1, bj.y1);
+      const xx2 = Math.min(bi.x2, bj.x2);
+      const yy2 = Math.min(bi.y2, bj.y2);
+      const w = Math.max(0, xx2 - xx1);
+      const h = Math.max(0, yy2 - yy1);
+      const inter = w * h;
+      const areaI = (bi.x2 - bi.x1) * (bi.y2 - bi.y1);
+      const areaJ = (bj.x2 - bj.x1) * (bj.y2 - bj.y1);
+      const iou = inter / (areaI + areaJ - inter);
+      if (iou > iouThreshold) {
+        shouldKeep = false;
+        break;
+      }
+    }
+    if (shouldKeep) keep.push(i);
+  }
+  return keep;
+}
 
   const processDetectionsInWorklet = (frame: any, model: TensorflowModel) => {
     'worklet';
@@ -39,32 +83,32 @@ export function useObjectDetection(format: any) {
       const resized = preprocessFrame(frame, MODEL_INPUT_SIZE);
       const outputs = model.runSync([resized]);
       const boxes = outputs[0] as Float32Array;
-      logWorklet(`[Worklet] Boxes: ${boxes}`);
       const classes = outputs[1] as Float32Array;
       const scores = outputs[2] as Float32Array;
       const numDetections = outputs[3] as Float32Array;
-
-      // logWorklet('[Worklet] Model outputs debug:');
-      // logWorklet(`[Worklet] Boxes shape: ${boxes.length}`);
-      // logWorklet(`[Worklet] Classes shape: ${classes.length}`);
-      // logWorklet(`[Worklet] Scores shape: ${scores.length}`);
-      // logWorklet(
-      //   // `[Worklet] First few classes: ${Array.from(classes.slice(0, 5))}`
-      // );
-      // logWorklet(
-      //   `[Worklet] First few scores: ${Array.from(scores.slice(0, 5))}`
-      // );
 
       const totalDetections = Math.min(
         Math.round(numDetections[0] || 0),
         scores.length
       );
+      const boxesArray = [];   // {x1,y1,x2,y2} 형식으로 담을 배열
+      const scoresArray = [];
+      for (let i = 0; i < totalDetections; i++) {
+        const y1 = boxes[i * 4];
+        const x1 = boxes[i * 4 + 1];
+        const y2 = boxes[i * 4 + 2];
+        const x2 = boxes[i * 4 + 3];
+        boxesArray.push({ x1, y1, x2, y2 });
+        scoresArray.push(scores[i]);
+      }
+
+      const keepIdx = nonMaxSuppression(boxesArray, scoresArray, 0.4);
 
       const detected: Detection[] = [];
 
       // logWorklet(`[Worklet] Total detections: ${totalDetections}`);
 
-      for (let i = 0; i < totalDetections; i++) {
+      for (const i of keepIdx) {
         const score = scores[i];
         const classId = Math.round(classes[i]);
         // const className = COCO_CLASS_NAMES[classId] || 'unknown';
@@ -78,6 +122,7 @@ export function useObjectDetection(format: any) {
           // logWorklet(
           //   `[Worklet] Detection ${i} skipped - Score below threshold`
           // );
+          if (Math.round(classes[i]) !== 52)
           continue;
         }
 
@@ -90,10 +135,19 @@ export function useObjectDetection(format: any) {
 
         if ([x1, y1, x2, y2].some((v) => isNaN(v) || v < 0 || v > 1)) continue;
 
-        const x = clamp(x1 * frame.width, 0, frame.width);
-        const y = clamp(y1 * frame.height, 0, frame.height);
-        const width = clamp((x2 - x1) * frame.width, 0, frame.width - x);
-        const height = clamp((y2 - y1) * frame.height, 0, frame.height - y);
+        // const x = clamp(x1 * frame.width, 0, frame.width);
+        // const y = clamp(y1 * frame.height, 0, frame.height);
+        // const width = clamp((x2 - x1) * frame.width, 0, frame.width - x);
+        // const height = clamp((y2 - y1) * frame.height, 0, frame.height - y);
+
+        const inputSize = 320;
+        const cropSize = 1080;
+        const cropOffsetX = (1920 - cropSize) / 2;
+
+        const x = clamp((x1 * cropSize + cropOffsetX), 0, frame.width);
+        const y = clamp((y1 * cropSize), 0, frame.height);
+        const width = clamp(((x2 - x1) * cropSize), 0, frame.width - x);
+        const height = clamp(((y2 - y1) * cropSize), 0, frame.height - y);
 
         detected.push({
           x,
@@ -128,7 +182,7 @@ export function useObjectDetection(format: any) {
   //   ...
   // };
 
-  const processExtractedData = async (extractedDataArray: any[]) => {
+  const processExtractedData = useRef(async (extractedDataArray: any[]) => {
     const now = Date.now();
     console.log('[JS] Processing extracted data:', {
       totalItems: extractedDataArray.length,
@@ -181,13 +235,14 @@ export function useObjectDetection(format: any) {
     } catch (error) {
       console.error('[JS] Batch processing error:', error);
     }
-  };
+  }).current;
 
-  const runOnJSThread = Worklets.createRunOnJS(processExtractedData);
-
-  // 이걸 늘리면 프레임별 연산이 느려집니다.
-  // 이걸 낮추면 더 많은 프레임별 연산을 처리합니다.
-  const SAMPLE_RATE = 1;
+  // const runOnJSThread = Worklets.createRunOnJS(processExtractedData);
+  // processExtractedData를 한 번만 래핑한 뒤, 콜백도 한 번만 생성
+  const runOnJSThread = useRef(
+    Worklets.createRunOnJS(processExtractedData)
+  ).current;
+  const SAMPLE_RATE = 15;
 
   const frameProcessor = useFrameProcessor(
     async (frame) => {

@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "daldidan_wj1",
-    "slug": "daldidan_wj1 ",
+    "name": "daldidan_wj",
+    "slug": "daldidan_wj",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "daldidan",
+    "scheme": "daldidan-dev",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "assetBundlePatterns": [
@@ -16,20 +16,14 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.jinmoon23.daldidan",
-      "infoPlist": {
-        "NSCameraUsageDescription": "Allow $(PRODUCT_NAME) to access your camera"
-      }
+      "bundleIdentifier": "com.jinmoon23.daldidan.dev"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.dnjswoc.daldidan",
-      "permissions": [
-        "android.permission.CAMERA"
-      ]
+      "package": "com.jinmoon23.daldidan.dev"
     },
     "web": {
       "bundler": "metro",
