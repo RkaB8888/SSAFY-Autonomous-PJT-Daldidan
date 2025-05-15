@@ -5,6 +5,7 @@ import { useObjectDetection } from '../hooks/useObjectDetection';
 import DetectionOverlay from './DetectionOverlay';
 import AppleButton from './AppleButton';
 import ViewShot, { captureRef } from 'react-native-view-shot';
+import AppleHint from './AppleHint'
 
 export default function CameraView() {
   const device = useCameraDevice('back');
@@ -86,9 +87,10 @@ export default function CameraView() {
         />
       )}
       {detections.length === 0 ? (
-        <View style={styles.noDetectionContainer}>
-          <Text style={styles.noDetectionText}>🍎사과를 비춰주세요🍎</Text>
-        </View>
+        <AppleHint />
+        // <View style={styles.noDetectionContainer}>
+        //   <Text style={styles.noDetectionText}>🍎사과를 비춰주세요🍎</Text>
+        // </View>
       ) : (
         <>
         {/* <DetectionOverlay
