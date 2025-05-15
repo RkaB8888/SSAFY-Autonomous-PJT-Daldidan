@@ -16,12 +16,23 @@ export const useImageProcessing = () => {
 
   const preprocessFrame = (frame: any, targetSize: number) => {
     'worklet';
-    return resize(frame, {
-      scale: { width: targetSize, height: targetSize },
-      pixelFormat: 'rgb',
-      dataType: 'uint8',
-    });
-  };
+     const isPortrait = frame.height > frame.width;
+  const shortSide = Math.min(frame.width, frame.height);
+  const cropX = (frame.width - shortSide) / 2;
+  const cropY = (frame.height - shortSide) / 2;
+
+  return resize(frame, {
+    scale: { width: targetSize, height: targetSize },
+    pixelFormat: 'rgb',
+    dataType: 'uint8',
+    crop: {
+      x: cropX,
+      y: cropY,
+      width: shortSide,
+      height: shortSide,
+    },
+  });
+};
 
   const extractCroppedData = async (
     frame: any,

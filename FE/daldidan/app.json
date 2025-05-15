@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "daldidan",
-    "slug": "daldidan",
+    "name": "DaldidanDev",
+    "slug": "daldidan-dev",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "daldidan",
+    "scheme": "daldidan-dev",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "assetBundlePatterns": ["**/*"],
@@ -14,15 +14,14 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.jinmoon23.daldidan"
+      "bundleIdentifier": "com.jinmoon23.daldidan.dev"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-
-      "package": "com.jinmoon23.daldidan"
+      "package": "com.jinmoon23.daldidan.dev"
     },
     "web": {
       "bundler": "metro",

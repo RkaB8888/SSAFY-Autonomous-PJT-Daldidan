@@ -1,5 +1,5 @@
 import { Canvas, Group, Rect } from '@shopify/react-native-skia';
-import React from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { StyleSheet, Text, View, Dimensions } from 'react-native';
 import { Detection } from '../hooks/types/objectDetection';
 import { COCO_CLASS_NAMES } from '../constants/cocoClassNames';
@@ -17,18 +17,70 @@ export default function DetectionOverlay({
   screenSize,
   format,
 }: Props) {
+    const prevBoxes = useRef<Detection[]>([]);
+      const [smoothed, setSmoothed] = useState<Detection[]>([]);
+
+      const SMOOTH_FACTOR = 0.2; // 부드럽게 이동 (0.0~1.0)
+
+      useEffect(() => {
+        if (detections.length !== prevBoxes.current.length) {
+          // 초기화 or 박스 개수가 바뀐 경우
+          prevBoxes.current = detections.map((d) => ({ ...d }));
+          setSmoothed(detections);
+          return;
+        }
+
+        const next = detections.map((d, i) => {
+          const prev = prevBoxes.current[i];
+          return {
+            ...d,
+            x: prev.x + (d.x - prev.x) * SMOOTH_FACTOR,
+            y: prev.y + (d.y - prev.y) * SMOOTH_FACTOR,
+            width: prev.width + (d.width - prev.width) * SMOOTH_FACTOR,
+            height: prev.height + (d.height - prev.height) * SMOOTH_FACTOR,
+          };
+        });
+
+        prevBoxes.current = next;
+        setSmoothed(next);
+      }, [detections]);
+
   return (
     <>
       <Canvas style={StyleSheet.absoluteFill}>
         <Group>
-          {detections.map((detection, i) => {
-            const scaleX = screenSize.width / (format?.videoWidth || 1);
-            const scaleY = screenSize.height / (format?.videoHeight || 1);
+          {smoothed.map((detection, i) => {
+                // 📌 DetectionOverlay 내에서, detection -> 화면상 위치 변환
+              const frameW = 1920;
+              const frameH = 1080;
+              const screenW = screenSize.width;
+              const screenH = screenSize.height;
 
-            const x = detection.x * scaleX;
-            const y = detection.y * scaleY;
-            const width = detection.width * scaleX;
-            const height = detection.height * scaleY;
+              // 90도 회전 + 위치 변환
+              const rotated = {
+                x: detection.y,
+                y: frameW - detection.x - detection.width,
+                width: detection.height,
+                height: detection.width,
+              };
+
+              const scaleX = screenW / frameH; // frameH = 1080 → now width axis
+              const scaleY = screenH / frameW; // frameW = 1920 → now height axis
+
+              const x = rotated.x * scaleX;
+              const y = rotated.y * scaleY;
+              const width = rotated.width * scaleX;
+              const height = rotated.height * scaleY;
+
+              console.log(`[Debug ${i}]`);
+              console.log('original:', detection);
+              console.log('rotated:', rotated);
+              console.log('screen:', {
+                x: x.toFixed(1),
+                y: y.toFixed(1),
+                width: width.toFixed(1),
+                height: height.toFixed(1),
+              });
 
             // 객체 크기에 따라 선 두께 조절
             const strokeWidth = Math.max(
@@ -44,86 +96,38 @@ export default function DetectionOverlay({
                   y={y}
                   width={width}
                   height={height}
-                  color='rgba(255, 0, 0, 0.8)'
+                  color='rgba(250, 198, 198, 0.8)'
                   style='stroke'
                   strokeWidth={strokeWidth}
                 />
-                {/* 모서리 강조 */}
-                <Group>
-                  {/* 좌상단 모서리 */}
-                  <Rect
-                    x={x}
-                    y={y}
-                    width={width * 0.2}
-                    height={strokeWidth * 2}
-                    color='rgba(255, 0, 0, 0.8)'
-                  />
-                  <Rect
-                    x={x}
-                    y={y}
-                    width={strokeWidth * 2}
-                    height={height * 0.2}
-                    color='rgba(255, 0, 0, 0.8)'
-                  />
-                  {/* 우상단 모서리 */}
-                  <Rect
-                    x={x + width - width * 0.2}
-                    y={y}
-                    width={width * 0.2}
-                    height={strokeWidth * 2}
-                    color='rgba(255, 0, 0, 0.8)'
-                  />
-                  <Rect
-                    x={x + width - strokeWidth * 2}
-                    y={y}
-                    width={strokeWidth * 2}
-                    height={height * 0.2}
-                    color='rgba(255, 0, 0, 0.8)'
-                  />
-                  {/* 좌하단 모서리 */}
-                  <Rect
-                    x={x}
-                    y={y + height - height * 0.2}
-                    width={width * 0.2}
-                    height={strokeWidth * 2}
-                    color='rgba(255, 0, 0, 0.8)'
-                  />
-                  <Rect
-                    x={x}
-                    y={y + height - height * 0.2}
-                    width={strokeWidth * 2}
-                    height={height * 0.2}
-                    color='rgba(255, 0, 0, 0.8)'
-                  />
-                  {/* 우하단 모서리 */}
-                  <Rect
-                    x={x + width - width * 0.2}
-                    y={y + height - height * 0.2}
-                    width={width * 0.2}
-                    height={strokeWidth * 2}
-                    color='rgba(255, 0, 0, 0.8)'
-                  />
-                  <Rect
-                    x={x + width - strokeWidth * 2}
-                    y={y + height - height * 0.2}
-                    width={strokeWidth * 2}
-                    height={height * 0.2}
-                    color='rgba(255, 0, 0, 0.8)'
-                  />
-                </Group>
+                
               </Group>
             );
           })}
         </Group>
       </Canvas>
-      {detections.map((detection, i) => {
-        const scaleX = screenSize.width / (format?.videoWidth || 1);
-        const scaleY = screenSize.height / (format?.videoHeight || 1);
+      {smoothed.map((detection, i) => {
+       // 📌 DetectionOverlay 내에서, detection -> 화면상 위치 변환
+        const frameW = 1920;
+        const frameH = 1080;
+        const screenW = screenSize.width;
+        const screenH = screenSize.height;
 
-        const x = detection.x * scaleX;
-        const y = detection.y * scaleY;
-        const width = detection.width * scaleX;
-        const height = detection.height * scaleY;
+        // 90도 회전 + 위치 변환
+        const rotated = {
+          x: detection.y,
+          y: frameW - detection.x - detection.width,
+          width: detection.height,
+          height: detection.width,
+        };
+
+        const scaleX = screenW / frameH; // frameH = 1080 → now width axis
+        const scaleY = screenH / frameW; // frameW = 1920 → now height axis
+
+        const x = rotated.x * scaleX;
+        const y = rotated.y * scaleY;
+        const width = rotated.width * scaleX;
+        const height = rotated.height * scaleY;
 
         // 객체 크기에 따라 텍스트 크기 조절
         const fontSize = Math.max(
