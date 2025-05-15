@@ -8,12 +8,12 @@ interface Props {
   detections: Detection[];
   screenSize: { width: number; height: number };
   format: any;
-  detectionResults: import('../hooks/types/objectDetection').DetectionResult[];
+  // detectionResults: import('../hooks/types/objectDetection').DetectionResult[];
 }
 
 export default function DetectionOverlay({
   detections,
-  detectionResults,
+  // detectionResults,
   screenSize,
   format,
 }: Props) {
@@ -135,11 +135,11 @@ export default function DetectionOverlay({
           Math.min(14, Math.min(width, height) * 0.1)
         );
 
-        const matched = detectionResults.find(
-          (r) =>
-            r.detection.class_id === detection.class_id &&
-            r.detection.sugar_content !== undefined
-        );
+        // const matched = detectionResults.find(
+        //   (r) =>
+        //     r.detection.class_id === detection.class_id &&
+        //     r.detection.sugar_content !== undefined
+        // );
 
         return (
           <View
@@ -158,9 +158,9 @@ export default function DetectionOverlay({
             ]}
           >
             <Text style={[styles.text, { fontSize }]} numberOfLines={1}>
-              {`${COCO_CLASS_NAMES[detection.class_id ?? 0] || 'Unknown'}${
+              {/* {`${COCO_CLASS_NAMES[detection.class_id ?? 0] || 'Unknown'}${
                 matched ? ` - 당도: ${matched.detection.sugar_content}Bx` : ''
-              }`}
+              }`} */}
             </Text>
           </View>
         );
