@@ -45,10 +45,11 @@ export default function CameraView() {
       {appState === 'active' && (
         <Camera
           ref={cameraRef}
-          style={[
-            StyleSheet.absoluteFill,
-            detections.length === 0 && styles.grayedCamera,
-          ]}
+          // style={[
+          //   StyleSheet.absoluteFill,
+          //   detections.length === 0 && styles.grayedCamera,
+          // ]}
+          style={StyleSheet.absoluteFill}
           device={device}
           isActive={appState === 'active'}
           frameProcessor={frameProcessor}

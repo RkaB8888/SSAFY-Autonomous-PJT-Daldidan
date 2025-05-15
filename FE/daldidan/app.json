@@ -1,10 +1,15 @@
 {
   "expo": {
-    "name": "daldidan_wj",
-    "slug": "daldidan_wj",
+    "name": "달디단",
+    "slug": "daldidan_wj2",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "splash": {
+      "image": "./assets/images/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FF5255"
+    },
+    "icon": "./assets/images/daldidan.png",
     "scheme": "daldidan-dev",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -16,14 +21,21 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.jinmoon23.daldidan.dev"
+      "bundleIdentifier": "com.jinmoon23.daldidan.dev",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Allow $(PRODUCT_NAME) to access your camera"
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.jinmoon23.daldidan.dev"
+      "package": "com.dnjswoc.daldidan.dev",
+      "permissions": [
+        "android.permission.CAMERA"
+      ],
+      "label": "달디단"
     },
     "web": {
       "bundler": "metro",
@@ -75,7 +87,7 @@
         "origin": false
       },
       "eas": {
-        "projectId": "fa361428-0891-424c-a4c6-170fb1ea48ac"
+        "projectId": "68edb9c1-a15a-4e4b-a0fd-9d6ed127f287"
       }
     },
     "owner": "dnjswoc"

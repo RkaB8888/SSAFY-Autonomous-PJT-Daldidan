@@ -1,7 +1,25 @@
-import React from 'react';
-import CameraViewNoDetect from '../components/CameraViewNoDetect';
+// app/index.tsx
+import { useRouter } from 'expo-router';
+import { useEffect } from 'react';
+import { View, ActivityIndicator, StyleSheet } from 'react-native';
 
-export default function App() {
-  // 메인 / 근접 시 / 원거리 시 카메라 뷰 분기처리를 해야함
-  return <CameraViewNoDetect />;
+export default function SplashScreen() {
+  const router = useRouter();
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      router.replace('/camera');
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  return (
+    <View style={styles.container}>
+      <ActivityIndicator size="large" color="#ff3b30" />
+    </View>
+  );
 }
+
+const styles = StyleSheet.create({
+  container: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' },
+});
