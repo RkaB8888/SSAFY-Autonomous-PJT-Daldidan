@@ -141,29 +141,29 @@ export default function DetectionOverlay({
         //     r.detection.sugar_content !== undefined
         // );
 
-        return (
-          <View
-            key={i}
-            style={[
-              styles.textContainer,
-              {
-                position: 'absolute',
-                left: Math.max(0, Math.min(x, screenSize.width - 150)),
-                top: Math.max(0, Math.min(y - 25, screenSize.height - 25)),
-                width: 150,
-                backgroundColor: 'rgba(0, 0, 0, 0.7)',
-                borderWidth: 1,
-                borderColor: 'rgba(255, 0, 0, 0.8)',
-              },
-            ]}
-          >
-            <Text style={[styles.text, { fontSize }]} numberOfLines={1}>
-              {/* {`${COCO_CLASS_NAMES[detection.class_id ?? 0] || 'Unknown'}${
-                matched ? ` - 당도: ${matched.detection.sugar_content}Bx` : ''
-              }`} */}
-            </Text>
-          </View>
-        );
+        // return (
+        //   <View
+        //     key={i}
+        //     style={[
+        //       styles.textContainer,
+        //       {
+        //         position: 'absolute',
+        //         left: Math.max(0, Math.min(x, screenSize.width - 150)),
+        //         top: Math.max(0, Math.min(y - 25, screenSize.height - 25)),
+        //         width: 150,
+        //         backgroundColor: 'rgba(0, 0, 0, 0.7)',
+        //         borderWidth: 1,
+        //         borderColor: 'rgba(255, 0, 0, 0.8)',
+        //       },
+        //     ]}
+        //   >
+        //     <Text style={[styles.text, { fontSize }]} numberOfLines={1}>
+        //       {/* {`${COCO_CLASS_NAMES[detection.class_id ?? 0] || 'Unknown'}${
+        //         matched ? ` - 당도: ${matched.detection.sugar_content}Bx` : ''
+        //       }`} */}
+        //     </Text>
+        //   </View>
+        // );
       })}
     </>
   );

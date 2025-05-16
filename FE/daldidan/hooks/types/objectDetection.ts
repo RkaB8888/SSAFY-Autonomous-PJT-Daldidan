@@ -15,20 +15,23 @@ export interface Detection {
 // 백엔드 API에서 받아올 객체 탐지 및 분석 결과의 타입 정의
 // 이 타입은 useObjectAnalysis, useAnalysisApiHandler, CameraViewNoDetect 등에서 사용됩니다.
 export interface AnalyzedObjectResult {
-  id?: number; // 백엔드에서 부여한 고유 ID 또는 클래스 ID 등 (API 명세 확인)
-  class_id: number; // 객체 클래스 ID (예: 52 for apple, 59 for donut)
-  label: string; // 객체 라벨 (예: "apple", "donut")
-  bbox: { // 백엔드에서 분석한 바운딩 박스 좌표 (API 명세 확인, 보통 원본 이미지 기준)
-    x1: number;
-    y1: number;
-    x2: number;
-    y2: number;
+  id?: number; // 백엔드에서 부여한 고유 ID (응답 예시에는 id가 있네요)
+  sugar_content?: number | null; // 당도 값 (nullable)
+  bbox: { // 바운딩 박스 좌표 구조
+    xmin: number;
+    ymin: number;
+    xmax: number;
+    ymax: number;
   };
-  // score?: number; // 백엔드에서 온 탐지 신뢰도 점수 (있다면)
-  sugar_content?: number | null; // 사과의 경우 당도 값 (없거나 측정 실패 시 null 또는 undefined)
-  // 도넛의 경우 다른 분석 값 필드가 필요할 수 있습니다. 예: sweetness?: number | null;
-  // ... 백엔드 응답 JSON 구조에 정확히 맞춰 필드 추가 ...
+  segmentation?: any; // 응답 예시에 segmentation이 있네요 (null 또는 다른 형태일 수 있습니다)
+  // TODO: 백엔드 응답에 'class_id'나 'label', 'score' 등이 직접 포함되어 있는지 확인 필요
+  // 현재 예시 응답에는 없지만, 객체의 종류를 구분하려면 이 정보가 필요합니다.
+  // 만약 백엔드가 id만 반환한다면, 이 id를 프론트엔드에서 클래스/라벨에 매핑하는 로직이 필요할 수 있습니다.
+  // 여기서는 'label'과 'class_id' 필드가 없다고 가정하고 일단 진행합니다.
+  // 만약 있다면 여기에 추가해야 합니다: class_id?: number; label?: string; score?: number;
 }
 
 // API 응답이 분석된 객체 결과들의 배열이라고 가정
-export type ScreenshotAnalysisResponse = AnalyzedObjectResult[];
+export interface ScreenshotAnalysisResponse {
+    results: AnalyzedObjectResult[]; // 백엔드 응답의 "results" 키 아래에 객체 배열이 담김
+}

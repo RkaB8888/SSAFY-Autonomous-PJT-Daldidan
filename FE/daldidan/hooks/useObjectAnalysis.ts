@@ -14,9 +14,9 @@ export const useObjectAnalysis = () => {
   const sendAnalysisRequest = async (
     formData: FormData
   ): Promise<AnalyzedObjectResult[]> => { // AnalyzedObjectResult[] 타입 반환
-
+    console.log('FormDataaaaaaa', formData)
     console.log('[useObjectAnalysis] Sending analysis request...');
-
+    
     try {
       // API_ENDPOINTS.OBJECT_ANALYSIS 주소가 백엔드 API와 일치하는지 확인
       const response = await fetch(API_ENDPOINTS.OBJECT_ANALYSIS, {
@@ -24,7 +24,7 @@ export const useObjectAnalysis = () => {
         body: formData,
         // FormData 사용 시 'Content-Type' 헤더는 fetch가 자동으로 설정
       });
-
+      console.log('formData:',formData)
       // HTTP 상태 코드가 2xx 범위인지 확인
       if (!response.ok) {
         const errorBody = await response.text();

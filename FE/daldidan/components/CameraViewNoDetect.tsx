@@ -2,45 +2,47 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { StyleSheet, Text, View, AppState, Dimensions, Button, ActivityIndicator, Alert } from 'react-native';
-import { Camera, useCameraDevice } from 'react-native-vision-camera';
+import { Camera, useCameraDevice } from 'react-native-vision-camera'; // Photo 타입 임포트
 import { useObjectDetection } from '../hooks/useObjectDetection';
 // import DetectionOverlay from './DetectionOverlay'; // 실시간 탐지 결과 오버레이
 import AppleButton from './AppleButton'; // 캡쳐 트리거 버튼 컴포넌트
-import ViewShot, { captureRef } from 'react-native-view-shot'; // 화면 캡쳐 라이브러리
+// ViewShot, captureRef는 이제 필요 없습니다.
+// import ViewShot, { captureRef } from 'react-native-view-shot';
 import AppleHint from './AppleHint'; // 탐지되지 않았을 때 힌트 컴포넌트
 
 // ★★★ useAnalysisApiHandler 훅 임포트 ★★★
+// useAnalysisApiHandler.ts 파일에 이 훅 구현 코드가 있어야 합니다. (resetAnalysis, originalImageSize 반환 포함)
 import { useAnalysisApiHandler } from '../hooks/useAnalysisApiHandler';
-// API 응답 타입은 훅 내부에서 관리되지만, 결과 오버레이에 전달
-import { AnalyzedObjectResult } from '../hooks/types/objectDetection'; // API 응답 타입
+// API 응답 타입 임포트 (훅 내부에서 관리되지만, 결과 오버레이에 전달)
+import { AnalyzedObjectResult } from '../hooks/types/objectDetection'; // AnalyzedObjectResult 타입
 
 // ★★★ API 분석 결과를 표시할 새로운 오버레이 컴포넌트 임포트 ★★★
-// 이 컴포넌트를 위에서 새로 만들었습니다.
-import AnalyzedResultOverlay from './AnalyzedResultOverlay';
+// AnalyzedResultOverlay.tsx 파일에 구현 코드가 있어야 합니다. (이전 답변 코드 참고)
+import AnalyzedResultOverlay from './AnalyzedResultOverlay'; // 임포트 주석 해제!
 
-import AppleProcessing from './AppleProcessing';
-import AppleBar from './AppleBar';
 
 export default function CameraView() {
   const device = useCameraDevice('back');
-  const [screenSize, setScreenSize] = useState({ width: 0, height: 0 });
+  // screenSize 상태는 onLayout 이벤트에서 업데이트됩니다. 초기값은 { width: 0, height: 0 }
+  const [screenSize, setScreenSize] = useState({ width: 0, height: 0 }); // <-- 여기가 screenSize 선언 및 초기화
   const [appState, setAppState] = useState('active');
 
+  // ViewShot ref는 takePhoto를 사용한다면 필요 없을 수 있습니다.
   const viewShotRef = useRef(null);
-  // cameraPaused state는 이제 useAnalysisApiHandler 훅의 isAnalyzing 및 analyzedResults 상태로 대체됩니다.
 
 
   // ★★★ useAnalysisApiHandler 훅 사용 ★★★
-  // useAnalysisApiHandler.ts 파일에 이 훅의 구현 코드가 있어야 합니다.
+  // useAnalysisApiHandler.ts 파일에 이 훅 구현 코드가 있어야 합니다. (resetAnalysis, originalImageSize 반환 포함)
   const {
     triggerAnalysis, // API 분석 시작 함수 (훅 내부에서 FormData 생성 및 fetch 호출)
     isAnalyzing,     // API 분석 중 상태 (boolean)
     analyzedResults, // API 분석 완료된 결과 배열 (AnalyzedObjectResult[] | null)
     analysisError,   // API 에러 메시지 (string | null)
+    originalImageSize, // ★★★ 훅에서 원본 이미지 해상도 상태 가져오기 (OriginalImageSize | null 타입) ★★★
     resetAnalysis,   // ★★★ 분석 결과 초기화 함수 (useAnalysisApiHandler 훅에서 반환 필요) ★★★
   } = useAnalysisApiHandler(); // 훅 호출
 
-  // API 훅의 상태 (isAnalyzing, analyzedResults, analysisError)는 이 컴포넌트에서 직접 접근하여 UI 업데이트에 사용합니다.
+  // API 훅의 상태 (isAnalyzing, analyzedResults, analysisError)와 원본 해상도를 이 컴포넌트에서 직접 접근하여 UI 업데이트에 사용합니다.
 
 
   // App 상태 변화 감지
@@ -61,16 +63,17 @@ export default function CameraView() {
     hasPermission,
     detections, // useObjectDetection에서 실시간으로 받아오는 탐지 결과
     frameProcessor, // useObjectDetection에서 정의된 프레임 프로세서 함수
-    cameraRef, // useVisionCamera의 Camera 컴포넌트 ref
+    cameraRef, // useVisionCamera의 Camera 컴포넌트 ref (사진 촬영에 사용!)
     // detectionResults, // useObjectDetection에서 사용하던 예전 로직 (이제 사용 안 함)
   } = useObjectDetection(format);
 
 
   // 전체 화면 캡쳐 및 API 요청 함수
   const handleCaptureAndAnalyze = useCallback(async () => {
-    if (!viewShotRef.current) {
-      console.error("[Capture] ViewShot ref is not set.");
-      Alert.alert("Error", "Could not capture screen.");
+    // cameraRef를 takePhoto에 사용
+    if (!cameraRef.current) {
+      console.error("[Capture] Camera ref is not set.");
+      Alert.alert("Error", "Camera not ready.");
       return;
     }
     // isAnalyzing 상태는 useAnalysisApiHandler 훅에서 관리되며, 훅 내부에서 중복 실행 방지됩니다.
@@ -83,48 +86,44 @@ export default function CameraView() {
     // 이 상태 변경을 Camera 컴포넌트의 isActive prop이 감지하여 카메라가 멈춥니다.
 
     try {
-      console.log('[CameraView] Starting screen capture...');
+      console.log('[CameraView] Starting photo capture...');
 
-      // ViewShot 캡쳐 (파일 URI 형식으로)
-      // result: 'file' 또는 'tmpfile' 사용
-      const uri = await captureRef(viewShotRef, {
-        format: "jpg", // 또는 "jpg"
-        quality: 0.9,
-        result: "tmpfile", // 또는 "tmpfile"
+      // cameraRef.current.takePhoto() 메서드를 사용하여 카메라 영상 캡처
+      const photo = await cameraRef.current.takePhoto({
+          qualityPrioritization: 'speed', // 속도 우선
+          enableShutterAnimation: false, // 셔터 애니메이션 비활성화
       });
 
-      if (!uri) {
-         console.error("[Capture] Failed to capture screen, URI is null or empty.");
-         Alert.alert("Error", "Failed to capture screen.");
-         return; // 캡쳐 실패 시 중단
+      const uri = `file://${photo.path}`;
+      const photoOriginalWidth = photo.width; // 캡처된 원본 이미지 너비
+      const photoOriginalHeight = photo.height; // 캡처된 원본 이미지 높이
+
+
+      if (!uri || uri === 'file://undefined') {
+         console.error("[Capture] Failed to capture photo, URI is null or invalid:", uri);
+         Alert.alert("Error", "Failed to capture photo.");
+         return;
       }
 
-      console.log("[Capture] Screen captured to file URI:", uri);
+      console.log(`[Capture] Photo captured to file URI: ${uri} (Resolution: ${photoOriginalWidth}x${photoOriginalHeight})`);
 
-      // ★★★ useAnalysisApiHandler 훅의 triggerAnalysis 함수 호출 ★★★
-      // 이 함수 내부에서 FormData 생성, API 요청, 상태 업데이트 (isAnalyzing, analyzedResults, analysisError) 모두 처리됩니다.
-      await triggerAnalysis(uri); // 훅에서 가져온 함수 호출
+      // useAnalysisApiHandler 훅의 triggerAnalysis 함수 호출
+      // 캡처된 사진 파일의 URI와 원본 해상도 정보를 함께 훅으로 전달
+      await triggerAnalysis(uri, photoOriginalWidth, photoOriginalHeight);
 
       console.log("[CameraView] Triggered analysis process.");
 
-      // 분석 완료 및 에러 처리는 useAnalysisApiHandler 훅 내부 및 훅이 반환하는 상태를 통해 이루어집니다.
-      // 분석 완료 후 카메라 정지 상태 (isActive=false)는 isAnalyzing=false가 되면서 유지됩니다. (아래 isActive 로직 참고)
-
     } catch (error: any) {
-      // triggerAnalysis에서 발생하고 다시 던져진 에러를 여기서 catch할 수도 있지만,
-      // 훅 내부에서 이미 Alert 등으로 사용자에게 알림을 처리하고 있다면 불필요할 수 있습니다.
-      console.error("[CameraView] Error during capture or triggering analysis:", error);
-      // Alert.alert("Capture/Trigger Error", error.message || "An error occurred."); // 중복 알림 주의
+      console.error("[CameraView] Error during photo capture or triggering analysis:", error);
+      Alert.alert("Analysis Failed", error.message || "An error occurred during analysis.");
+
     } finally {
        // 카메라 일시 정지/재개 로직은 isAnalyzing 상태에 의해 자동으로 처리됩니다.
-       // 별도의 setCameraPaused(false) 호출이 필요 없습니다.
     }
-  }, [isAnalyzing, triggerAnalysis]); // 의존성 배열: isAnalyzing, triggerAnalysis
+  }, [isAnalyzing, triggerAnalysis, cameraRef]);
 
 
   // AppleButton 또는 다른 캡쳐 트리거 UI 표시 여부 결정
-  // useObjectDetection에서 오는 실시간 detections를 사용
-  // 사과 (class_id 52) 또는 도넛 (class_id 59)이 탐지되면 버튼 표시
   const appleOrDonutDetected = detections.some(d => d.class_id === 52 || d.class_id === 59);
 
 
@@ -138,134 +137,111 @@ export default function CameraView() {
 
 
   // ★★★ React 컴포넌트는 하나의 루트 엘리먼트만 반환해야 합니다. ★★★
-  // ViewShot으로 캡쳐할 영역과 그 위에 표시될 오버레이, 버튼 등을 하나의 <React.Fragment>로 감쌉니다.
   return (
-    <React.Fragment> {/* 최상위 엘리먼트로 React.Fragment 사용 */}
-      {/* ViewShot으로 캡쳐할 전체 영역 */}
-       <ViewShot ref={viewShotRef} style={StyleSheet.absoluteFill} options={{ format: 'jpg', quality: 0.9 }}>
-         {/* 캡쳐 대상 영역 전체 View */}
-         <View
-           style={StyleSheet.absoluteFill} // 이 View가 ViewShot을 꽉 채우도록
-           onLayout={(event) => {
-             const { width, height } = event.nativeEvent.layout;
-             setScreenSize({ width, height });
-           }}
-         >
-           {/* Camera 컴포넌트 */}
-           {/* appState가 'active' 상태일 때만 Camera 마운트 */}
-           {/* isAnalyzing 중이거나 analysisFinished 상태일 때 isActive는 false */}
-           {appState === 'active' ? ( // ★★★ 조건부 렌더링 수정: 삼항 연산자 사용 ★★★
-             <Camera
-               ref={cameraRef}
-               style={StyleSheet.absoluteFill}
-               device={device}
-               // ★★★ 카메라 활성화 조건: App Active이고, 분석 중이 아니며, 분석 완료 상태가 아닐 때 ★★★
-               // isAnalyzing 중이거나 analysisFinished 상태일 때 isActive는 false
-               isActive={!isAnalyzing && analyzedResults === null} // appState === 'active' 조건은 이미 상위 View에서 체크
-               frameProcessor={frameProcessor} // isActive가 false면 실행 안됨
-               fps={fps}
-               format={format}
-               photo={true}
-             />
-           ) : null} {/* ★★★ 조건이 false일 때 null 반환 ★★★ */}
+    // View에 onLayout이 달려있고, 이 View가 화면 전체를 덮습니다.
+    <View style={StyleSheet.absoluteFill} // 이 View가 화면 전체를 덮도록
+      onLayout={(event) => {
+        // ★★★ View의 레이아웃 정보가 확정되면 screenSize 상태 업데이트 ★★★
+        // 이 부분이 setScreenSize를 호출하여 screenSize를 0이 아닌 실제 값으로 업데이트합니다.
+        const { width, height } = event.nativeEvent.layout;
+        setScreenSize({ width, height });
+        console.log('[CameraView] screenSize updated:', { width, height }); // screenSize 업데이트 로그
+      }}
+    > {/* 최상위 View */}
+      {/* Camera 컴포넌트 */}
+      {/* appState가 'active' 상태일 때만 Camera 마운트 */}
+      {/* isAnalyzing 중이거나 analysisFinished 상태일 때 isActive는 false */}
+      {appState === 'active' ? (
+        <Camera
+          ref={cameraRef}
+          style={StyleSheet.absoluteFill}
+          device={device}
+          isActive={!isAnalyzing && analyzedResults === null}
+          frameProcessor={frameProcessor}
+          fps={fps}
+          format={format}
+          photo={true}
+        />
+      ) : null}
 
 
-           {/*
-              실시간 탐지 결과 오버레이 (CameraViewNoDetect에서 가져온 detections 사용)
-              API 분석 중이 아니고 분석 결과가 없을 때만 실시간 오버레이를 보여줍니다.
-           */}
-           {/* {detections.length > 0 && !isAnalyzing && analyzedResults === null ? ( // isAnalyzing 중이 아니고 분석 결과가 없을 때
-              <DetectionOverlay
-                detections={detections} // 실시간 탐지 결과
-                screenSize={screenSize}
-                format={format}
-                detectionResults={[]} // API 결과 표시 안 함
-             />
-           ) : null} ★★★ 조건부 렌더링 수정 ★★★ */}
+      {/* 실시간 탐지 결과 오버레이 */}
+      {/* {detections.length > 0 && !isAnalyzing && analyzedResults === null ? (
+         <DetectionOverlay
+           detections={detections}
+           screenSize={screenSize} // 화면 크기 (onLayout 후 업데이트된 값)
+           format={format}
+           detectionResults={[]}
+        />
+      ) : null} */}
 
 
-           {/*
-              API 분석 결과 오버레이 (나중에 구현할 부분 - AnalyzedResultOverlay)
-              analyzedResults state는 useAnalysisApiHandler 훅에서 가져옵니다.
-              분석 완료 상태일 때만 보여줍니다.
-           */}
-           {/* analyzedResults가 null이 아니고(분석이 한 번이라도 완료 또는 실패) 배열이고 길이가 0보다 클 때 */}
-           {/* ★★★ analyzedResults가 null이 아닐 때 안전하게 접근하도록 조건 수정 ★★★ */}
-           {analysisFinished && analyzedResults && analyzedResults.length > 0 ? ( // 분석 완료 상태이고 결과가 있을 때
-               // ★★★ AnalyzedResultOverlay 컴포넌트 렌더링 (만들어야 함) ★★★
-               // analyzedResults와 screenSize 정보를 prop으로 전달합니다.
-               <AnalyzedResultOverlay results={analyzedResults} screenSize={screenSize} />
-           ) : null} {/* ★★★ 조건부 렌더링 수정 ★★★ */}
-
-            {/* API 분석 완료 후 결과는 없지만 카메라는 정지 상태인 경우 (예: 빈 화면에 분석 버튼 누름) */}
-            {analysisFinished && analyzedResults !== null && analyzedResults.length === 0 ? (
-                 <View style={styles.noDetectionMessage}><Text style={styles.noDetectionText}>객체 인식 결과 없음</Text></View>
-            ) : null} {/* ★★★ 조건부 렌더링 수정 ★★★ */}
+      {/* ★★★ API 분석 결과 오버레이 (AnalyzedResultOverlay) ★★★ */}
+      {/* 분석 완료 상태이고 결과가 있으며, 원본 크기 정보가 있고, ★★★ 화면 크기도 유효할 때만 렌더링 ★★★ */}
+      {/* screenSize가 0이 아니게 업데이트된 후에 이 조건이 true가 될 가능성이 생깁니다. */}
+      {analysisFinished && analyzedResults && analyzedResults.length > 0 && originalImageSize && screenSize.width > 0 && screenSize.height > 0 ? (
+          // ★★★ AnalyzedResultOverlay 컴포넌트 렌더링 ★★★
+          <AnalyzedResultOverlay results={analyzedResults} screenSize={screenSize} originalImageSize={originalImageSize} />
+      ) : null}
 
 
-         </View> {/* 캡쳐 대상 영역 View 끝 */}
-       </ViewShot> {/* ViewShot 끝 */}
+       {/* API 분석 완료 후 결과는 없지만 카메라는 정지 상태인 경우 */}
+       {analysisFinished && analyzedResults !== null && analyzedResults.length === 0 ? (
+            <View style={styles.noDetectionMessage}><Text style={styles.noDetectionText}>객체 인식 결과 없음</Text></View>
+       ) : null}
 
-        {/* ViewShot 영역 외에 표시될 UI 요소들 (절대 위치 사용) */}
 
-        {/* 사과 또는 도넛 탐지 시 캡쳐 버튼 표시 */}
-        {/* isAnalyzing 중이 아니고 분석 완료 상태가 아닐 때만 버튼 표시 */}
-        {appleOrDonutDetected && !isAnalyzing && analyzedResults === null ? ( // 훅에서 가져온 isAnalyzing 사용
-           <View style={styles.captureButtonContainer}>
-               {/* AppleButton 컴포넌트의 onPress에 캡쳐 및 분석 함수 연결 */}
-               <AppleButton
-                   detections={detections} // 실시간 detections 전달 (보이게/안 보이게)
-                   onPress={handleCaptureAndAnalyze} // 버튼 클릭 시 캡쳐+분석 실행
-                   // isAnalyzing={isAnalyzing} // 버튼 내부에서 로딩 상태 사용 시 전달
-               />
+       {/* 캡쳐 버튼 등 나머지 UI 요소들 */}
+
+       {/* 사과 또는 도넛 탐지 시 캡쳐 버튼 표시 */}
+       {appleOrDonutDetected && !isAnalyzing && analyzedResults === null ? (
+          <View style={styles.captureButtonContainer}>
+              <AppleButton
+                  detections={detections}
+                  onPress={handleCaptureAndAnalyze}
+              />
+          </View>
+       ) : null}
+
+
+       {/* 분석 중 인디케이터 표시 */}
+       {isAnalyzing ? ( // 훅에서 가져온 isAnalyzing 사용
+           <View style={styles.loadingOverlay}>
+               <ActivityIndicator size="large" color="#ffffff" />
+               <Text style={styles.loadingText}>분석 중...</Text>
            </View>
-        ) : null} {/* ★★★ 조건부 렌더링 수정 ★★★ */}
+       ) : null}
 
 
-        {/* 분석 중 인디케이터 표시 */}
-        {isAnalyzing ? ( // 훅에서 가져온 isAnalyzing 사용
-            <View style={styles.loadingOverlay}>
-                <ActivityIndicator size="large" color="#ffffff" />
-                <Text style={styles.loadingText}>분석 중...</Text>
-            </View>
-        ) : null} {/* ★★★ 조건부 렌더링 수정 ★★★ */}
+       {/* 탐지된 객체가 없을 때 힌트 메시지 */}
+       {/* detections.length === 0 이고, isAnalyzing 중이 아니고, 분석 완료 상태가 아닐 때 표시 */}
+       {detections.length === 0 && !isAnalyzing && analyzedResults === null ? (
+          <AppleHint />
+       ) : null}
 
 
-        {/* 탐지된 객체가 없을 때 힌트 메시지 */}
-        {/* detections.length === 0 이고, isAnalyzing 중이 아니고, 분석 완료 상태가 아닐 때 표시 */}
-        {detections.length === 0 && !isAnalyzing && analyzedResults === null ? ( // 훅에서 가져온 isAnalyzing 사용
-           <AppleHint /> // AppleHint 컴포넌트가 자체 스타일을 가질 것으로 예상
-        ) : null} {/* ★★★ 조건부 렌더링 수정 ★★★ */}
+        {/* analysisError 상태 표시 (필요시) */}
+         {/* analysisError && !isAnalyzing ? (
+             <View style={styles.errorOverlay}>
+                  <Text style={styles.errorText}>Error: {analysisError}</Text>
+             </View>
+         ) : null */}
 
 
-         {/* analysisError 상태 표시 (필요시) */}
-          {/* analysisError && !isAnalyzing ? ( // 훅에서 가져온 analysisError 사용
-              <View style={styles.errorOverlay}>
-                   <Text style={styles.errorText}>Error: {analysisError}</Text>
-              </View>
-          ) : null */} {/* ★★★ 조건부 렌더링 수정 ★★★ */}
+        {/* ★★★ 분석 완료 후 카메라를 다시 켜기 위한 버튼 등 UI 추가 필요 ★★★ */}
+        {/* 분석 완료 상태일 때만 "다시 시작" 버튼 표시 */}
+        {analysisFinished ? (
+             <View style={styles.resumeButtonContainer}>
+                  <Button title="다시 시작" onPress={() => {
+                      resetAnalysis(); // 훅에서 가져온 resetAnalysis 함수 호출
+                  }} />
+             </View>
+        ) : null}
 
 
-         {/* ★★★ 분석 완료 후 카메라를 다시 켜기 위한 버튼 등 UI 추가 필요 ★★★ */}
-         {/* 분석 완료 상태일 때만 "다시 시작" 버튼 표시 */}
-         {analysisFinished ? ( // 분석 완료 상태일 때
-              <View style={styles.resumeButtonContainer}>
-                   {/* 이 버튼을 누르면 analyzedResults와 analysisError를 null로 초기화 */}
-                   {/* useAnalysisApiHandler 훅에 resetAnalysis 함수를 추가하고 임포트했다고 가정 */}
-                   <Button title="다시 시작" onPress={() => {
-                       // ★★★ useAnalysisApiHandler 훅에서 반환하는 resetAnalysis 함수 호출 ★★★
-                       resetAnalysis();
-                       // resetAnalysis 함수는 analyzedResults와 analysisError 상태를 null로 설정해야 합니다.
-                       // isAnalyzing은 이미 false 상태일 것임.
-                       // 이 상태 변경으로 인해 Camera의 isActive prop이 true로 바뀌면서 카메라가 다시 켜짐.
-                   }} />
-              </View>
-         ) : null} {/* ★★★ 조건부 렌더링 수정 ★★★ */}
-
-
-      </React.Fragment> 
-    );
-  }
+     </View> // 최상위 View 끝
+   );
+ }
 
 const styles = StyleSheet.create({
   container: {
@@ -275,7 +251,7 @@ const styles = StyleSheet.create({
   grayedCamera: { opacity: 0.7 },
   captureButtonContainer: {
      position: 'absolute',
-     bottom: 100, // AppleButton이 자체 스타일로 관리한다면 이 스타일은 CameraView에서 제거
+     bottom: 100,
      alignSelf: 'center',
      zIndex: 10,
   },
@@ -291,7 +267,7 @@ const styles = StyleSheet.create({
      marginTop: 10,
      fontSize: 16,
   },
-   noDetectionMessage: { // AppleHint 컴포넌트 대체
+   noDetectionMessage: {
     position: 'absolute',
     top: '50%',
     left: '50%',
@@ -306,14 +282,10 @@ const styles = StyleSheet.create({
      fontSize: 18,
      textAlign: 'center',
    },
-   // errorOverlay: { ... },
-   // errorText: { ... },
-    resumeButtonContainer: { // 다시 시작 버튼 컨테이너 스타일 추가
+    resumeButtonContainer: {
         position: 'absolute',
         bottom: 50,
         alignSelf: 'center',
-        zIndex: 15, // 버튼이 로딩 오버레이 등 위에 표시되도록
+        zIndex: 15,
     },
-   // noResultOverlay: { ... }, // 결과 없을 때 메시지 컨테이너 (분석 완료 후)
-   // noResultText: { ... }, // 결과 없을 때 메시지 텍스트 (분석 완료 후)
 });
