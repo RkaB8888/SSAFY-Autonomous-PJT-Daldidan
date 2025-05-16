@@ -19,7 +19,7 @@ import { AnalyzedObjectResult } from '../hooks/types/objectDetection'; // Analyz
 // ★★★ API 분석 결과를 표시할 새로운 오버레이 컴포넌트 임포트 ★★★
 // AnalyzedResultOverlay.tsx 파일에 구현 코드가 있어야 합니다. (이전 답변 코드 참고)
 import AnalyzedResultOverlay from './AnalyzedResultOverlay'; // 임포트 주석 해제!
-
+import AppleProcessing from './AppleProcessing';
 
 export default function CameraView() {
   const device = useCameraDevice('back');
@@ -127,13 +127,10 @@ export default function CameraView() {
   const appleOrDonutDetected = detections.some(d => d.class_id === 52 || d.class_id === 59);
 
 
-  // 카메라 권한 또는 설정 로딩 실패 시
-  if (!hasPermission || !device || !format) {
-    return <View style={styles.container}><Text style={{color:'white'}}>카메라 설정 또는 권한 확인 중...</Text></View>;
-  }
-
+ 
   // 분석 완료 상태 판단: analyzedResults가 null이 아니고 배열이며, isAnalyzing이 false일 때
   const analysisFinished = analyzedResults !== null && !isAnalyzing;
+ 
 
 
   // ★★★ React 컴포넌트는 하나의 루트 엘리먼트만 반환해야 합니다. ★★★
@@ -147,7 +144,13 @@ export default function CameraView() {
         setScreenSize({ width, height });
         console.log('[CameraView] screenSize updated:', { width, height }); // screenSize 업데이트 로그
       }}
-    > {/* 최상위 View */}
+    > 
+ {!hasPermission || !device || !format ? (
+      <View style={styles.container}>
+        <Text style={{ color: 'white' }}>카메라 설정 또는 권한 확인 중...</Text>
+      </View>
+    ) : (
+       <>
       {/* Camera 컴포넌트 */}
       {/* appState가 'active' 상태일 때만 Camera 마운트 */}
       {/* isAnalyzing 중이거나 analysisFinished 상태일 때 isActive는 false */}
@@ -205,12 +208,9 @@ export default function CameraView() {
 
 
        {/* 분석 중 인디케이터 표시 */}
-       {isAnalyzing ? ( // 훅에서 가져온 isAnalyzing 사용
-           <View style={styles.loadingOverlay}>
-               <ActivityIndicator size="large" color="#ffffff" />
-               <Text style={styles.loadingText}>분석 중...</Text>
-           </View>
-       ) : null}
+      {isAnalyzing && (
+      <AppleProcessing status="juicing" />
+    )}
 
 
        {/* 탐지된 객체가 없을 때 힌트 메시지 */}
@@ -236,13 +236,12 @@ export default function CameraView() {
                       resetAnalysis(); // 훅에서 가져온 resetAnalysis 함수 호출
                   }} />
              </View>
-        ) : null}
-
-
-     </View> // 최상위 View 끝
-   );
- }
-
+         ) : null}
+      </>
+    )}
+  </View> // ✅ 여기 View 닫고
+);     
+}
 const styles = StyleSheet.create({
   container: {
     flex: 1,
