@@ -26,7 +26,7 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.jinmoon23.daldidan.dev",
+      "package": "com.jinmoon235.daldidan.dev",
       "permissions": [
         "android.permission.CAMERA"
       ]
@@ -81,9 +81,9 @@
         "origin": false
       },
       "eas": {
-        "projectId": "ff487748-a6a5-4ce3-b88c-48b1993796df"
+        "projectId": "8021f9dc-5866-4921-be06-fa0085733491"
       }
     },
-    "owner": "psum9903"
+    "owner": "jinmoon235"
   }
 }
