@@ -89,9 +89,6 @@
     "extra": {
       "router": {
         "origin": false
-      },
-      "eas": {
-        "projectId": "ff487748-a6a5-4ce3-b88c-48b1993796df"
       }
     },
     "owner": "psum9903"
