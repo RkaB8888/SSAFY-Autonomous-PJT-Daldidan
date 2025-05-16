@@ -728,7 +728,7 @@ for epoch in range(num_epochs):
         labels = labels.to(device)
 
         optimizer.zero_grad()
-        with autocast(device_type='cuda', dtype=torch.float16):
+        with autocast():
             outputs = model(images, feats).squeeze()
             loss = criterion(outputs, labels)
         scaler.scale(loss).backward()
