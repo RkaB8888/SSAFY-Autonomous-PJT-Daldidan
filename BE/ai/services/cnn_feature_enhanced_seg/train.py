@@ -600,8 +600,6 @@
 #         print(f"📌 [Epoch {epoch+1}] Best R² 갱신 → 저장 완료 (R²: {val_r2:.4f})")
 
 # print(f"\n🎉 학습 완료 | Best Validation R²: {best_val_r2:.4f} | 저장 위치: {SAVE_PATH}")
-
-
 import os
 import cv2
 import json
@@ -635,7 +633,7 @@ transform = transforms.Compose([
     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 ])
 
-# ✅ feature 추출 함수 (속도 최적화)
+# ✅ feature 추출 함수
 def extract_features(image, mask):
     x, y, w, h = cv2.boundingRect(mask)
     roi = image[y:y+h, x:x+w]
@@ -683,7 +681,7 @@ class AppleDataset(Dataset):
         cv2.fillPoly(mask, [points], 255)
 
         manual_feats = extract_features(image, mask)
-        manual_feats = torch.tensor(manual_feats, dtype=torch.float32).to(device)
+        manual_feats = torch.tensor(manual_feats, dtype=torch.float32)
 
         image_pil = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         image_pil = transforms.ToPILImage()(image_pil)
@@ -693,7 +691,7 @@ class AppleDataset(Dataset):
             image_tensor = transforms.ToTensor()(image_pil)
 
         label = float(data['collection'].get('sugar_content_nir', 0))
-        return image_tensor.to(device), manual_feats, torch.tensor(label, dtype=torch.float32).to(device)
+        return image_tensor, manual_feats, torch.tensor(label, dtype=torch.float32)
 
 # ✅ collate_fn
 def custom_collate(batch):
@@ -707,11 +705,12 @@ val_size = int(0.2 * len(dataset))
 train_size = len(dataset) - val_size
 train_dataset, val_dataset = random_split(dataset, [train_size, val_size])
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=0, pin_memory=True, collate_fn=custom_collate)
 val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=0, pin_memory=True, collate_fn=custom_collate)
 
 # ✅ 모델
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = FusionModel(manual_feature_dim).to(device)
 criterion = nn.MSELoss()
 optimizer = optim.Adam(model.parameters(), lr=lr)
@@ -724,6 +723,10 @@ for epoch in range(num_epochs):
     model.train()
     train_loss, all_preds, all_labels = 0.0, [], []
     for images, feats, labels in tqdm(train_loader, desc=f"Epoch {epoch+1}/{num_epochs}"):
+        images = images.to(device)
+        feats = feats.to(device)
+        labels = labels.to(device)
+
         optimizer.zero_grad()
         with autocast(device_type='cuda', dtype=torch.float16):
             outputs = model(images, feats).squeeze()
@@ -742,6 +745,10 @@ for epoch in range(num_epochs):
     val_preds, val_labels = [], []
     with torch.no_grad():
         for images, feats, labels in val_loader:
+            images = images.to(device)
+            feats = feats.to(device)
+            labels = labels.to(device)
+
             outputs = model(images, feats).squeeze()
             val_preds.extend(outputs.cpu().numpy())
             val_labels.extend(labels.cpu().numpy())
