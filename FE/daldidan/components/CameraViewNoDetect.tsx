@@ -7,7 +7,6 @@ import { useObjectDetection } from '../hooks/useObjectDetection';
 import DetectionOverlay from './DetectionOverlay'; // 실시간 탐지 결과 오버레이
 import AppleButton from './AppleButton'; // 캡쳐 트리거 버튼 컴포넌트
 import AppleHint from './AppleHint'; // 탐지되지 않았을 때 힌트 컴포넌트
-
 // ★★★ useAnalysisApiHandler 훅 임포트 ★★★
 // useAnalysisApiHandler.ts 파일에 이 훅 구현 코드가 있어야 합니다. (resetAnalysis, originalImageSize 반환 포함)
 import { useAnalysisApiHandler } from '../hooks/useAnalysisApiHandler';
@@ -18,6 +17,8 @@ import { AnalyzedObjectResult } from '../hooks/types/objectDetection'; // Analyz
 // AnalyzedResultOverlay.tsx 파일에 구현 코드가 있어야 합니다. (이전 답변 코드 참고)
 import AnalyzedResultOverlay from './AnalyzedResultOverlay'; // 임포트 주석 해제!
 import AppleProcessing from './AppleProcessing';
+import { useShake } from '../hooks/useShake';
+
 
 export default function CameraView() {
   const device = useCameraDevice('back');
@@ -161,8 +162,13 @@ export default function CameraView() {
  
   // 분석 완료 상태 판단: analyzedResults가 null이 아니고 배열이며, isAnalyzing이 false일 때
   const analysisFinished = analyzedResults !== null && !isAnalyzing;
- 
 
+useShake(() => {
+  if (analysisFinished) {
+    console.log('[Shake] 감지됨 → 분석 초기화');
+    resetAnalysis();
+  }
+}, 1.3, 700); // threshold 1.3 (더 민감), interval 700ms
 
   // ★★★ React 컴포넌트는 하나의 루트 엘리먼트만 반환해야 합니다. ★★★
   return (
