@@ -4,7 +4,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import LottieView from 'lottie-react-native';
 
 interface Props {
-  status: 'peeling' | 'juicing';
+  status: 'juicing';
 }
 
 export default function AppleProcessing({ status }: Props) {

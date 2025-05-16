@@ -1,6 +1,6 @@
-// AppleHint.tsx
 import React, { useEffect } from 'react';
-import { View, Text, Image, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
+import LottieView from 'lottie-react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -9,37 +9,38 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-const phoneImage = require('../assets/images/phone_icon.png'); // 폰 그림 경로로 수정
-
 export default function AppleHint() {
-  const rotation = useSharedValue(0);
+  const translateY = useSharedValue(0);
 
   useEffect(() => {
-    rotation.value = withRepeat(
+    const screenHeight = -400; // 임의 높이, 나중에 Dimensions로 처리 가능
+    translateY.value = withRepeat(
       withSequence(
-        withTiming(-10, { duration: 150 }),
-        withTiming(10, { duration: 150 }),
-        withTiming(-10, { duration: 150 }),
-        withTiming(0, { duration: 150 })
+        withTiming(-screenHeight, { duration: 3000 }),
+        withTiming(0, { duration: 3000 })
       ),
-      -1, // 무한 반복
-      false
+      -1,
+      true
     );
   }, []);
 
   const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ rotateZ: `${rotation.value}deg` }],
+    transform: [{ translateY: translateY.value }],
   }));
 
   return (
     <View style={styles.container}>
-      <Animated.Image
-        source={phoneImage}
-        style={[styles.image, animatedStyle]}
-        resizeMode="contain"
-      />
-      {/* <Text style={styles.title}>인식된 사과가 없습니다!</Text> */}
-      <Text style={styles.subtitle}>🍎사과를 비춰주세요🍎</Text>
+      <Animated.View style={[StyleSheet.absoluteFillObject, animatedStyle]}>
+        <LottieView
+          source={require('../assets/lottie/scan.json')}
+          autoPlay
+          loop
+          style={styles.lottie}
+        />
+      </Animated.View>
+      <View style={styles.overlay}>
+        <Text style={styles.subtitle}>🍎 사과를 비춰주세요 🍎</Text>
+      </View>
     </View>
   );
 }
@@ -47,24 +48,25 @@ export default function AppleHint() {
 const styles = StyleSheet.create({
   container: {
     ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.4)',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.4)',
     zIndex: 999,
   },
-  image: {
-    width: 120,
-    height: 120,
-    marginBottom: 20,
+  lottie: {
+    width: '100%',
+    height: 300, // 스캔 바 높이
   },
-  title: {
-    color: 'white',
-    fontSize: 20,
-    fontWeight: 'bold',
+  overlay: {
+    position: 'absolute',
+    bottom: '15%',
+    alignItems: 'center',
   },
   subtitle: {
     color: 'white',
-    fontSize: 16,
-    marginTop: 4,
+    fontSize: 18,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    paddingHorizontal: 20,
   },
 });
