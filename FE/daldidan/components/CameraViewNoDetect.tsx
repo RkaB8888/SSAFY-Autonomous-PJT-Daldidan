@@ -4,10 +4,8 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { StyleSheet, Text, View, AppState, Dimensions, Button, ActivityIndicator, Alert } from 'react-native';
 import { Camera, useCameraDevice } from 'react-native-vision-camera'; // Photo 타입 임포트
 import { useObjectDetection } from '../hooks/useObjectDetection';
-// import DetectionOverlay from './DetectionOverlay'; // 실시간 탐지 결과 오버레이
+import DetectionOverlay from './DetectionOverlay'; // 실시간 탐지 결과 오버레이
 import AppleButton from './AppleButton'; // 캡쳐 트리거 버튼 컴포넌트
-// ViewShot, captureRef는 이제 필요 없습니다.
-// import ViewShot, { captureRef } from 'react-native-view-shot';
 import AppleHint from './AppleHint'; // 탐지되지 않았을 때 힌트 컴포넌트
 
 // ★★★ useAnalysisApiHandler 훅 임포트 ★★★
@@ -26,9 +24,11 @@ export default function CameraView() {
   // screenSize 상태는 onLayout 이벤트에서 업데이트됩니다. 초기값은 { width: 0, height: 0 }
   const [screenSize, setScreenSize] = useState({ width: 0, height: 0 }); // <-- 여기가 screenSize 선언 및 초기화
   const [appState, setAppState] = useState('active');
-
-  // ViewShot ref는 takePhoto를 사용한다면 필요 없을 수 있습니다.
-  const viewShotRef = useRef(null);
+  const [countdown, setCountdown] = useState<number | null>(null);
+  const countdownTimer = useRef<NodeJS.Timeout | null>(null);
+  const justReset = useRef(false);
+   const [autoCaptureEnabled, setAutoCaptureEnabled] = useState(true);
+  const lastCenterRef = useRef<{ x: number; y: number } | null>(null);
 
 
   // ★★★ useAnalysisApiHandler 훅 사용 ★★★
@@ -53,7 +53,7 @@ export default function CameraView() {
     });
     return () => subscription.remove();
   }, []);
-
+  
   // 카메라 설정 및 권한
   const format =
     device?.formats.find((f) => f.maxFps >= 60) ?? device?.formats[0];
@@ -66,6 +66,18 @@ export default function CameraView() {
     cameraRef, // useVisionCamera의 Camera 컴포넌트 ref (사진 촬영에 사용!)
     // detectionResults, // useObjectDetection에서 사용하던 예전 로직 (이제 사용 안 함)
   } = useObjectDetection(format);
+ const hasApple = detections.some((d) => d.class_id === 52);
+  useEffect(() => {
+ if (
+      !hasApple ||
+      isAnalyzing ||
+      analyzedResults !== null ||
+      countdown !== null ||
+      !autoCaptureEnabled ||
+      justReset.current
+    ) return;
+    startCountdownAndCapture();
+  }, [detections, countdown, isAnalyzing, analyzedResults, autoCaptureEnabled]);
 
 
   // 전체 화면 캡쳐 및 API 요청 함수
@@ -120,8 +132,27 @@ export default function CameraView() {
     } finally {
        // 카메라 일시 정지/재개 로직은 isAnalyzing 상태에 의해 자동으로 처리됩니다.
     }
+    setCountdown(null);
   }, [isAnalyzing, triggerAnalysis, cameraRef]);
 
+  const startCountdownAndCapture = () => {
+  if (countdownTimer.current || isAnalyzing || analyzedResults !== null) return;
+
+  setCountdown(3); // 시작 숫자
+  let current = 3;
+
+  countdownTimer.current = setInterval(() => {
+    current -= 1;
+    if (current > 0) {
+      setCountdown(current);
+    } else {
+      clearInterval(countdownTimer.current!);
+      countdownTimer.current = null;
+      
+      handleCaptureAndAnalyze(); // 자동 캡처 실행
+    }
+  }, 1000);
+};
 
   // AppleButton 또는 다른 캡쳐 트리거 UI 표시 여부 결정
   const appleOrDonutDetected = detections.some(d => d.class_id === 52 || d.class_id === 59);
@@ -169,14 +200,14 @@ export default function CameraView() {
 
 
       {/* 실시간 탐지 결과 오버레이 */}
-      {/* {detections.length > 0 && !isAnalyzing && analyzedResults === null ? (
+      {detections.length > 0 && !isAnalyzing && analyzedResults === null ? (
          <DetectionOverlay
            detections={detections}
            screenSize={screenSize} // 화면 크기 (onLayout 후 업데이트된 값)
            format={format}
-           detectionResults={[]}
+          //  detectionResults={[]}
         />
-      ) : null} */}
+      ) : null}
 
 
       {/* ★★★ API 분석 결과 오버레이 (AnalyzedResultOverlay) ★★★ */}
@@ -197,7 +228,7 @@ export default function CameraView() {
        {/* 캡쳐 버튼 등 나머지 UI 요소들 */}
 
        {/* 사과 또는 도넛 탐지 시 캡쳐 버튼 표시 */}
-       {appleOrDonutDetected && !isAnalyzing && analyzedResults === null ? (
+       {/* {appleOrDonutDetected && !isAnalyzing && analyzedResults === null ? (
           <View style={styles.captureButtonContainer}>
               <AppleButton
                   detections={detections}
@@ -205,6 +236,15 @@ export default function CameraView() {
               />
           </View>
        ) : null}
+     */}
+      {countdown !== null && (
+        <View style={styles.countdownOverlay}>
+          <Text style={styles.countdownText}>
+            {'🍎'.repeat(countdown)}
+          </Text>
+        </View>
+      )}
+
 
 
        {/* 분석 중 인디케이터 표시 */}
@@ -232,8 +272,9 @@ export default function CameraView() {
         {/* 분석 완료 상태일 때만 "다시 시작" 버튼 표시 */}
         {analysisFinished ? (
              <View style={styles.resumeButtonContainer}>
-                  <Button title="다시 시작" onPress={() => {
+                  <Button title="🐝사과 찾으러가기" onPress={() => {
                       resetAnalysis(); // 훅에서 가져온 resetAnalysis 함수 호출
+                      setCountdown(null);
                   }} />
              </View>
          ) : null}
@@ -287,4 +328,19 @@ const styles = StyleSheet.create({
         alignSelf: 'center',
         zIndex: 15,
     },
+    countdownOverlay: {
+      position: 'absolute',
+      bottom: 120,
+      alignSelf: 'center',   
+      // backgroundColor: 'rgba(0, 0, 0, 0.6)',
+      paddingVertical: 16,
+      paddingHorizontal: 24,
+      borderRadius: 20,
+      zIndex: 50,
+    },
+countdownText: {
+  fontSize: 48,
+  fontWeight: 'bold',
+  color: 'white',
+},
 });

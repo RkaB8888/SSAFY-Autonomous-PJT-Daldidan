@@ -6,6 +6,7 @@ import React from "react";
 import { StyleSheet, Text, View, Dimensions } from "react-native";
 import { AnalyzedObjectResult } from "../hooks/types/objectDetection";
 import { COCO_CLASS_NAMES } from "../constants/cocoClassNames";
+import { Canvas, Rect, Group, Skia } from "@shopify/react-native-skia";
 
 interface Props {
   // useAnalysisApiHandler 훅에서 받아온 분석 결과 리스트 (null 아님이 상위에서 보장됨)
@@ -74,8 +75,47 @@ const scale = screenHeight / rotatedImageHeight;
 };
 
 
-  return (
+ return (
   <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
+    {/* 🔶 Skia 마스킹 캔버스 */}
+    <Canvas style={StyleSheet.absoluteFill}>
+      {/* 전체 어두운 레이어 */}
+      <Group>
+        <Rect
+          x={0}
+          y={0}
+          width={screenSize.width}
+          height={screenSize.height}
+          color="rgba(0, 0, 0, 0.5)"
+        />
+      </Group>
+
+      {/* 바운딩 박스들 위에 투명한 박스 그려서 클리핑 */}
+      {results.map((result, index) => {
+        const screenBbox = transformBboxToScreen(
+          result.bbox,
+          originalImageSize.width,
+          originalImageSize.height,
+          screenSize.width,
+          screenSize.height
+        );
+        const screenWidth = screenBbox.x2 - screenBbox.x1;
+        const screenHeight = screenBbox.y2 - screenBbox.y1;
+
+        return (
+          <Rect
+            key={`mask-${index}`}
+            x={screenBbox.x1}
+            y={screenBbox.y1}
+            width={screenWidth}
+            height={screenHeight}
+            color="rgba(0, 0, 0, 0)"
+            blendMode="clear" // 핵심! 이걸로 해당 영역만 비워줌
+          />
+        );
+      })}
+    </Canvas>
+
     {results.map((result, index) => {
       const screenBbox = transformBboxToScreen(
         result.bbox,
