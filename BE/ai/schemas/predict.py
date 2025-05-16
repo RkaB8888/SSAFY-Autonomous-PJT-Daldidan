@@ -1,11 +1,25 @@
 # ai/schemas/predict.py
+from typing import List, Optional
 from pydantic import BaseModel
 
 
-class PredictRequest(BaseModel):
+class BBox(BaseModel):  # (x, y, w, h)  or  (xmin, ymin, xmax, ymax) 중 하나로 통일
+    xmin: int
+    ymin: int
+    xmax: int
+    ymax: int
+
+
+class Segmentation(BaseModel):  # COCO-style 폴리곤 점 목록
+    points: List[List[float]]  # [[x1, y1], [x2, y2], ...]
+
+
+class ApplePred(BaseModel):
     id: int
+    sugar_content: float
+    bbox: Optional[BBox] = None
+    segmentation: Optional[Segmentation] = None
 
 
 class PredictResponse(BaseModel):
-    id: int
-    predict_sugar_content: float
+    results: List[ApplePred]

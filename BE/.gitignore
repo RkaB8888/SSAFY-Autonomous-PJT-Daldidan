@@ -190,6 +190,7 @@ ai/dataset/*
 
 # 실험 결과 캐시
 ai/services/**/cache/**
+ai/tmp/**
 !ai/services/**/cache/.gitkeep
 
 # 로그

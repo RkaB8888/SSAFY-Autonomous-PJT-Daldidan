@@ -2,6 +2,7 @@ from fastapi import FastAPI, Request
 from api.v1 import routes
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
+import services.yolov8
 
 
 class UnlimitedSizeMiddleware(BaseHTTPMiddleware):
