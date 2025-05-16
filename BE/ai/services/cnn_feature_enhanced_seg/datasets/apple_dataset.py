@@ -63,8 +63,6 @@
 #             print(f"[INFO] {idx}/{len(self)}번째 데이터 feature 추출 완료")
 
 #         return image_tensor, manual_features, torch.tensor(label, dtype=torch.float32)
-
-#1223
 import os
 import json
 from PIL import Image
@@ -74,12 +72,13 @@ from torchvision import transforms
 import numpy as np
 
 class AppleDataset(Dataset):
-    def __init__(self, image_dir, json_files, manual_features, labels, transform=None):
+    def __init__(self, image_dir, json_files, manual_features, labels, transform=None, device='cpu'):
         self.image_dir = image_dir
         self.json_files = json_files
         self.manual_features = manual_features
         self.labels = labels
         self.transform = transform
+        self.device = device  # ✅ device 추가
 
     def __len__(self):
         return len(self.json_files)
@@ -92,16 +91,17 @@ class AppleDataset(Dataset):
 
         try:
             image_pil = Image.open(img_path).convert("RGB")
-        except Exception as e:
+        except Exception:
             print(f"[WARNING] Image load failed: {img_path}")
             return None
 
-        if self.transform:
-            image_tensor = self.transform(image_pil)
-        else:
-            image_tensor = transforms.ToTensor()(image_pil)
-
+        image_tensor = self.transform(image_pil) if self.transform else transforms.ToTensor()(image_pil)
         manual_feat = torch.tensor(self.manual_features[idx], dtype=torch.float32)
         label = torch.tensor(self.labels[idx], dtype=torch.float32)
+
+        # ✅ GPU로 전송
+        image_tensor = image_tensor.to(self.device)
+        manual_feat = manual_feat.to(self.device)
+        label = label.to(self.device)
 
         return image_tensor, manual_feat, label

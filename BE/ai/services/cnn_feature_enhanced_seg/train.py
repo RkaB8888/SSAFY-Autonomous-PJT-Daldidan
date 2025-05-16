@@ -836,8 +836,8 @@ train_dataset, val_dataset = random_split(dataset, [train_size, val_size])
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=8, pin_memory=True)
-val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=8, pin_memory=True)
+train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=48, pin_memory=True)
+val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=48, pin_memory=True)
 
 # ✅ 모델 및 학습 세팅
 model = FusionModel(manual_feature_dim).to(device)
