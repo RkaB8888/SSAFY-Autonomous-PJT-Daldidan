@@ -34,45 +34,39 @@ export default function AnalyzedResultOverlay({ results, screenSize, originalIma
         screenWidth: number, // 현재 화면 너비
         screenHeight: number // 현재 화면 높이
     ) => {
-        // 원본 이미지 해상도와 현재 화면 크기를 비교하여 스케일 비율 계산
-        const scaleX = screenWidth / originalWidth;
-        const scaleY = screenHeight / originalHeight;
+        // 1. EfficientDet은 중앙 크롭 기반으로 320x320으로 리사이즈 됨
+        const cropSize = Math.min(originalWidth, originalHeight); // ex: 1440
+        const cropOffsetX = (originalWidth - cropSize) / 2; // 0
+        const cropOffsetY = (originalHeight - cropSize) / 2; // ex: 560
 
-        // ★★★ 이 console.log가 찍힐 것입니다! ★★★
-        // 훅에서 올바른 배열과 원본 해상도가 넘어와 map이 실행된다면 이 코드가 실행됩니다.
-        console.log('[AnalyzedResultOverlay] Transform Debug:',
-                    'Original Bbox {xmin,ymin,xmax,ymax}:', bbox,
-                    'Original Size {w,h}:', {originalWidth, originalHeight},
-                    'Screen Size {w,h}:', {screenWidth, screenHeight},
-                    'Scales {x,y}:', {scaleX, scaleY});
+        // 2. bbox는 크롭된 기준에서 좌표로 해석됨 (그래야 model과 동일)
+        const cropX1 = bbox.xmin - cropOffsetX;
+        const cropY1 = bbox.ymin - cropOffsetY;
+        const cropX2 = bbox.xmax - cropOffsetX;
+        const cropY2 = bbox.ymax - cropOffsetY;
 
+        // 3. 90도 회전 보정 (시계방향)
+        const rotatedX1 = cropY1;
+        const rotatedY1 = cropSize - cropX2;
+        const rotatedX2 = cropY2;
+        const rotatedY2 = cropSize - cropX1;
 
-        const screenX1 = bbox.xmin * scaleX;
-        const screenY1 = bbox.ymin * scaleY;
-        const screenX2 = bbox.xmax * scaleX;
-        const screenY2 = bbox.ymax * scaleY;
+        // 4. 화면 비율로 스케일
+        const scaleX = screenWidth / cropSize;
+        const scaleY = screenHeight / cropSize;
 
-        const finalX1 = Math.max(0, Math.round(screenX1));
-        const finalY1 = Math.max(0, Math.round(screenY1));
-        const finalX2 = Math.min(screenWidth, Math.round(screenX2));
-        const finalY2 = Math.min(screenHeight, Math.round(screenY2));
-
-        console.log('[AnalyzedResultOverlay] Transformed Screen Bbox {x1,y1,x2,y2}:', {x1: finalX1, y1: finalY1, x2: finalX2, y2: finalY2});
-
-
-        // TODO: 카메라 미리보기의 resizeMode에 따른 추가 조정 필요 (AspectFit, AspectFill 등)
-        // 이 부분은 transformBboxToScreen 함수를 호출하는 쪽(CameraViewNoDetect)이나,
-        // AnalyzedResultOverlay 자체에서 Camera 컴포넌트의 resizeMode와 화면 종횡비를 알고 있다면 조정 가능합니다.
-        // 가장 정확한 것은 카메라 미리보기가 화면에 표시될 때 생기는 레터박스/잘림 영역만큼 좌표를 이동시키는 것입니다.
-
+        const screenX1 = rotatedX1 * scaleX;
+        const screenY1 = rotatedY1 * scaleY;
+        const screenX2 = rotatedX2 * scaleX;
+        const screenY2 = rotatedY2 * scaleY;
 
         return {
-            x1: finalX1,
-            y1: finalY1,
-            x2: finalX2,
-            y2: finalY2,
+            x1: Math.round(screenX1),
+            y1: Math.round(screenY1),
+            x2: Math.round(screenX2),
+            y2: Math.round(screenY2),
         };
-    };
+        };
 
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
