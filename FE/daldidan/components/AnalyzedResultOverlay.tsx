@@ -1,103 +1,118 @@
 // daldidan/components/AnalyzedResultOverlay.tsx
+// useAnalysisApiHandler 훅에서 올바른 배열과 원본 해상도를 넘겨준다면 이 코드는 정상 작동합니다.
+// (변환 로직, 렌더링 로직 포함)
+
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import { AnalyzedObjectResult } from '../hooks/types/objectDetection'; // API 분석 결과 타입
-import { COCO_CLASS_NAMES } from '../constants/cocoClassNames'; // 클래스 이름 필요시
-// Skia를 사용하여 박스를 그릴 수도 있습니다. 필요에 따라 추가하세요.
-// import { Canvas, Group, Rect } from '@shopify/react-native-skia';
+import { StyleSheet, Text, View, Dimensions } from 'react-native';
+import { AnalyzedObjectResult } from '../hooks/types/objectDetection';
+import { COCO_CLASS_NAMES } from '../constants/cocoClassNames';
 
 interface Props {
-  // useAnalysisApiHandler 훅에서 받아온 분석 결과 리스트 (null 아님이 보장됨)
+  // useAnalysisApiHandler 훅에서 받아온 분석 결과 리스트 (null 아님이 상위에서 보장됨)
+  // 훅에서 올바른 배열(AnalyzedObjectResult[])을 전달할 것이라고 가정합니다.
   results: AnalyzedObjectResult[];
   // 카메라 뷰의 현재 화면 크기
   screenSize: { width: number; height: number };
-  // TODO: API 분석 시 사용된 원본 이미지의 크기 정보도 필요할 수 있습니다.
-  // 백엔드에서 반환하는 bbox 좌표가 어떤 이미지 크기 기준인지 확인하세요.
-  // originalImageSize?: { width: number; height: number };
+  // API 분석 시 사용된 원본 이미지의 크기 정보 (필수)
+  // 훅에서 올바른 객체({ width, height })를 전달할 것이라고 가정합니다.
+  originalImageSize: { width: number; height: number };
 }
 
-// API 분석 결과를 화면에 그리는 컴포넌트 (카메라 정지 상태에서 표시)
-export default function AnalyzedResultOverlay({ results, screenSize /*, originalImageSize*/ }: Props) {
+export default function AnalyzedResultOverlay({ results, screenSize, originalImageSize }: Props) {
 
-    if (!results || results.length === 0) {
-        return null; // 결과가 없거나 빈 배열이면 아무것도 표시 안 함
+    // results가 null이거나 비어있으면 렌더링 안 함 (훅에서 제대로 넘겨준다면 이 체크는 통과될 것입니다)
+    if (!results || results.length === 0 || !screenSize || screenSize.width <= 0 || screenSize.height <= 0 || !originalImageSize || originalImageSize.width <= 0 || originalImageSize.height <= 0) {
+        console.log("[AnalyzedResultOverlay] Not rendering: results empty or size info missing.", { results, screenSize, originalImageSize });
+        return null;
     }
 
-    // TODO: 여기에서 API 결과의 bbox 좌표를 화면 좌표계로 변환하는 로직을 구현해야 합니다.
-    // 백엔드에서 받은 bbox 좌표가 (x1, y1, x2, y2) 형태이고 원본 이미지 크기 기준이라고 가정합니다.
-    // 이 좌표를 RN 화면 크기 (screenSize.width, screenSize.height)에 맞게 스케일링해야 합니다.
-    // 원본 이미지 크기 정보가 필요하다면 prop으로 받거나 API 응답에 포함되어야 합니다.
-    // 카메라 뷰의 종횡비와 이미지의 종횡비가 다를 경우 추가적인 조정이 필요할 수 있습니다.
+    // API 결과의 bbox 좌표 (xmin, ymin, xmax, ymax)를 현재 화면 좌표계로 변환하는 함수
+    const transformBboxToScreen = (
+        bbox: { xmin: number; ymin: number; xmax: number; ymax: number; }, // 백엔드 bbox 형태
+        originalWidth: number, // 원본 이미지 너비 (훅에서 받아온 prop)
+        originalHeight: number, // 원본 이미지 높이 (훅에서 받아온 prop)
+        screenWidth: number, // 현재 화면 너비
+        screenHeight: number // 현재 화면 높이
+    ) => {
+        // 1. EfficientDet은 중앙 크롭 기반으로 320x320으로 리사이즈 됨
+        const cropSize = Math.min(originalWidth, originalHeight); // ex: 1440
+        const cropOffsetX = (originalWidth - cropSize) / 2; // 0
+        const cropOffsetY = (originalHeight - cropSize) / 2; // ex: 560
 
-    // 아래는 예시 변환 로직입니다. 실제 환경에 맞춰 수정하세요.
-    // 여기서는 원본 이미지 크기가 캡쳐 시 ViewShot을 감싼 View의 크기 (screenSize)와 동일하다고 가정한 간단한 예시입니다.
-    const transformBboxToScreen = (bbox: { x1: number; y1: number; x2: number; y2: number; }, originalWidth: number, originalHeight: number, screenWidth: number, screenHeight: number) => {
-        // 간단한 비율 스케일링 예시 (원본 이미지와 화면의 종횡비가 같다고 가정)
-        const scaleX = screenWidth / originalWidth;
-        const scaleY = screenHeight / originalHeight;
+        // 2. bbox는 크롭된 기준에서 좌표로 해석됨 (그래야 model과 동일)
+        const cropX1 = bbox.xmin - cropOffsetX;
+        const cropY1 = bbox.ymin - cropOffsetY;
+        const cropX2 = bbox.xmax - cropOffsetX;
+        const cropY2 = bbox.ymax - cropOffsetY;
+
+        // 3. 90도 회전 보정 (시계방향)
+        const rotatedX1 = cropY1;
+        const rotatedY1 = cropSize - cropX2;
+        const rotatedX2 = cropY2;
+        const rotatedY2 = cropSize - cropX1;
+
+        // 4. 화면 비율로 스케일
+        const scaleX = screenWidth / cropSize;
+        const scaleY = screenHeight / cropSize;
+
+        const screenX1 = rotatedX1 * scaleX;
+        const screenY1 = rotatedY1 * scaleY;
+        const screenX2 = rotatedX2 * scaleX;
+        const screenY2 = rotatedY2 * scaleY;
 
         return {
-            x1: bbox.x1 * scaleX,
-            y1: bbox.y1 * scaleY,
-            x2: bbox.x2 * scaleX,
-            y2: bbox.y2 * scaleY,
+            x1: Math.round(screenX1),
+            y1: Math.round(screenY1),
+            x2: Math.round(screenX2),
+            y2: Math.round(screenY2),
         };
-    };
-
-    // TODO: 실제 originalImageSize (API 분석에 사용된 원본 이미지의 크기)를 정의하거나 prop으로 받아야 합니다.
-    // 임시로 screenSize와 같다고 가정합니다.
-    const originalImageSize = screenSize; // ★★★ 이 부분은 실제 로직에 맞게 수정하세요! ★★★
-
+        };
 
   return (
-    // 이 오버레이는 카메라 뷰 전체를 덮도록 절대 위치로 설정합니다.
-    <View style={StyleSheet.absoluteFill} pointerEvents="box-none"> {/* pointerEvents="box-none"으로 하위 터치 이벤트 통과 */}
-        {/* TODO: Skia Canvas 또는 RN View/Text를 사용하여 바운딩 박스 및 텍스트 그리기 */}
-
+    <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
+        {/* results 배열을 순회하며 각 객체의 바운딩 박스와 텍스트를 렌더링 */}
         {results.map((result, index) => {
-             // API 결과의 bbox 좌표 (result.bbox)를 화면 좌표로 변환합니다.
+             // 여기서 result는 AnalyzedObjectResult 타입이며, result.bbox는 { xmin, ymin, xmax, ymax } 형태입니다.
              const screenBbox = transformBboxToScreen(
-                 result.bbox,
-                 originalImageSize.width,
-                 originalImageSize.height,
-                 screenSize.width,
-                 screenSize.height
+                 result.bbox, // { xmin, ymin, xmax, ymax } 형태
+                 originalImageSize.width, // 원본 이미지 너비 (훅에서 받아온 prop)
+                 originalImageSize.height, // 원본 이미지 높이 (훅에서 받아온 prop)
+                 screenSize.width, // 화면 너비 (prop)
+                 screenSize.height // 화면 높이 (prop)
              );
 
-             const screenWidth = screenBbox.x2 - screenBbox.x1;
-             const screenHeight = screenBbox.y2 - screenBbox.y1;
+             const screenWidth = Math.max(0, screenBbox.x2 - screenBbox.x1);
+             const screenHeight = Math.max(0, screenBbox.y2 - screenBbox.y1);
 
-             // 객체 라벨 및 당도 텍스트
-             const labelText = result.label || (result.class_id !== undefined ? COCO_CLASS_NAMES[result.class_id] : 'Unknown');
+             const labelText = result.id !== undefined ? `객체 ${result.id}` : `객체 ${index + 1}`;
              const sugarText = result.sugar_content !== undefined && result.sugar_content !== null
-                               ? `당도: ${result.sugar_content}Bx`
+                               ? `당도: ${result.sugar_content.toFixed(1)}Bx`
                                : '';
-             const displayTexts = [labelText, sugarText].filter(Boolean).join(' - '); // 라벨과 당도 합치기
+             const displayTexts = [labelText, sugarText].filter(Boolean).join(' - ');
 
-
-             // 객체 크기에 따라 텍스트 크기 조절 (선택 사항)
-            const fontSize = Math.max(
-              10,
-              Math.min(14, Math.min(screenWidth, screenHeight) * 0.1) // 화면 크기 적용된 박스 크기 사용
-            );
-
+             const fontSize = Math.max(
+               10,
+               Math.min(14, Math.min(screenWidth > 0 ? screenWidth : 1, screenHeight > 0 ? screenHeight : 1) * 0.1)
+             );
 
             return (
-                <React.Fragment key={`analyzed-obj-${index}`}>
-                    {/* 바운딩 박스 그리기 (예: RN View 스타일) */}
-                    <View
-                        style={{
-                            position: 'absolute',
-                            left: screenBbox.x1,
-                            top: screenBbox.y1,
-                            width: screenWidth,
-                            height: screenHeight,
-                            borderWidth: 2,
-                            borderColor: 'yellow', // 분석 결과 박스 색상 (실시간과 다르게)
-                            // backgroundColor: 'rgba(255, 255, 0, 0.2)', // 반투명 배경
-                            zIndex: 5, // 다른 UI 위에 표시
-                        }}
-                    />
+                <React.Fragment key={`analyzed-obj-${result.id ?? index}`}>
+                    {/* 바운딩 박스 그리기 */}
+                    {/* 박스 크기나 위치가 유효하면 렌더링 */}
+                    {screenWidth > 0 && screenHeight > 0 && screenBbox.x1 >= 0 && screenBbox.y1 >= 0 && screenBbox.x2 <= screenSize.width && screenBbox.y2 <= screenSize.height ? (
+                        <View
+                            style={{
+                                position: 'absolute',
+                                left: screenBbox.x1,
+                                top: screenBbox.y1,
+                                width: screenWidth,
+                                height: screenHeight,
+                                borderWidth: 2,
+                                borderColor: 'yellow',
+                                zIndex: 5,
+                            }}
+                        />
+                    ) : null}
                     {/* 텍스트 라벨 및 당도 표시 */}
                      {displayTexts ? (
                        <View
@@ -105,17 +120,17 @@ export default function AnalyzedResultOverlay({ results, screenSize /*, original
                                styles.textContainer,
                                {
                                    position: 'absolute',
-                                   // 텍스트 위치: 박스 좌상단 기준, 화면 범위 벗어나지 않도록 조정
                                    left: Math.max(0, Math.min(screenBbox.x1, screenSize.width - 150)),
                                    top: Math.max(0, Math.min(screenBbox.y1 - 25, screenSize.height - 25)),
-                                   width: 150, // 텍스트 컨테이너 너비 고정
+                                   width: 150,
                                    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-                                   // borderColor: 'yellow', // 라벨 테두리 색상
-                                   // borderWidth: 1,
+                                   padding: 4,
+                                   borderRadius: 4,
+                                   zIndex: 6,
                                },
                            ]}
                        >
-                           <Text style={[styles.text, { fontSize }]} numberOfLines={1}>
+                           <Text style={[{ fontSize }, styles.text]} numberOfLines={1}>
                                {displayTexts}
                            </Text>
                        </View>
@@ -128,11 +143,7 @@ export default function AnalyzedResultOverlay({ results, screenSize /*, original
 }
 
 const styles = StyleSheet.create({
-    textContainer: {
-        padding: 4,
-        borderRadius: 4,
-        zIndex: 6, // 바운딩 박스 View보다 위에
-    },
+    textContainer: { },
     text: {
         color: 'white',
         fontWeight: 'bold',
