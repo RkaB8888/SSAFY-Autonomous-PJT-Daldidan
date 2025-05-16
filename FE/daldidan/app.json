@@ -57,15 +57,6 @@
       ],
       "expo-router",
       [
-        "expo-splash-screen",
-        {
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 200,
-          "resizeMode": "contain",
-          "backgroundColor": "#ffffff"
-        }
-      ],
-      [
         "react-native-vision-camera",
         {
           "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera",
