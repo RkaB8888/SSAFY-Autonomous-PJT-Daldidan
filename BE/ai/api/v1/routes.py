@@ -12,14 +12,6 @@ from schemas.predict import PredictResponse, ApplePred, BBox, Segmentation
 from services.predict_service import predict  # crop → 당도 추정
 from services.detect_service import detect  # ▶︎ YOLO 등 (bytes → list[dict])
 
-router = APIRouter()
-
-
-@router.get("/health")
-async def health_check():
-    return {"status": "AI server is running"}
-
-
 """
 { 추론 모델
 cnn_lgbm_bbox,
@@ -34,10 +26,25 @@ model_jmk2,
 yolov8_tflite
 }
 """
+# -----------------------------
+# 사용할 모델 상수 정의
+# -----------------------------
+# 사과 인식 모델: detect()에 전달할 이름 및 버전
+DETECT_MODEL_NAME: str = "yolov8"
+DETECT_MODEL_VERSION: str = "coco_int8"
+# 당도 추론 모델: predict()에 전달할 모델 식별자
+PREDICT_MODEL_NAME: str = "cnn_lgbm_bbox"
+# -----------------------------
+
+router = APIRouter()
+
+
+@router.get("/health")
+async def health_check():
+    return {"status": "AI server is running"}
 
 
 @router.post("/predict", response_model=PredictResponse)
-# @router.post("/predict")
 async def predict_image(
     image: Optional[UploadFile] = File(None),
     image_base64: Optional[str] = Form(None),
@@ -76,7 +83,9 @@ async def predict_image(
 
     # 2️⃣  사과 탐지 -------------------------------------------------------------
     # detect_apples : bytes/RGB → [{"bbox":(xmin,ymin,xmax,ymax), "seg": [[...]]}, ...]
-    apples = detect("yolov8", pil_img, version="coco_int8")  # type: List[dict]
+    apples = detect(
+        DETECT_MODEL_NAME, pil_img, version=DETECT_MODEL_VERSION
+    )  # type: List[dict]
     if not apples:
         print("사과 없음")
         return PredictResponse(results=[])
@@ -96,7 +105,7 @@ async def predict_image(
         image_bytes = buf.getvalue()
 
         sugar = predict(
-            "cnn_lgbm_bbox", image_bytes
+            PREDICT_MODEL_NAME, image_bytes
         )  # ← bytes/PIL 둘 중 하나에 맞춰 predict 수정
         # 🔴 박스 시각화
         draw.rectangle(
