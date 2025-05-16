@@ -1,51 +1,128 @@
+# ai/services/yolov8/scripts/bbox_crop.py
 import cv2
 import numpy as np
 import tensorflow as tf
 import os
-import tempfile # 임시 파일 처리를 위해 필요 (백엔드용 함수에서 사용)
+import tempfile  # 임시 파일 처리를 위해 필요 (백엔드용 함수에서 사용)
 
 # --- 모델 및 설정 값 (백엔드 환경에 맞게 반드시 수정!) ---
 # TODO: 실제 백엔드 환경에 맞는 TFLite 모델 파일 경로로 수정해야 합니다.
 TFLITE_MODEL_PATH = "./yolov8n_int8.tflite"
 
 INPUT_SIZE = (640, 640)  # 모델 입력 크기 (너비, 높이)
-CONFIDENCE_THRESHOLD = 0.25 # 객체 탐지 신뢰도 임계값 (필요시 조정)
-IOU_THRESHOLD = 0.45 # NMS (Non-Maximum Suppression) IoU 임계값
+CONFIDENCE_THRESHOLD = 0.25  # 객체 탐지 신뢰도 임계값 (필요시 조정)
+IOU_THRESHOLD = 0.45  # NMS (Non-Maximum Suppression) IoU 임계값
 
 # 모델 학습에 사용된 클래스 이름 목록
 COCO_CLASS_NAMES = [
-    'person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 'truck', 'boat', 'traffic light',
-    'fire hydrant', 'stop sign', 'parking meter', 'bench', 'bird', 'cat', 'dog', 'horse', 'sheep', 'cow',
-    'elephant', 'bear', 'zebra', 'giraffe', 'backpack', 'umbrella', 'handbag', 'tie', 'suitcase', 'frisbee',
-    'skis', 'snowboard', 'sports ball', 'kite', 'baseball bat', 'baseball glove', 'skateboard', 'surfboard',
-    'tennis racket', 'bottle', 'wine glass', 'cup', 'fork', 'knife', 'spoon', 'bowl', 'banana', 'apple',
-    'sandwich', 'orange', 'broccoli', 'carrot', 'hot dog', 'pizza', 'donut',
-    'cake', 'chair', 'couch',
-    'potted plant', 'bed', 'dining table', 'toilet', 'tv', 'laptop', 'mouse', 'remote', 'keyboard', 'cell phone',
-    'microwave', 'oven', 'toaster', 'sink', 'refrigerator', 'book', 'clock', 'vase', 'scissors', 'teddy bear',
-    'hair drier', 'toothbrush'
+    "person",
+    "bicycle",
+    "car",
+    "motorcycle",
+    "airplane",
+    "bus",
+    "train",
+    "truck",
+    "boat",
+    "traffic light",
+    "fire hydrant",
+    "stop sign",
+    "parking meter",
+    "bench",
+    "bird",
+    "cat",
+    "dog",
+    "horse",
+    "sheep",
+    "cow",
+    "elephant",
+    "bear",
+    "zebra",
+    "giraffe",
+    "backpack",
+    "umbrella",
+    "handbag",
+    "tie",
+    "suitcase",
+    "frisbee",
+    "skis",
+    "snowboard",
+    "sports ball",
+    "kite",
+    "baseball bat",
+    "baseball glove",
+    "skateboard",
+    "surfboard",
+    "tennis racket",
+    "bottle",
+    "wine glass",
+    "cup",
+    "fork",
+    "knife",
+    "spoon",
+    "bowl",
+    "banana",
+    "apple",
+    "sandwich",
+    "orange",
+    "broccoli",
+    "carrot",
+    "hot dog",
+    "pizza",
+    "donut",
+    "cake",
+    "chair",
+    "couch",
+    "potted plant",
+    "bed",
+    "dining table",
+    "toilet",
+    "tv",
+    "laptop",
+    "mouse",
+    "remote",
+    "keyboard",
+    "cell phone",
+    "microwave",
+    "oven",
+    "toaster",
+    "sink",
+    "refrigerator",
+    "book",
+    "clock",
+    "vase",
+    "scissors",
+    "teddy bear",
+    "hair drier",
+    "toothbrush",
 ]
-CLASS_NAMES = COCO_CLASS_NAMES # 사용하려는 최종 클래스 이름 목록
+CLASS_NAMES = COCO_CLASS_NAMES  # 사용하려는 최종 클래스 이름 목록
 
 # 백엔드에서 탐지 및 추가 분석하려는 대상 클래스 ID 목록
 TARGET_CLASS_IDS = []
 try:
-    apple_id = CLASS_NAMES.index('apple')
+    apple_id = CLASS_NAMES.index("apple")
     TARGET_CLASS_IDS.append(apple_id)
     # print(f"[INFO] 'apple' class ID is: {apple_id}") # 백엔드 로그로 대체
 except ValueError:
-    print("[ERROR] 'apple' class not found in CLASS_NAMES. Check CLASS_NAMES configuration.")
+    print(
+        "[ERROR] 'apple' class not found in CLASS_NAMES. Check CLASS_NAMES configuration."
+    )
 
 try:
-    donut_id = CLASS_NAMES.index('donut')
+    donut_id = CLASS_NAMES.index("donut")
     TARGET_CLASS_IDS.append(donut_id)
     # print(f"[INFO] 'donut' class ID is: {donut_id}") # 백엔드 로그로 대체
 except ValueError:
-     print("[ERROR] 'donut' class not found in CLASS_NAMES. Check CLASS_NAMES configuration.")
+    print(
+        "[ERROR] 'donut' class not found in CLASS_NAMES. Check CLASS_NAMES configuration."
+    )
 
 
 if not TARGET_CLASS_IDS:
-    print("[ERROR] No target classes ('apple', 'donut') found or specified. Detection functions will return empty results.")
+    print(
+        "[ERROR] No target classes ('apple', 'donut') found or specified. Detection functions will return empty results."
+    )
 
 
 # --- TFLite 인터프리터 로드 ---
@@ -92,12 +169,20 @@ def preprocess_image(image_np: np.ndarray, input_size: tuple) -> tuple:
     bottom = h - nh - top
     left = (w - nw) // 2
     right = w - nw - left
-    image_padded = cv2.copyMakeBorder(image_resized, top, bottom, left, right, cv2.BORDER_CONSTANT, value=(114, 114, 114))
+    image_padded = cv2.copyMakeBorder(
+        image_resized,
+        top,
+        bottom,
+        left,
+        right,
+        cv2.BORDER_CONSTANT,
+        value=(114, 114, 114),
+    )
 
     # BGR to RGB 및 정규화 (0-1 범위)
     image_rgb = cv2.cvtColor(image_padded, cv2.COLOR_BGR2RGB)
     image_normalized = image_rgb.astype(np.float32) / 255.0
-    input_data = np.expand_dims(image_normalized, axis=0) # 배치 차원 추가
+    input_data = np.expand_dims(image_normalized, axis=0)  # 배치 차원 추가
 
     return input_data, original_width, original_height, scale, left, top
 
@@ -111,7 +196,7 @@ def postprocess_output_coco(
     pad_top: int,
     conf_thresh: float,
     iou_thresh: float,
-    input_size: tuple
+    input_size: tuple,
 ) -> tuple:
     """
     모델 출력 후처리 및 NMS 적용 후 원본 이미지 기준 바운딩 박스 좌표, 점수, 클래스 ID를 반환합니다.
@@ -135,7 +220,7 @@ def postprocess_output_coco(
     # output_data = np.squeeze(output_data) # 배치 차원 제거
     # predictions = output_data.T # (84, 8400) -> (8400, 84)
     # 또는 더 간단하게:
-    predictions = np.squeeze(output_data).T # Shape (8400, 84)
+    predictions = np.squeeze(output_data).T  # Shape (8400, 84)
 
     boxes = []
     scores = []
@@ -158,12 +243,12 @@ def postprocess_output_coco(
             continue
 
         # 바운딩 박스 좌표를 [x1, y1, x2, y2] 형태로 변환 (모델 입력 기준 픽셀)
-        x1 = (xc_raw - w_raw / 2)
-        y1 = (yc_raw - h_raw / 2)
-        x2 = (xc_raw + w_raw / 2)
-        y2 = (yc_raw + h_raw / 2)
+        x1 = xc_raw - w_raw / 2
+        y1 = yc_raw - h_raw / 2
+        x2 = xc_raw + w_raw / 2
+        y2 = yc_raw + h_raw / 2
 
-        boxes.append([x1, y1, x2, y2]) # 모델 입력 기준 픽셀 좌표
+        boxes.append([x1, y1, x2, y2])  # 모델 입력 기준 픽셀 좌표
         scores.append(current_conf)
         class_ids_pred.append(current_class_id)
 
@@ -177,25 +262,28 @@ def postprocess_output_coco(
     for box_px in boxes:
         x1_px, y1_px, x2_px, y2_px = box_px
         # 모델 입력 크기 (640x640 등) 기준으로 정규화
-        y1_norm = y1_px / input_size[1] # 높이로 정규화
-        x1_norm = x1_px / input_size[0] # 너비로 정규화
+        y1_norm = y1_px / input_size[1]  # 높이로 정규화
+        x1_norm = x1_px / input_size[0]  # 너비로 정규화
         y2_norm = y2_px / input_size[1]
         x2_norm = x2_px / input_size[0]
-        normalized_boxes_for_nms.append([y1_norm, x1_norm, y2_norm, x2_norm]) # NMS 입력 형태
+        normalized_boxes_for_nms.append(
+            [y1_norm, x1_norm, y2_norm, x2_norm]
+        )  # NMS 입력 형태
 
     if not normalized_boxes_for_nms:
-         return [], [], [] # NMS 적용할 박스가 없으면 빈 리스트 반환
-
+        return [], [], []  # NMS 적용할 박스가 없으면 빈 리스트 반환
 
     # tf.image.non_max_suppression은 GPU/TPU에 최적화되어 있지만, CPU에서도 작동합니다.
     # numpy 배열을 tf.constant로 변환하여 사용합니다.
     selected_indices = tf.image.non_max_suppression(
-        boxes=np.array(normalized_boxes_for_nms, dtype=np.float32), # NMS는 float32 필요
-        scores=np.array(scores, dtype=np.float32), # NMS는 float32 필요
-        max_output_size=100, # 최대 결과 수
+        boxes=np.array(
+            normalized_boxes_for_nms, dtype=np.float32
+        ),  # NMS는 float32 필요
+        scores=np.array(scores, dtype=np.float32),  # NMS는 float32 필요
+        max_output_size=100,  # 최대 결과 수
         iou_threshold=iou_thresh,
-        score_threshold=conf_thresh # NMS에도 score_threshold 적용 가능 (선택 사항)
-    ).numpy() # 결과를 numpy 배열로 변환
+        score_threshold=conf_thresh,  # NMS에도 score_threshold 적용 가능 (선택 사항)
+    ).numpy()  # 결과를 numpy 배열로 변환
 
     final_boxes_orig_coords = []
     final_scores = []
@@ -203,7 +291,7 @@ def postprocess_output_coco(
 
     # NMS 통과한 박스들만 선택하고 원본 이미지 크기 기준으로 변환
     for index in selected_indices:
-        box = boxes[index] # 모델 입력 기준 픽셀 좌표 [x1,y1,x2,y2]
+        box = boxes[index]  # 모델 입력 기준 픽셀 좌표 [x1,y1,x2,y2]
 
         # 패딩 및 스케일 역변환을 통해 원본 이미지 기준으로 좌표 복원
         x1_on_resized = box[0] - pad_left
@@ -222,7 +310,6 @@ def postprocess_output_coco(
         y1_final = max(0, int(y1_orig))
         x2_final = min(original_width, int(x2_orig))
         y2_final = min(original_height, int(y2_orig))
-
 
         final_boxes_orig_coords.append([x1_final, y1_final, x2_final, y2_final])
         final_scores.append(scores[index])
@@ -252,11 +339,13 @@ def detect_target_objects_and_get_info(image_np: np.ndarray) -> list:
         return []
 
     # 전처리
-    input_data, orig_w, orig_h, scale_ratio, pad_l, pad_t = preprocess_image(image_np, INPUT_SIZE)
+    input_data, orig_w, orig_h, scale_ratio, pad_l, pad_t = preprocess_image(
+        image_np, INPUT_SIZE
+    )
 
     if input_data is None:
-         # print("[ERROR] Image preprocessing failed.") # 백엔드 로그로 대체
-         return []
+        # print("[ERROR] Image preprocessing failed.") # 백엔드 로그로 대체
+        return []
 
     # 추론 실행
     try:
@@ -269,8 +358,15 @@ def detect_target_objects_and_get_info(image_np: np.ndarray) -> list:
 
     # 후처리 및 바운딩 박스, 점수, 클래스 ID 추출 (원본 이미지 기준)
     boxes_orig, scores, class_ids = postprocess_output_coco(
-        output_data, orig_w, orig_h, scale_ratio, pad_l, pad_t,
-        CONFIDENCE_THRESHOLD, IOU_THRESHOLD, INPUT_SIZE
+        output_data,
+        orig_w,
+        orig_h,
+        scale_ratio,
+        pad_l,
+        pad_t,
+        CONFIDENCE_THRESHOLD,
+        IOU_THRESHOLD,
+        INPUT_SIZE,
     )
 
     detected_objects_info = []
@@ -278,23 +374,35 @@ def detect_target_objects_and_get_info(image_np: np.ndarray) -> list:
     for i in range(len(boxes_orig)):
         if class_ids[i] in TARGET_CLASS_IDS:
             # 클래스 ID가 유효한지 확인 (CLASS_NAMES 범위 내에 있는지)
-            label = CLASS_NAMES[class_ids[i]] if class_ids[i] < len(CLASS_NAMES) else f"Unknown_{class_ids[i]}"
+            label = (
+                CLASS_NAMES[class_ids[i]]
+                if class_ids[i] < len(CLASS_NAMES)
+                else f"Unknown_{class_ids[i]}"
+            )
 
             # 유효성 검사: bbox 좌표가 올바른 형태인지 간단히 확인
             bbox = boxes_orig[i]
-            if not (isinstance(bbox, list) and len(bbox) == 4 and all(isinstance(coord, int) for coord in bbox)):
-                 print(f"[WARNING] Skipping object {i} due to invalid bbox format: {bbox}")
-                 continue
+            if not (
+                isinstance(bbox, list)
+                and len(bbox) == 4
+                and all(isinstance(coord, int) for coord in bbox)
+            ):
+                print(
+                    f"[WARNING] Skipping object {i} due to invalid bbox format: {bbox}"
+                )
+                continue
 
-            detected_objects_info.append({
-                "bbox": bbox, # [x1, y1, x2, y2] (원본 이미지 기준 int 좌표)
-                "score": float(scores[i]), # JSON 직렬화를 위해 float으로 변환
-                "class_id": int(class_ids[i]), # JSON 직렬화를 위해 int으로 변환
-                "label": label # 사과 또는 도넛 라벨 포함
-            })
+            detected_objects_info.append(
+                {
+                    "bbox": bbox,  # [x1, y1, x2, y2] (원본 이미지 기준 int 좌표)
+                    "score": float(scores[i]),  # JSON 직렬화를 위해 float으로 변환
+                    "class_id": int(class_ids[i]),  # JSON 직렬화를 위해 int으로 변환
+                    "label": label,  # 사과 또는 도넛 라벨 포함
+                }
+            )
 
     # print(f"[INFO] Detected {len(detected_objects_info)} target object(s).") # 백엔드 로그로 대체
-    return detected_objects_info # 탐지된 객체 정보 리스트 반환
+    return detected_objects_info  # 탐지된 객체 정보 리스트 반환
 
 
 def crop_and_save_object_bboxes_temp(image_np: np.ndarray, objects_info: list) -> list:
@@ -324,11 +432,13 @@ def crop_and_save_object_bboxes_temp(image_np: np.ndarray, objects_info: list) -
 
     for i, obj_info in enumerate(objects_info):
         bbox = obj_info.get("bbox")
-        label = obj_info.get("label", "object") # 라벨 정보 사용
+        label = obj_info.get("label", "object")  # 라벨 정보 사용
 
         if bbox is None or not (isinstance(bbox, list) and len(bbox) == 4):
-             print(f"[WARNING] Skipping cropping for object {i} due to missing or invalid bbox info: {bbox}. Info: {obj_info}")
-             continue
+            print(
+                f"[WARNING] Skipping cropping for object {i} due to missing or invalid bbox info: {bbox}. Info: {obj_info}"
+            )
+            continue
 
         x1, y1, x2, y2 = bbox
 
@@ -341,7 +451,9 @@ def crop_and_save_object_bboxes_temp(image_np: np.ndarray, objects_info: list) -
 
         # 바운딩 박스 영역 유효성 검사 (너비/높이가 0 이상이어야 함)
         if x2 <= x1 or y2 <= y1:
-            print(f"[WARNING] Invalid bounding box coordinates for cropping ({label}): [{x1}, {y1}, {x2}, {y2}]. Skipping.")
+            print(
+                f"[WARNING] Invalid bounding box coordinates for cropping ({label}): [{x1}, {y1}, {x2}, {y2}]. Skipping."
+            )
             continue
 
         # 이미지 자르기 (numpy slicing 사용)
@@ -349,22 +461,31 @@ def crop_and_save_object_bboxes_temp(image_np: np.ndarray, objects_info: list) -
         cropped_image_np = image_np[y1:y2, x1:x2]
 
         if cropped_image_np is None or cropped_image_np.size == 0:
-            print(f"[WARNING] Cropped image for box ({label}) [{x1}, {y1}, {x2}, {y2}] resulted in None or empty array. Skipping.")
+            print(
+                f"[WARNING] Cropped image for box ({label}) [{x1}, {y1}, {x2}, {y2}] resulted in None or empty array. Skipping."
+            )
             continue
 
         # 잘라낸 이미지를 임시 파일로 저장
         try:
             # 접두사에 라벨 정보 사용, 고유한 임시 파일명 생성
-            fd, temp_cropped_path = tempfile.mkstemp(prefix=f"{label}_crop_{i}_", suffix=".jpg")
-            os.close(fd) # 파일 디스크립터 바로 닫기
-            cv2.imwrite(temp_cropped_path, cropped_image_np) # 자른 이미지를 임시 파일로 저장
+            fd, temp_cropped_path = tempfile.mkstemp(
+                prefix=f"{label}_crop_{i}_", suffix=".jpg"
+            )
+            os.close(fd)  # 파일 디스크립터 바로 닫기
+            cv2.imwrite(
+                temp_cropped_path, cropped_image_np
+            )  # 자른 이미지를 임시 파일로 저장
             saved_cropped_paths.append(temp_cropped_path)
             # print(f"[INFO] Cropped {label} {i+1} saved to temporary file: {temp_cropped_path}") # 백엔드 로그로 대체
         except Exception as e:
-             print(f"[ERROR] Error saving cropped image {i+1} ({label}) to temporary file: {e}")
-             # 저장 실패 시 해당 경로는 반환 리스트에 포함되지 않음
+            print(
+                f"[ERROR] Error saving cropped image {i+1} ({label}) to temporary file: {e}"
+            )
+            # 저장 실패 시 해당 경로는 반환 리스트에 포함되지 않음
 
     return saved_cropped_paths
+
 
 # NOTE: 테스트 목적으로 특정 폴더에 저장하는 함수는 제외되었습니다.
 # 백엔드 통합 시에는 위 crop_and_save_object_bboxes_temp 함수를 사용하세요.

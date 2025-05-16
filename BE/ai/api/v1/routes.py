@@ -1,8 +1,16 @@
-# ai>api>v1>routes.py
-import time
-from fastapi import APIRouter, HTTPException, UploadFile, File, Form
-from schemas.predict import PredictResponse
-from services.predict_service import predict
+# ai/api/v1/routes.p y
+import base64, io, time, os
+import imghdr
+from typing import Optional, List
+
+from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+from PIL import Image, ImageDraw
+from io import BytesIO
+from datetime import datetime
+
+from schemas.predict import PredictResponse, ApplePred, BBox, Segmentation
+from services.predict_service import predict  # crop → 당도 추정
+from services.detect_service import detect  # ▶︎ YOLO 등 (bytes → list[dict])
 
 router = APIRouter()
 
@@ -13,7 +21,7 @@ async def health_check():
 
 
 """
-{
+{ 추론 모델
 cnn_lgbm_bbox,
 cnn_lgbm_seg,
 lgbm_bbox,
@@ -22,29 +30,107 @@ xgb_bbox,
 xgb_seg,
 model_jmk2,
 }
+{ 인식 모델
+yolov8_tflite
+}
 """
-
-# @router.post("/predict", response_model=PredictResponse)
-# async def predict_image(id: int = Form(...), image: UploadFile = File(...)):
-#     try:
-#         image_bytes = await image.read()
-#         result = predict("model_jhg2", image_bytes)  # ← 바이트 전달
-#         return PredictResponse(id=id, predict_sugar_content=float(result["confidence"]))
-#     except Exception as e:
-#         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/predict", response_model=PredictResponse)
-async def predict_image(id: int = Form(...), image_base64: str = Form(...)):
-    start = time.perf_counter()
-    try:
-        import base64
+# @router.post("/predict")
+async def predict_image(
+    image: Optional[UploadFile] = File(None),
+    image_base64: Optional[str] = Form(None),
+):
+    if (image is None and image_base64 is None) or (image and image_base64):
+        raise HTTPException(
+            status_code=400,
+            detail="Exactly one of 'image' or 'image_base64' must be provided.",
+        )
+    t0 = time.perf_counter()
 
-        image_bytes = base64.b64decode(image_base64)
-        # image_bytes = await image.read()
-        result = predict("cnn_lgbm_bbox", image_bytes)  # ← 바이트 전달
-        elapsed = time.perf_counter() - start
-        print(f"[/predict] id={id}  elapsed={elapsed*1000:.1f} ms")
-        return PredictResponse(id=id, predict_sugar_content=float(result))
+    # 1️⃣  이미지 디코딩 ----------------------------------------------------------
+    try:
+        if image is not None:
+            img_bytes = await image.read()
+            image.file.seek(0)
+        else:
+            img_bytes = base64.b64decode(image_base64)
+
+        # 📁 저장 디렉토리 생성
+        save_dir = "tmp/uploads"
+        os.makedirs(save_dir, exist_ok=True)
+
+        # 📸 저장 파일명: predict_20240515_213803.jpg 형식
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        ext = imghdr.what(None, h=img_bytes) or "jpg"
+        filename = f"predict_{timestamp}.{ext}"
+        save_path = os.path.join(save_dir, filename)
+
+        with open(save_path, "wb") as f:
+            f.write(img_bytes)
+
+        pil_img = Image.open(io.BytesIO(img_bytes)).convert("RGB")
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=f"Invalid image: {e}")
+
+    # 2️⃣  사과 탐지 -------------------------------------------------------------
+    # detect_apples : bytes/RGB → [{"bbox":(xmin,ymin,xmax,ymax), "seg": [[...]]}, ...]
+    apples = detect("yolov8", pil_img, version="coco_int8")  # type: List[dict]
+    if not apples:
+        print("사과 없음")
+        return PredictResponse(results=[])
+
+    # 🔴 바운딩 박스 그리기용 복제본 생성
+    draw_img = pil_img.copy()
+    draw = ImageDraw.Draw(draw_img)
+
+    # 3️⃣  각 사과 영역 crop → 당도 추정 -----------------------------------------
+    results: List[ApplePred] = []
+    for idx, det in enumerate(apples):
+        xmin, ymin, xmax, ymax = det["bbox"]
+
+        crop = pil_img.crop((xmin, ymin, xmax, ymax))
+        buf = io.BytesIO()
+        crop.save(buf, format="JPEG")
+        image_bytes = buf.getvalue()
+
+        sugar = predict(
+            "cnn_lgbm_bbox", image_bytes
+        )  # ← bytes/PIL 둘 중 하나에 맞춰 predict 수정
+        # 🔴 박스 시각화
+        draw.rectangle(
+            [int(xmin), int(ymin), int(xmax), int(ymax)], outline="red", width=4
+        )
+        text_y = int(ymin) - 10 if ymin > 10 else int(ymin) + 10
+        draw.text(
+            (int(xmin), text_y),
+            f"id={idx} | {sugar:.2f}",
+            fill="red",
+            stroke_width=1,
+            stroke_fill="white",
+        )
+
+        item = ApplePred(
+            id=idx,
+            sugar_content=float(sugar),
+            bbox=BBox(
+                xmin=int(xmin),
+                ymin=int(ymin),
+                xmax=int(xmax),
+                ymax=int(ymax),
+            ),
+            segmentation=Segmentation(points=det["seg"]) if det.get("seg") else None,
+        )
+        results.append(item)
+
+    # ✅ 바운딩 박스 시각화 이미지 저장 -----------------------------------------
+    drawn_path = os.path.join(save_dir, f"predict_{timestamp}_drawn.{ext}")
+    draw_img.save(drawn_path)
+    print(f"✅ 바운딩 박스 이미지 저장: {drawn_path}")
+
+    # 4️⃣  응답 + 로그 -----------------------------------------------------------
+    print(
+        f"[/predict] apples={len(results)}  elapsed={(time.perf_counter()-t0)*1000:.1f} ms"
+    )
+    return PredictResponse(results=results)
