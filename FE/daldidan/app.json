@@ -32,10 +32,6 @@
         "resizeMode": "contain",
         "backgroundColor": "#FF5255"
       },
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
-      },
       "package": "com.jinmoon23.daldidan.dev",
       "permissions": [
         "android.permission.CAMERA"
