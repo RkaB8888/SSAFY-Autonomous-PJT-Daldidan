@@ -279,7 +279,7 @@ export function useObjectDetection(format: any) {
       try {
         console.log('Attempting to load model...');
         const model = await loadTensorflowModel(
-          require('../assets/2.tflite'),
+          require('../assets/model.tflite'),
           'gpu' as TensorflowModelDelegate
         );
         console.log('Model loaded successfully');

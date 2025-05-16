@@ -10,18 +10,7 @@
     "preview": {
       "distribution": "internal"
     },
-    "production": {
-      "android": {
-        "buildType": "apk"
-      },
-      "distribution": "store"
-    },
-    "test": {
-      "android": {
-        "buildType": "apk"
-      },
-      "distribution": "internal"
-    }
+    "production": {}
   },
   "submit": {
     "production": {}

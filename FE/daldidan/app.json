@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "달디단",
-    "slug": "daldidan_wj",
+    "name": "DaldidanDev",
+    "slug": "daldidan-dev",
     "version": "1.0.0",
     "orientation": "portrait",
     "splash": {
@@ -76,8 +76,11 @@
     "extra": {
       "router": {
         "origin": false
+      },
+      "eas": {
+        "projectId": "5c5f0090-03ff-4d08-8338-3d3c13e38cce"
       }
     },
-    "owner": "psum9903"
+    "owner": "dnjswoc"
   }
 }
