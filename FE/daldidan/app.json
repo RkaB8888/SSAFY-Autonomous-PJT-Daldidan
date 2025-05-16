@@ -31,11 +31,10 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.dnjswoo.daldidan.dev",
+      "package": "com.jinmoon23.daldidan.dev",
       "permissions": [
         "android.permission.CAMERA"
-      ],
-      "label": "달디단"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -87,9 +86,9 @@
         "origin": false
       },
       "eas": {
-        "projectId": "04abdd85-eff8-461d-a6c3-84697204d462"
+        "projectId": "ff487748-a6a5-4ce3-b88c-48b1993796df"
       }
     },
-    "owner": "dnjswoo"
+    "owner": "psum9903"
   }
 }

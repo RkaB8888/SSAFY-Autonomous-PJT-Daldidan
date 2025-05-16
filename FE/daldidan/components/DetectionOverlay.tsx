@@ -8,12 +8,12 @@ interface Props {
   detections: Detection[];
   screenSize: { width: number; height: number };
   format: any;
-  detectionResults: import('../hooks/types/objectDetection').DetectionResult[];
+  // detectionResults: import('../hooks/types/objectDetection').DetectionResult[];
 }
 
 export default function DetectionOverlay({
   detections,
-  detectionResults,
+  // detectionResults,
   screenSize,
   format,
 }: Props) {
@@ -96,7 +96,7 @@ export default function DetectionOverlay({
                   y={y}
                   width={width}
                   height={height}
-                  color='rgba(250, 198, 198, 0.8)'
+                  color='rgba(255, 255, 255, 0.8)'
                   style='stroke'
                   strokeWidth={strokeWidth}
                 />
@@ -135,35 +135,35 @@ export default function DetectionOverlay({
           Math.min(14, Math.min(width, height) * 0.1)
         );
 
-        const matched = detectionResults.find(
-          (r) =>
-            r.detection.class_id === detection.class_id &&
-            r.detection.sugar_content !== undefined
-        );
+        // const matched = detectionResults.find(
+        //   (r) =>
+        //     r.detection.class_id === detection.class_id &&
+        //     r.detection.sugar_content !== undefined
+        // );
 
-        return (
-          <View
-            key={i}
-            style={[
-              styles.textContainer,
-              {
-                position: 'absolute',
-                left: Math.max(0, Math.min(x, screenSize.width - 150)),
-                top: Math.max(0, Math.min(y - 25, screenSize.height - 25)),
-                width: 150,
-                backgroundColor: 'rgba(0, 0, 0, 0.7)',
-                borderWidth: 1,
-                borderColor: 'rgba(255, 0, 0, 0.8)',
-              },
-            ]}
-          >
-            <Text style={[styles.text, { fontSize }]} numberOfLines={1}>
-              {`${COCO_CLASS_NAMES[detection.class_id ?? 0] || 'Unknown'}${
-                matched ? ` - 당도: ${matched.detection.sugar_content}Bx` : ''
-              }`}
-            </Text>
-          </View>
-        );
+        // return (
+        //   <View
+        //     key={i}
+        //     style={[
+        //       styles.textContainer,
+        //       {
+        //         position: 'absolute',
+        //         left: Math.max(0, Math.min(x, screenSize.width - 150)),
+        //         top: Math.max(0, Math.min(y - 25, screenSize.height - 25)),
+        //         width: 150,
+        //         backgroundColor: 'rgba(0, 0, 0, 0.7)',
+        //         borderWidth: 1,
+        //         borderColor: 'rgba(255, 0, 0, 0.8)',
+        //       },
+        //     ]}
+        //   >
+        //     <Text style={[styles.text, { fontSize }]} numberOfLines={1}>
+        //       {/* {`${COCO_CLASS_NAMES[detection.class_id ?? 0] || 'Unknown'}${
+        //         matched ? ` - 당도: ${matched.detection.sugar_content}Bx` : ''
+        //       }`} */}
+        //     </Text>
+        //   </View>
+        // );
       })}
     </>
   );
