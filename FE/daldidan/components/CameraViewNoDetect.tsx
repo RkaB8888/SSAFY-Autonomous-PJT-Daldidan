@@ -311,7 +311,7 @@ useShake(() => {
 
           {/* ★★★ 분석 완료 후 카메라를 다시 켜기 위한 버튼 등 UI 추가 필요 ★★★ */}
           {/* 분석 완료 상태일 때만 "다시 시작" 버튼 표시 */}
-          {analysisFinished ? (
+          {/* {analysisFinished ? (
             <View style={styles.resumeButtonContainer}>
               <Button
                 title='🐝사과 찾으러가기'
@@ -321,7 +321,7 @@ useShake(() => {
                 }}
               />
             </View>
-          ) : null}
+          ) : null} */}
         </>
       )}
     </View> // ✅ 여기 View 닫고
