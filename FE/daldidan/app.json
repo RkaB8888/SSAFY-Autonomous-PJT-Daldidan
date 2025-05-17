@@ -8,9 +8,7 @@
     "scheme": "daldidan-dev",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "packagerOpts": {
       "config": "metro.config.js"
     },
@@ -27,9 +25,7 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.jinmoon23.daldidan.dev",
-      "permissions": [
-        "android.permission.CAMERA"
-      ]
+      "permissions": ["android.permission.CAMERA"]
     },
     "web": {
       "bundler": "metro",
@@ -66,10 +62,7 @@
       [
         "react-native-fast-tflite",
         {
-          "enableAndroidGpuLibraries": [
-            "libOpenCL-pixel.so",
-            "libGLES_mali.so"
-          ]
+          "enableAndroidGpuLibraries": ["libOpenCL-pixel.so", "libGLES_mali.so"]
         }
       ]
     ],
