@@ -8,9 +8,7 @@
     "scheme": "daldidan-dev",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "packagerOpts": {
       "config": "metro.config.js"
     },
@@ -26,10 +24,8 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.jinmoon235.daldidan.dev",
-      "permissions": [
-        "android.permission.CAMERA"
-      ]
+      "package": "com.jinmoon23.daldidan.dev",
+      "permissions": ["android.permission.CAMERA"]
     },
     "web": {
       "bundler": "metro",
@@ -66,10 +62,7 @@
       [
         "react-native-fast-tflite",
         {
-          "enableAndroidGpuLibraries": [
-            "libOpenCL-pixel.so",
-            "libGLES_mali.so"
-          ]
+          "enableAndroidGpuLibraries": ["libOpenCL-pixel.so", "libGLES_mali.so"]
         }
       ]
     ],
@@ -81,9 +74,9 @@
         "origin": false
       },
       "eas": {
-        "projectId": "8021f9dc-5866-4921-be06-fa0085733491"
+        "projectId": "ff487748-a6a5-4ce3-b88c-48b1993796df"
       }
     },
-    "owner": "jinmoon235"
+    "owner": "psum9903"
   }
 }
