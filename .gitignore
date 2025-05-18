@@ -5,3 +5,5 @@ Thumbs.db
 # IDE 설정
 .vscode/
 .idea/
+
+/runs
