@@ -186,16 +186,19 @@ export default function CameraView() {
   // 분석 완료 상태 판단: analyzedResults가 null이 아니고 배열이며, isAnalyzing이 false일 때
   const analysisFinished = analyzedResults !== null && !isAnalyzing;
 
-  useShake(
-    () => {
-      if (analysisFinished) {
-        console.log('[Shake] 감지됨 → 분석 초기화');
-        resetAnalysis();
-      }
-    },
-    1.3,
-    700
-  ); // threshold 1.3 (더 민감), interval 700ms
+useShake(() => {
+  if (analysisFinished) {
+    console.log('[Shake] 감지됨 → 분석 초기화');
+    justReset.current = true; // ✅ 자동 캡처 방지 플래그 ON
+    resetAnalysis();
+
+    // ✅ 일정 시간 후 자동 캡처 다시 허용
+    setTimeout(() => {
+      justReset.current = false;
+      console.log('[Shake] 자동 캡처 재허용됨');
+    }, 2000); // 2초 뒤에 자동 캡처 허용
+  }
+}, 2.0, 700);
 
   // ★★★ React 컴포넌트는 하나의 루트 엘리먼트만 반환해야 합니다. ★★★
   return (
@@ -308,7 +311,7 @@ export default function CameraView() {
 
           {/* ★★★ 분석 완료 후 카메라를 다시 켜기 위한 버튼 등 UI 추가 필요 ★★★ */}
           {/* 분석 완료 상태일 때만 "다시 시작" 버튼 표시 */}
-          {analysisFinished ? (
+          {/* {analysisFinished ? (
             <View style={styles.resumeButtonContainer}>
               <Button
                 title='🐝사과 찾으러가기'
@@ -318,7 +321,7 @@ export default function CameraView() {
                 }}
               />
             </View>
-          ) : null}
+          ) : null} */}
         </>
       )}
     </View> // ✅ 여기 View 닫고
