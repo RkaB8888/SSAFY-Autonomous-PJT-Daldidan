@@ -163,18 +163,24 @@ export default function AnalyzedResultOverlay({
         const screenWidth = Math.max(0, screenBbox.x2 - screenBbox.x1);
         const screenHeight = Math.max(0, screenBbox.y2 - screenBbox.y1);
 
+        // bbox 시각화용 디버그 뷰
         return (
-          <Pressable
-            key={result.id ?? index}
-            style={{
-              position: "absolute",
-              left: screenBbox.x1,
-              top: screenBbox.y1,
-              width: screenWidth,
-              height: screenHeight,
-              zIndex: 5,
-            }}
-          />
+          <React.Fragment key={result.id ?? index}>
+            <View
+              style={{
+                position: "absolute",
+                left: screenBbox.x1,
+                top: screenBbox.y1,
+                width: screenWidth,
+                height: screenHeight,
+                borderWidth: 2,
+                borderColor: "rgba(255,0,0,0.5)",
+                backgroundColor: "rgba(255,0,0,0.08)",
+                zIndex: 100,
+                pointerEvents: "none",
+              }}
+            />
+          </React.Fragment>
         );
       })}
       <AppleToastStack
