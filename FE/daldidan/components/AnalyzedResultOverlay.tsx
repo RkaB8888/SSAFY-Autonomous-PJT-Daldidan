@@ -59,6 +59,8 @@ export default function AnalyzedResultOverlay({
 
   const [topN, setTopN] = useState(3); // 기본 top N : 3개
 
+  const [minSugar, setMinSugar] = useState(10); // 슬라이더로 설정할 최소 당도 값(기본 최소값 10Bx)
+
   const topNIds = [...results]
     .filter(r => r.sugar_content !== undefined && r.sugar_content !== null)
     .sort((a, b) => b.sugar_content! - a.sugar_content!) // 내림차순 정렬
@@ -137,7 +139,7 @@ export default function AnalyzedResultOverlay({
         maxN={Math.max(1, results.length)} // ✅ 최소 1개는 보장
       />
 
-      <VisualBar results={results} onApplePress={handleApplePress} />
+      <VisualBar results={results} onChangeMinSugar={setMinSugar} minSugar={minSugar} />
       {/* 🔶 Skia 마스킹 캔버스 */}
       <Canvas style={StyleSheet.absoluteFill}>
         {/* 전체 어두운 레이어 */}
