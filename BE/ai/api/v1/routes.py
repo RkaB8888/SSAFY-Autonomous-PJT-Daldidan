@@ -44,7 +44,7 @@ from services.detect_service import detect  # ▶︎ YOLO 등 (bytes → list[di
 DETECT_MODEL_NAME: str = "yolov8_pt"
 DETECT_MODEL_VERSION: str = "m"
 # 당도 추론 모델: predict()에 전달할 모델 식별자
-PREDICT_MODEL_NAME: str = "cnn_lgbm_bbox"
+PREDICT_MODEL_NAME: str = "cnn_lgbm_seg"
 # -----------------------------
 
 router = APIRouter()
