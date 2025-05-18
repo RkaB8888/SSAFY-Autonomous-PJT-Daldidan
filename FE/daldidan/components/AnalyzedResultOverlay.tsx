@@ -14,6 +14,7 @@ import question_apple from "../assets/images/question_apple.png";
 import { Image } from "react-native"; // ✅ 추가
 import ShakeReminder from "./ShakeReminder";
 import AppleToastStack from "./AppleToastStack";
+import TopNAppleSelector from "./TopNAppleSelector";  // topN 사과 선택 드롭다운 코드
 
 interface Props {
   // useAnalysisApiHandler 훅에서 받아온 분석 결과 리스트 (null 아님이 상위에서 보장됨)
@@ -56,6 +57,15 @@ export default function AnalyzedResultOverlay({
   const [showTooltip, setShowTooltip] = useState(false);
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
+  const [topN, setTopN] = useState(3); // 기본 top N : 3개
+
+  const topNIds = [...results]
+    .filter(r => r.sugar_content !== undefined && r.sugar_content !== null)
+    .sort((a, b) => b.sugar_content! - a.sugar_content!) // 내림차순 정렬
+    .slice(0, topN)
+    .map(r => r.id);
+
+
   useEffect(() => {
     Animated.loop(
       Animated.sequence([
@@ -74,6 +84,13 @@ export default function AnalyzedResultOverlay({
       ])
     ).start();
   }, []);
+
+  useEffect(() => {
+    if (topN > results.length) {
+      setTopN(results.length);
+    }
+  }, [results.length]);
+
 
   const transformBboxToScreen = (
     bbox: { xmin: number; ymin: number; xmax: number; ymax: number },
@@ -112,6 +129,14 @@ export default function AnalyzedResultOverlay({
   };
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
+
+      {/* topN 선택 드롭다운 */}
+      <TopNAppleSelector
+        topN={topN}
+        onChange={setTopN}
+        maxN={Math.max(1, results.length)} // ✅ 최소 1개는 보장
+      />
+
       <VisualBar results={results} onApplePress={handleApplePress} />
       {/* 🔶 Skia 마스킹 캔버스 */}
       <Canvas style={StyleSheet.absoluteFill}>
@@ -138,17 +163,26 @@ export default function AnalyzedResultOverlay({
           const screenWidth = screenBbox.x2 - screenBbox.x1;
           const screenHeight = screenBbox.y2 - screenBbox.y1;
 
-          return (
-            <Rect
-              key={`mask-${index}`}
-              x={screenBbox.x1}
-              y={screenBbox.y1}
-              width={screenWidth}
-              height={screenHeight}
-              color="rgba(0, 0, 0, 0)"
-              blendMode="clear" // 핵심! 이걸로 해당 영역만 비워줌
-            />
+          const isHighlighted = topNIds.includes(result.id);  // topN에 선택된 사과들
+          console.log(
+            `[TopN Debug] id=${result.id}, 당도=${result.sugar_content}, isHighlighted=${isHighlighted}`
           );
+
+          if (isHighlighted) {
+            return (
+              <Rect
+                key={`mask-${index}`}
+                x={screenBbox.x1}
+                y={screenBbox.y1}
+                width={screenWidth}
+                height={screenHeight}
+                color={isHighlighted ? "rgba(0, 0, 0, 0)" : "rgba(0, 0, 0, 0.5)"}
+                blendMode="clear" // 핵심! 이걸로 해당 영역만 비워줌
+              />
+            );
+          } else {
+            return null;
+          }
         })}
       </Canvas>
 
