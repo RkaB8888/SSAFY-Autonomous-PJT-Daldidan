@@ -3,18 +3,17 @@
 // (변환 로직, 렌더링 로직 포함)
 
 import React, { useState } from "react";
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef } from "react";
 import { Animated, StyleSheet, Text, View, Easing } from "react-native";
 import { AnalyzedObjectResult } from "../hooks/types/objectDetection";
 import VisualBar from "./VisualBar";
 import { Canvas, Rect, Group, Skia } from "@shopify/react-native-skia";
-import { Pressable } from 'react-native';
-import InfoTooltip from './InfoTooltip'; // 상단에 import 추가
-import question_apple from '../assets/images/question_apple.png';
-import { Image } from 'react-native'; // ✅ 추가
-import ShakeReminder from './ShakeReminder';
-
-
+import { Pressable } from "react-native";
+import InfoTooltip from "./InfoTooltip"; // 상단에 import 추가
+import question_apple from "../assets/images/question_apple.png";
+import { Image } from "react-native"; // ✅ 추가
+import ShakeReminder from "./ShakeReminder";
+import AppleToastStack from "./AppleToastStack";
 
 interface Props {
   // useAnalysisApiHandler 훅에서 받아온 분석 결과 리스트 (null 아님이 상위에서 보장됨)
@@ -58,23 +57,23 @@ export default function AnalyzedResultOverlay({
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-  Animated.loop(
-    Animated.sequence([
-      Animated.timing(scaleAnim, {
-        toValue: 1.1,
-        duration: 500,
-        easing: Easing.inOut(Easing.ease),
-        useNativeDriver: true,
-      }),
-      Animated.timing(scaleAnim, {
-        toValue: 1,
-        duration: 500,
-        easing: Easing.inOut(Easing.ease),
-        useNativeDriver: true,
-      }),
-    ])
-  ).start();
-}, []);
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(scaleAnim, {
+          toValue: 1.1,
+          duration: 500,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(scaleAnim, {
+          toValue: 1,
+          duration: 500,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  }, []);
 
   const transformBboxToScreen = (
     bbox: { xmin: number; ymin: number; xmax: number; ymax: number },
@@ -111,7 +110,6 @@ export default function AnalyzedResultOverlay({
   const handleApplePress = (appleId: string | number) => {
     setSelectedAppleId(appleId);
   };
-
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
       <VisualBar results={results} onApplePress={handleApplePress} />
@@ -162,127 +160,60 @@ export default function AnalyzedResultOverlay({
           screenSize.width,
           screenSize.height
         );
-
         const screenWidth = Math.max(0, screenBbox.x2 - screenBbox.x1);
         const screenHeight = Math.max(0, screenBbox.y2 - screenBbox.y1);
 
-        console.log("[📦 bbox]", result.bbox);
-        console.log("[📐 screenSize]", screenSize);
-        console.log("[📷 originalSize]", originalImageSize);
-        console.log("[📦 screenBbox]", screenBbox);
-        console.log("[📏 boxWidth, boxHeight]", screenWidth, screenHeight);
-
-        const labelText =
-          result.id !== undefined ? `객체 ${result.id}` : `객체 ${index + 1}`;
-        const sugarText =
-          result.sugar_content !== undefined && result.sugar_content !== null
-            ? `당도: ${result.sugar_content.toFixed(1)}Bx`
-            : "";
-        const displayTexts = [labelText, sugarText].filter(Boolean).join(" - ");
-
-        const fontSize = Math.max(
-          10,
-          Math.min(14, Math.min(screenWidth, screenHeight) * 0.1)
-        );
-
-        const isSelected = result.id === selectedAppleId;
-
-        return (  
-          <React.Fragment key={`analyzed-obj-${result.id ?? index}`}>
-            {/* 바운딩 박스 */}
-            {screenWidth > 0 &&
-            screenHeight > 0 &&
-            screenBbox.x1 >= 0 &&
-            screenBbox.y1 >= 0 &&
-            screenBbox.x2 <= screenSize.width &&
-            screenBbox.y2 <= screenSize.height ? (
-              <Animated.View
-                style={{
-                  position: "absolute",
-                  left: screenBbox.x1,
-                  top: screenBbox.y1,
-                  width: screenWidth,
-                  height: screenHeight,
-                  borderWidth: isSelected ? 4 : 2,
-                  borderColor: isSelected ? "#FFD700" : "yellow",
-                  zIndex: 5,
-                  shadowColor: isSelected ? "#FFD700" : "transparent",
-                  shadowOffset: { width: 0, height: 0 },
-                  shadowOpacity: isSelected ? 0.8 : 0,
-                  shadowRadius: isSelected ? 10 : 0,
-                  elevation: isSelected ? 5 : 0,
-                }}
-              />
-            ) : null}
-
-            {/* 텍스트 라벨 */}
-            {displayTexts ? (
-              <View
-                style={[
-                  styles.textContainer,
-                  {
-                    position: "absolute",
-                    left: Math.max(
-                      0,
-                      Math.min(screenBbox.x1, screenSize.width - 150)
-                    ),
-                    top:
-                      screenBbox.y1 - 30 > 0
-                        ? screenBbox.y1 - 30
-                        : screenBbox.y2 + 5,
-                    width: 150,
-                    backgroundColor: isSelected
-                      ? "rgba(255, 215, 0, 0.7)"
-                      : "rgba(0, 0, 0, 0.7)",
-                    padding: 4,
-                    borderRadius: 4,
-                    zIndex: 6,
-                  },
-                ]}
-              >
-                <Text
-                  style={[
-                    { fontSize },
-                    styles.text,
-                    isSelected && styles.selectedText,
-                  ]}
-                  numberOfLines={1}
-                >
-                  {displayTexts}
-                </Text>
-              </View>
-            ) : null}
+        // bbox 시각화용 디버그 뷰
+        return (
+          <React.Fragment key={result.id ?? index}>
+            <View
+              style={{
+                position: "absolute",
+                left: screenBbox.x1,
+                top: screenBbox.y1,
+                width: screenWidth,
+                height: screenHeight,
+                borderWidth: 2,
+                borderColor: "rgba(255,0,0,0.5)",
+                backgroundColor: "rgba(255,0,0,0.08)",
+                zIndex: 100,
+                pointerEvents: "none",
+              }}
+            />
           </React.Fragment>
         );
       })}
-    {/* ℹ️ 버튼 */}
-    <Animated.View
-    style={[
-        styles.infoButton, // ✅ 위치를 여기로 옮김!
-        { transform: [{ scale: scaleAnim }] },
-    ]}
-    >
+      <AppleToastStack
+        results={results}
+        screenSize={screenSize}
+        originalImageSize={originalImageSize}
+      />
+      {/* ℹ️ 버튼 */}
+      <Animated.View
+        style={[
+          styles.infoButton, // ✅ 위치를 여기로 옮김!
+          { transform: [{ scale: scaleAnim }] },
+        ]}
+      >
         <Pressable
-        onPress={() => setShowTooltip((prev) => !prev)}
-        style={styles.infoButton}
+          onPress={() => setShowTooltip((prev) => !prev)}
+          style={styles.infoButton}
         >
-        <Image
-        source={
-            showTooltip
-            ? require('../assets/images/explamation_apple.png')
-            : require('../assets/images/question_apple.png')
-        }
-        style={styles.infoIcon}
-        />
+          <Image
+            source={
+              showTooltip
+                ? require("../assets/images/explamation_apple.png")
+                : require("../assets/images/question_apple.png")
+            }
+            style={styles.infoIcon}
+          />
         </Pressable>
-    </Animated.View>
+      </Animated.View>
 
-    {/* 모달 */}
-    {showTooltip && <InfoTooltip onDismiss={() => setShowTooltip(false)} />}
+      {/* 모달 */}
+      {showTooltip && <InfoTooltip onDismiss={() => setShowTooltip(false)} />}
 
-    <ShakeReminder />
-
-
+      <ShakeReminder />
     </View>
   );
 }
@@ -299,15 +230,15 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   infoButton: {
-  position: 'absolute',
-  bottom: 20,
-  right: 5,
-  zIndex: 1000,
-  elevation : 10
-},
-infoIcon: {
-  width: 58,
-  height: 68,
-  resizeMode: 'contain',
-},
+    position: "absolute",
+    bottom: 20,
+    right: 5,
+    zIndex: 1000,
+    elevation: 10,
+  },
+  infoIcon: {
+    width: 58,
+    height: 68,
+    resizeMode: "contain",
+  },
 });
