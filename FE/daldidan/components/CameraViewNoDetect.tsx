@@ -26,6 +26,10 @@ import AnalyzedResultOverlay from './AnalyzedResultOverlay'; // 임포트 주석
 import AppleProcessing from './AppleProcessing';
 import { useShake } from '../hooks/useShake';
 
+import * as SplashScreen from 'expo-splash-screen';
+
+SplashScreen.preventAutoHideAsync(); // Splash 화면을 수동으로 제어하겠다는 선언
+
 export default function CameraView() {
   const device = useCameraDevice('back');
   // screenSize 상태는 onLayout 이벤트에서 업데이트됩니다. 초기값은 { width: 0, height: 0 }
@@ -72,6 +76,12 @@ export default function CameraView() {
     // detectionResults, // useObjectDetection에서 사용하던 예전 로직 (이제 사용 안 함)
   } = useObjectDetection(format);
   const hasApple = detections.some((d) => d.class_id === 52);
+
+  useEffect(() => {
+    if (device && hasPermission && format) {
+      SplashScreen.hideAsync(); // 준비가 끝난 순간에 splash를 닫음
+    }
+  }, [device, hasPermission, format]);
 
   useEffect(() => {
     // 사과가 감지되지 않았을 때 카운트다운 초기화
