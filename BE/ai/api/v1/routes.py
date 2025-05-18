@@ -23,7 +23,12 @@ xgb_seg,
 model_jmk2,
 }
 { 인식 모델
-yolov8_tflite
+yolov8,
+}
+{
+bbox_int8,
+seg_float16,
+seg_float32,
 }
 """
 # -----------------------------
@@ -31,7 +36,7 @@ yolov8_tflite
 # -----------------------------
 # 사과 인식 모델: detect()에 전달할 이름 및 버전
 DETECT_MODEL_NAME: str = "yolov8"
-DETECT_MODEL_VERSION: str = "coco_int8"
+DETECT_MODEL_VERSION: str = "bbox_int8"
 # 당도 추론 모델: predict()에 전달할 모델 식별자
 PREDICT_MODEL_NAME: str = "cnn_lgbm_bbox"
 # -----------------------------
@@ -82,12 +87,11 @@ async def predict_image(
         raise HTTPException(status_code=400, detail=f"Invalid image: {e}")
 
     # 2️⃣  사과 탐지 -------------------------------------------------------------
-    # detect_apples : bytes/RGB → [{"bbox":(xmin,ymin,xmax,ymax), "seg": [[...]]}, ...]
-    apples = detect(
-        DETECT_MODEL_NAME, pil_img, version=DETECT_MODEL_VERSION
-    )  # type: List[dict]
+    print("[/predict] 🔍 detect() 호출 시작")
+
+    apples = detect(DETECT_MODEL_NAME, pil_img, version=DETECT_MODEL_VERSION)
+    print(f"[/predict] 🔍 사과 탐지 결과: {len(apples)}개")
     if not apples:
-        print("사과 없음")
         return PredictResponse(results=[])
 
     # 🔴 바운딩 박스 그리기용 복제본 생성
@@ -98,15 +102,14 @@ async def predict_image(
     results: List[ApplePred] = []
     for idx, det in enumerate(apples):
         xmin, ymin, xmax, ymax = det["bbox"]
-
         crop = pil_img.crop((xmin, ymin, xmax, ymax))
         buf = io.BytesIO()
         crop.save(buf, format="JPEG")
         image_bytes = buf.getvalue()
 
-        sugar = predict(
-            PREDICT_MODEL_NAME, image_bytes
-        )  # ← bytes/PIL 둘 중 하나에 맞춰 predict 수정
+        # 당도 추론
+        sugar = predict(PREDICT_MODEL_NAME, image_bytes)
+
         # 🔴 박스 시각화
         draw.rectangle(
             [int(xmin), int(ymin), int(xmax), int(ymax)], outline="red", width=4
