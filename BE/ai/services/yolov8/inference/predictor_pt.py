@@ -4,6 +4,8 @@ from ultralytics import YOLO
 from PIL import Image
 import numpy as np
 
+from services.yolov8.utils.nms_utils import remove_enclosing_big_boxes
+
 
 class YoloV8PtSegPredictor:
     def __init__(self, model_size: str = "m"):
@@ -11,7 +13,7 @@ class YoloV8PtSegPredictor:
         self.model = YOLO(f"yolov8{model_size}-seg.pt")
 
     def predict(self, image: Image.Image | np.ndarray):
-        results = self.model(image, conf=0.2, iou=0.45, classes=47)
+        results = self.model(image, conf=0.2, iou=0.8, classes=47)
         detections = []
         if results and results[0].masks is not None:
             for i, box in enumerate(results[0].boxes):
@@ -29,4 +31,7 @@ class YoloV8PtSegPredictor:
                         "score": float(box.conf[0].item()),
                     }
                 )
-        return detections
+        # 🔧 겹쳐진 큰 박스 제거
+        filtered = remove_enclosing_big_boxes(detections, contain_thresh=0.9)
+        return filtered
+        # return detections
