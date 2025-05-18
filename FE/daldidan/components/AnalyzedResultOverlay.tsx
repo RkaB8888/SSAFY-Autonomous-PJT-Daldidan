@@ -13,7 +13,6 @@ import InfoTooltip from "./InfoTooltip"; // 상단에 import 추가
 import question_apple from "../assets/images/question_apple.png";
 import { Image } from "react-native"; // ✅ 추가
 import ShakeReminder from "./ShakeReminder";
-import AppleSugarToast from "./AppleSugarToast";
 import AppleToastStack from "./AppleToastStack";
 
 interface Props {
@@ -174,9 +173,6 @@ export default function AnalyzedResultOverlay({
               width: screenWidth,
               height: screenHeight,
               zIndex: 5,
-            }}
-            onPress={() => {
-              // AppleToastStack에서 제공하는 핸들러를 사용할 예정이므로, 이 부분은 AppleToastStack에서 처리
             }}
           />
         );
