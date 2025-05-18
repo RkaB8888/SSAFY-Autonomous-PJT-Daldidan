@@ -12,7 +12,7 @@ class BBox(BaseModel):  # (x, y, w, h)  or  (xmin, ymin, xmax, ymax) 중 하나�
 
 class Segmentation(BaseModel):  # COCO-style 폴리곤 점 목록
     points: List[
-        List[List[float]]
+        List[float]
     ]  # a list of contours, each contour is a list of [x, y] pairs
 
 

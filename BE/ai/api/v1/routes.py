@@ -1,4 +1,4 @@
-# ai/api/v1/routes.p y
+# ai/api/v1/routes.py
 import base64, io, time, os
 import imghdr
 from typing import Optional, List
@@ -13,30 +13,36 @@ from services.predict_service import predict  # crop → 당도 추정
 from services.detect_service import detect  # ▶︎ YOLO 등 (bytes → list[dict])
 
 """
-{ 추론 모델
-cnn_lgbm_bbox,
-cnn_lgbm_seg,
-lgbm_bbox,
-lgbm_seg,
-xgb_bbox,
-xgb_seg,
-model_jmk2,
+-------추론 모델------------------------
+{ 
+    cnn_lgbm_bbox,
+    cnn_lgbm_seg,
+    lgbm_bbox,
+    lgbm_seg,
+    xgb_bbox,
+    xgb_seg,
+    model_jmk2,
 }
-{ 인식 모델
-yolov8,
+-------인식 모델------------------------
+{ 
+    yolov8,
+    yolov8_pt,
 }
 {
-bbox_int8,
-seg_float16,
-seg_float32,
+    bbox_int8,
+    seg_float16,
+    seg_float32,
+    s,
+    m,
+    l,
 }
 """
 # -----------------------------
 # 사용할 모델 상수 정의
 # -----------------------------
 # 사과 인식 모델: detect()에 전달할 이름 및 버전
-DETECT_MODEL_NAME: str = "yolov8"
-DETECT_MODEL_VERSION: str = "bbox_int8"
+DETECT_MODEL_NAME: str = "yolov8_pt"
+DETECT_MODEL_VERSION: str = "m"
 # 당도 추론 모델: predict()에 전달할 모델 식별자
 PREDICT_MODEL_NAME: str = "cnn_lgbm_bbox"
 # -----------------------------
@@ -123,6 +129,12 @@ async def predict_image(
             stroke_fill="white",
         )
 
+        # 🔴 segmentation 외곽선 그리기
+        if det.get("seg"):
+            pts = [(int(x), int(y)) for x, y in det["seg"]]
+            # 닫힌 폴리곤으로 그림
+            draw.line(pts + [pts[0]], fill="blue", width=2)
+
         item = ApplePred(
             id=idx,
             sugar_content=float(sugar),
@@ -132,14 +144,14 @@ async def predict_image(
                 xmax=int(xmax),
                 ymax=int(ymax),
             ),
-            segmentation=Segmentation(points=det["seg"]) if det.get("seg") else None,
+            segmentation=Segmentation(points=pts) if det.get("seg") else None,
         )
         results.append(item)
 
-    # ✅ 바운딩 박스 시각화 이미지 저장 -----------------------------------------
+    # ✅ 시각화 이미지 저장 -----------------------------------------
     drawn_path = os.path.join(save_dir, f"predict_{timestamp}_drawn.{ext}")
     draw_img.save(drawn_path)
-    print(f"✅ 바운딩 박스 이미지 저장: {drawn_path}")
+    print(f"✅ 시각화 이미지 저장: {drawn_path}")
 
     # 4️⃣  응답 + 로그 -----------------------------------------------------------
     print(
