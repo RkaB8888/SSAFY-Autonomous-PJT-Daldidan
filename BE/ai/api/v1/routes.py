@@ -108,7 +108,37 @@ async def predict_image(
     results: List[ApplePred] = []
     for idx, det in enumerate(apples):
         xmin, ymin, xmax, ymax = det["bbox"]
-        crop = pil_img.crop((xmin, ymin, xmax, ymax))
+
+        # pts_list 초기화
+        pts_list = None
+
+        # 🔧 segmentation이 있는 경우 마스크 기반으로 crop
+        if det.get("seg"):
+            # 1) 전체 크기의 빈 'L' 모드(흑백) 마스크 생성
+            mask = Image.new("L", pil_img.size, 0)
+            mask_draw = ImageDraw.Draw(mask)
+
+            # det["seg"]는 [[x,y], …] 형태
+            pts_list = [(int(x), int(y)) for x, y in det["seg"]]
+            mask_draw.polygon(pts_list, fill=255)
+
+            # 2) 원본 이미지에서 마스크 영역만 추출
+            segmented = Image.new("RGB", pil_img.size)
+            segmented.paste(pil_img, mask=mask)
+
+            # 3) bbox 범위로 잘라내기
+            crop = segmented.crop((xmin, ymin, xmax, ymax))
+
+        else:
+            # 기본 bbox crop
+            crop = pil_img.crop((xmin, ymin, xmax, ymax))
+
+        # 디버그용 crop 저장
+        crop_debug_path = os.path.join(save_dir, f"{timestamp}_crop_{idx}.jpg")
+        crop.save(crop_debug_path)
+        print(f"🔍 Crop saved: {crop_debug_path}")
+
+        # 4) 당도 추론을 위한 JPEG 바이트로 변환
         buf = io.BytesIO()
         crop.save(buf, format="JPEG")
         image_bytes = buf.getvalue()
@@ -129,11 +159,9 @@ async def predict_image(
             stroke_fill="white",
         )
 
-        # 🔴 segmentation 외곽선 그리기
-        if det.get("seg"):
-            pts = [(int(x), int(y)) for x, y in det["seg"]]
-            # 닫힌 폴리곤으로 그림
-            draw.line(pts + [pts[0]], fill="blue", width=2)
+        # 🔴 segmentation 윤곽선 그리기
+        if pts_list:
+            draw.polygon(pts_list, outline="blue", width=2)
 
         item = ApplePred(
             id=idx,
@@ -144,7 +172,7 @@ async def predict_image(
                 xmax=int(xmax),
                 ymax=int(ymax),
             ),
-            segmentation=Segmentation(points=pts) if det.get("seg") else None,
+            segmentation=Segmentation(points=pts_list) if pts_list else None,
         )
         results.append(item)
 
