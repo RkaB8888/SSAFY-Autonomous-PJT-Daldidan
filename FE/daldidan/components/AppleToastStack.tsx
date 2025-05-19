@@ -1,12 +1,14 @@
-import React, { useState } from "react";
-import { Pressable } from "react-native";
-import AppleSugarToast from "./AppleSugarToast";
-import { AnalyzedObjectResult } from "../hooks/types/objectDetection";
+import React, { useState } from 'react';
+import { Pressable } from 'react-native';
+import AppleSugarToast from './AppleSugarToast';
+import { AnalyzedObjectResult } from '../hooks/types/objectDetection';
+import * as Haptics from 'expo-haptics';
 
 interface Props {
   results: AnalyzedObjectResult[];
   screenSize: { width: number; height: number };
   originalImageSize: { width: number; height: number };
+  onApplePress?: (result: AnalyzedObjectResult) => void;
 }
 
 function transformBboxToScreen(
@@ -41,6 +43,7 @@ export default function AppleToastStack({
   results,
   screenSize,
   originalImageSize,
+  onApplePress,
 }: Props) {
   const [toasts, setToasts] = useState<
     {
@@ -55,7 +58,7 @@ export default function AppleToastStack({
     <>
       {results.map((result, index) => {
         const screenBbox = transformBboxToScreen(
-          result.bbox,
+          result.bbox ?? { xmin: 0, ymin: 0, xmax: 0, ymax: 0 },
           originalImageSize.width,
           originalImageSize.height,
           screenSize.width,
@@ -72,7 +75,7 @@ export default function AppleToastStack({
           <Pressable
             key={result.id ?? index}
             style={{
-              position: "absolute",
+              position: 'absolute',
               left: screenBbox.x1,
               top: screenBbox.y1,
               width: screenWidth,
@@ -80,13 +83,15 @@ export default function AppleToastStack({
               zIndex: 5,
             }}
             onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              onApplePress?.(result);
               setToasts((prev) => {
                 const id = generateId();
                 return [
                   ...prev,
                   {
                     id,
-                    sugarContent: result.sugar_content?.toFixed(1) ?? "-",
+                    sugarContent: result.sugar_content?.toFixed(1) ?? '-',
                     position: {
                       x: baseX,
                       y: baseY - toastCount * 38,
