@@ -69,7 +69,7 @@ export default function InfoTooltip({ onDismiss }: Props) {
         >
           <View style={styles.bubble}>
             <Text style={styles.text}>🍎 슬라이더로 당도를 설정해보세요!</Text>
-            <Text style={styles.text}>🍎 사과를 클릭하면 당도가 나와요!</Text>
+            <Text style={styles.text}>🍎 사과를 터치하면 당도가 나와요!</Text>
           </View>
           <View style={styles.arrow} />
         </Animated.View>
