@@ -14,7 +14,7 @@ warnings.filterwarnings("ignore")
 # === 경로 설정 ===
 test_folder = r"/home/j-k12e206/ai-hub/Fuji/valid/jsons"
 json_folder = r"/home/j-k12e206/ai-hub/Fuji/valid/jsons"
-model_path = r"/home/j-k12e206/jmk/S12P31E206/BE/ai/services/model_jmk2/outputs/checkpoints/best_val_loss.pth"  # 저장된 모델 weight
+model_path = r"/home/j-k12e206/jmk/S12P31E206/BE/ai/services/cnn_feature/outputs/checkpoints/best_val_loss.pth"  # 저장된 모델 weight
 
 # === transform (학습때와 동일) ===
 transform = transforms.Compose([
