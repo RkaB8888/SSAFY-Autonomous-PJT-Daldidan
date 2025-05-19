@@ -50,6 +50,8 @@ export default function CameraView() {
   const countdownSoundRef = useRef<Sound | null>(null);
   const [showCaptureImage, setShowCaptureImage] = useState(false);
   const capturingRef = useRef(false);
+  const [freezeDetection, setFreezeDetection] = useState(false);
+
   // ★★★ useAnalysisApiHandler 훅 사용 ★★★
   // useAnalysisApiHandler.ts 파일에 이 훅 구현 코드가 있어야 합니다. (resetAnalysis, originalImageSize 반환 포함)
   const {
@@ -181,8 +183,9 @@ export default function CameraView() {
       // useAnalysisApiHandler 훅의 triggerAnalysis 함수 호출
       // 캡처된 사진 파일의 URI와 원본 해상도 정보를 함께 훅으로 전달
       await triggerAnalysis(uri, photoOriginalWidth, photoOriginalHeight);
-
       console.log('[CameraView] Triggered analysis process.');
+      setFreezeDetection(true);
+
     } catch (error: any) {
       console.error(
         '[CameraView] Error during photo capture or triggering analysis:',
@@ -196,31 +199,19 @@ export default function CameraView() {
       // 카메라 일시 정지/재개 로직은 isAnalyzing 상태에 의해 자동으로 처리됩니다.
     }
     setCountdown(null);
+
   }, [isAnalyzing, triggerAnalysis, cameraRef]);
+  
+  useEffect(() => {
+  if (analyzedResults !== null && !isAnalyzing) {
+    setFreezeDetection(false); // 분석 끝났을 때만 다시 감지 허용
+  }
+}, [analyzedResults, isAnalyzing]);
 
-  // const startCountdownAndCapture = () => {
-  //   if (countdownTimer.current || isAnalyzing || analyzedResults !== null)
-  //     return;
-
-  //   setCountdown(3); // 시작 숫자
-  //   let current = 3;
-
-  //   countdownTimer.current = setInterval(() => {
-  //     current -= 1;
-  //     if (current > 0) {
-  //       setCountdown(current);
-  //     } else {
-  //       clearInterval(countdownTimer.current!);
-  //       countdownTimer.current = null;
-
-  //       handleCaptureAndAnalyze(); // 자동 캡처 실행
-  //     }
-  //   }, 1000);
-  // };
 
     // 3) 사운드 재생 → 캡처 & 이미지 토글 함수
   const startCaptureSequence = () => {
-    if (isAnalyzing || analyzedResults !== null || showCaptureImage|| capturingRef.current) return;
+    if (isAnalyzing || analyzedResults !== null || showCaptureImage|| capturingRef.current || freezeDetection) return;
     
     capturingRef.current = true;
     // 이미지 보여주기
@@ -362,7 +353,8 @@ useShake(() => {
           {detections.length === 0 &&
           !isAnalyzing &&
           analyzedResults === null &&
-           !showCaptureImage ? (
+           !showCaptureImage &&
+           !freezeDetection ? (
             <AppleHint />
           ) : null}
 
