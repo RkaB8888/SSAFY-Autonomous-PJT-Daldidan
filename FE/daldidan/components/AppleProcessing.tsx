@@ -9,12 +9,11 @@ interface Props {
 
 export default function AppleProcessing({ status }: Props) {
   const getAnimation = () => {
-    // if (status === 'peeling') return require('../assets/animations/apple_peeling.json');
-    if (status === 'juicing') return require('../assets/lottie/apple_juicy.json');
+    if (status === 'juicing')
+      return require('../assets/lottie/apple_juicy.json');
   };
 
   const getText = () => {
-    // if (status === 'peeling') return '사과를 깎는 중...';
     if (status === 'juicing') return '사과즙 짜는 중...';
   };
 
@@ -47,6 +46,6 @@ const styles = StyleSheet.create({
     marginTop: 20,
     color: 'white',
     fontSize: 20,
-    fontWeight: 'bold',
+    fontFamily: 'Maplestory',
   },
 });

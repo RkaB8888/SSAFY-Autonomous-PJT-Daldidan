@@ -1,8 +1,14 @@
 // components/CaptureOverlay.tsx
-import React, { useEffect, useState } from "react";
-import { View, Image, StyleSheet, Text, Dimensions } from "react-native";
-import LottieView from "lottie-react-native";
-import Animated, { useSharedValue, useAnimatedStyle, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
+import React, { useEffect, useState } from 'react';
+import { View, Image, StyleSheet, Text, Dimensions } from 'react-native';
+import LottieView from 'lottie-react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
 
 interface FramePair {
   character: any;
@@ -26,12 +32,12 @@ export default function CaptureOverlay({
   framePair,
 }: CaptureOverlayProps) {
   const [flashes, setFlashes] = useState<Flash[]>([]);
-  const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+  const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } =
+    Dimensions.get('window');
   const translateY = useSharedValue(0);
   const animatedStyle = useAnimatedStyle(() => ({
-  transform: [{ translateY: translateY.value }],
-}));
-
+    transform: [{ translateY: translateY.value }],
+  }));
 
   useEffect(() => {
     if (!visible) {
@@ -73,14 +79,24 @@ export default function CaptureOverlay({
           loop={true}
           style={[
             styles.flash,
-            { top: flash.top, left: flash.left, transform: [{ translateX: -50 }, { translateY: -50 }] },
+            {
+              top: flash.top,
+              left: flash.left,
+              transform: [{ translateX: -50 }, { translateY: -50 }],
+            },
           ]}
         />
       ))}
 
-        <View style={styles.dualImageContainer}>
-        <Animated.Image source={framePair.character} style={[styles.characterImage, animatedStyle]} />
-        <Animated.Image source={framePair.camera} style={[styles.cameraImage, animatedStyle]} />
+      <View style={styles.dualImageContainer}>
+        <Animated.Image
+          source={framePair.character}
+          style={[styles.characterImage, animatedStyle]}
+        />
+        <Animated.Image
+          source={framePair.camera}
+          style={[styles.cameraImage, animatedStyle]}
+        />
       </View>
       
       <Text style={styles.text}>{framePair.message}</Text>
@@ -120,8 +136,8 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 250,
     color: 'white',
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: 25,
+    fontFamily: 'Maplestory',
     textAlign: 'center',
     zIndex: 103,
   },
