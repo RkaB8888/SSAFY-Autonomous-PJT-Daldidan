@@ -600,10 +600,172 @@
 #         print(f"📌 [Epoch {epoch+1}] Best R² 갱신 → 저장 완료 (R²: {val_r2:.4f})")
 
 # print(f"\n🎉 학습 완료 | Best Validation R²: {best_val_r2:.4f} | 저장 위치: {SAVE_PATH}")
+# import os
+# import cv2
+# import json
+# import numpy as np
+# from tqdm import tqdm
+# import torch
+# import torch.nn as nn
+# import torch.optim as optim
+# from torch.utils.data import DataLoader, Dataset, random_split
+# from torchvision import transforms
+# from sklearn.metrics import r2_score
+# from torch.cuda.amp import autocast, GradScaler
+# from models.fusion_model import FusionModel
 
+# # ✅ 경로 설정
+# IMG_DIR = "/home/j-k12e206/ai-hub/Fuji/train/images"
+# JSON_DIR = "/home/j-k12e206/ai-hub/Fuji/train/jsons"
+# SAVE_DIR = "/home/j-k12e206/jmk/S12P31E206/BE/ai/services/model_jmk2/meme/checkpoints"
+# os.makedirs(SAVE_DIR, exist_ok=True)
 
+# # ✅ 학습 설정
+# manual_feature_dim = 6
+# batch_size = 64
+# num_epochs = 20
+# lr = 0.001
+
+# # ✅ transform
+# transform = transforms.Compose([
+#     transforms.Resize((224, 224)),
+#     transforms.ToTensor(),
+#     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+# ])
+
+# # ✅ feature 추출 함수
+# def extract_features(image, mask):
+#     x, y, w, h = cv2.boundingRect(mask)
+#     roi = image[y:y+h, x:x+w]
+#     roi = cv2.resize(roi, (64, 64))
+
+#     R, G, B = roi[:, :, 2], roi[:, :, 1], roi[:, :, 0]
+#     sum_RGB = R + G + B + 1e-5
+#     Rn = np.mean(R / sum_RGB)
+#     C = np.mean(1 - R / 255.0)
+
+#     YCbCr = cv2.cvtColor(roi, cv2.COLOR_BGR2YCrCb)
+#     Cb, Cr = YCbCr[:, :, 1], YCbCr[:, :, 2]
+#     ycbcr_diff = np.mean(Cb) - np.mean(Cr)
+#     ycbcr_norm = np.mean(Cb) / (np.mean(Cb) + np.mean(Cr) + 1e-5)
+
+#     hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
+#     h_mean = np.mean(hsv[:, :, 0])
+#     s_mean = np.mean(hsv[:, :, 1])
+
+#     return np.array([Rn, C, ycbcr_diff, ycbcr_norm, h_mean, s_mean], dtype=np.float32)
+
+# # ✅ custom dataset
+# class AppleDataset(Dataset):
+#     def __init__(self, image_dir, json_files, transform=None):
+#         self.image_dir = image_dir
+#         self.json_files = json_files
+#         self.transform = transform
+
+#     def __len__(self):
+#         return len(self.json_files)
+
+#     def __getitem__(self, idx):
+#         json_path = self.json_files[idx]
+#         with open(json_path, 'r') as f:
+#             data = json.load(f)
+
+#         image_name = os.path.splitext(os.path.basename(json_path))[0] + ".jpg"
+#         image_path = os.path.join(self.image_dir, image_name)
+#         image = cv2.imread(image_path)
+#         if image is None:
+#             return None
+
+#         points = np.array(data['annotations']['segmentation']).reshape((-1, 2)).astype(np.int32)
+#         mask = np.zeros((data['images']['img_height'], data['images']['img_width']), dtype=np.uint8)
+#         cv2.fillPoly(mask, [points], 255)
+
+#         manual_feats = extract_features(image, mask)
+#         manual_feats = torch.tensor(manual_feats, dtype=torch.float32)
+
+#         image_pil = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+#         image_pil = transforms.ToPILImage()(image_pil)
+#         if self.transform:
+#             image_tensor = self.transform(image_pil)
+#         else:
+#             image_tensor = transforms.ToTensor()(image_pil)
+
+#         label = float(data['collection'].get('sugar_content_nir', 0))
+#         return image_tensor, manual_feats, torch.tensor(label, dtype=torch.float32)
+
+# # ✅ collate_fn
+# def custom_collate(batch):
+#     batch = [b for b in batch if b is not None]
+#     return torch.utils.data.dataloader.default_collate(batch)
+
+# # ✅ 데이터 준비
+# json_files = [os.path.join(JSON_DIR, f) for f in os.listdir(JSON_DIR) if f.endswith('.json')]
+# dataset = AppleDataset(IMG_DIR, json_files, transform=transform)
+# val_size = int(0.2 * len(dataset))
+# train_size = len(dataset) - val_size
+# train_dataset, val_dataset = random_split(dataset, [train_size, val_size])
+
+# device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+# train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=0, pin_memory=True, collate_fn=custom_collate)
+# val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=0, pin_memory=True, collate_fn=custom_collate)
+
+# # ✅ 모델
+# model = FusionModel(manual_feature_dim).to(device)
+# criterion = nn.MSELoss()
+# optimizer = optim.Adam(model.parameters(), lr=lr)
+# scaler = GradScaler()
+
+# best_val_r2 = -float('inf')
+
+# # ✅ 학습 루프
+# for epoch in range(num_epochs):
+#     model.train()
+#     train_loss, all_preds, all_labels = 0.0, [], []
+#     for images, feats, labels in tqdm(train_loader, desc=f"Epoch {epoch+1}/{num_epochs}"):
+#         images = images.to(device)
+#         feats = feats.to(device)
+#         labels = labels.to(device)
+
+#         optimizer.zero_grad()
+#         with autocast():
+#             outputs = model(images, feats).squeeze()
+#             loss = criterion(outputs, labels)
+#         scaler.scale(loss).backward()
+#         scaler.step(optimizer)
+#         scaler.update()
+#         train_loss += loss.item()
+#         all_preds.extend(outputs.detach().cpu().numpy())
+#         all_labels.extend(labels.detach().cpu().numpy())
+
+#     train_mae = np.mean(np.abs(np.array(all_preds) - np.array(all_labels)))
+#     print(f"✅ Epoch {epoch+1} | Loss: {train_loss:.4f} | MAE: {train_mae:.4f}")
+
+#     model.eval()
+#     val_preds, val_labels = [], []
+#     with torch.no_grad():
+#         for images, feats, labels in val_loader:
+#             images = images.to(device)
+#             feats = feats.to(device)
+#             labels = labels.to(device)
+
+#             outputs = model(images, feats).squeeze()
+#             val_preds.extend(outputs.cpu().numpy())
+#             val_labels.extend(labels.cpu().numpy())
+
+#     val_r2 = r2_score(val_labels, val_preds)
+#     val_mae = np.mean(np.abs(np.array(val_preds) - np.array(val_labels)))
+#     print(f"🔍 Validation → MAE: {val_mae:.4f} | R²: {val_r2:.4f}")
+
+#     if val_r2 > best_val_r2:
+#         best_val_r2 = val_r2
+#         torch.save(model.state_dict(), os.path.join(SAVE_DIR, "best_model.pth"))
+#         print(f"📌 [Epoch {epoch+1}] Best R² 갱신 → 저장 완료")
+
+# print(f"\n🎉 학습 완료 | Best Validation R²: {best_val_r2:.4f}")
+
+#1223
 import os
-import cv2
 import json
 import numpy as np
 from tqdm import tqdm
@@ -614,16 +776,19 @@ from torch.utils.data import DataLoader, Dataset, random_split
 from torchvision import transforms
 from sklearn.metrics import r2_score
 from torch.cuda.amp import autocast, GradScaler
+from PIL import Image
 from models.fusion_model import FusionModel
 
 # ✅ 경로 설정
 IMG_DIR = "/home/j-k12e206/ai-hub/Fuji/train/images"
 JSON_DIR = "/home/j-k12e206/ai-hub/Fuji/train/jsons"
-SAVE_DIR = "/home/j-k12e206/jmk/S12P31E206/BE/ai/services/model_jmk2/meme/checkpoints"
+# SAVE_DIR = "/home/j-k12e206/jmk/S12P31E206/BE/ai/services/model_jmk2/meme/checkpoints"
+SAVE_DIR = "/home/j-k12e206/jmk/S12P31E206/BE/ai/services/cnn_feature_enhanced_seg/me/checkpoints"
+FEATURE_DIR = "/home/j-k12e206/jmk/S12P31E206/BE/ai/services/cnn_feature_enhanced_seg/me"
 os.makedirs(SAVE_DIR, exist_ok=True)
 
 # ✅ 학습 설정
-manual_feature_dim = 6
+manual_feature_dim = 126
 batch_size = 64
 num_epochs = 20
 lr = 0.001
@@ -635,33 +800,13 @@ transform = transforms.Compose([
     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 ])
 
-# ✅ feature 추출 함수 (속도 최적화)
-def extract_features(image, mask):
-    x, y, w, h = cv2.boundingRect(mask)
-    roi = image[y:y+h, x:x+w]
-    roi = cv2.resize(roi, (64, 64))
-
-    R, G, B = roi[:, :, 2], roi[:, :, 1], roi[:, :, 0]
-    sum_RGB = R + G + B + 1e-5
-    Rn = np.mean(R / sum_RGB)
-    C = np.mean(1 - R / 255.0)
-
-    YCbCr = cv2.cvtColor(roi, cv2.COLOR_BGR2YCrCb)
-    Cb, Cr = YCbCr[:, :, 1], YCbCr[:, :, 2]
-    ycbcr_diff = np.mean(Cb) - np.mean(Cr)
-    ycbcr_norm = np.mean(Cb) / (np.mean(Cb) + np.mean(Cr) + 1e-5)
-
-    hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
-    h_mean = np.mean(hsv[:, :, 0])
-    s_mean = np.mean(hsv[:, :, 1])
-
-    return np.array([Rn, C, ycbcr_diff, ycbcr_norm, h_mean, s_mean], dtype=np.float32)
-
-# ✅ custom dataset
+# ✅ Dataset 정의
 class AppleDataset(Dataset):
-    def __init__(self, image_dir, json_files, transform=None):
+    def __init__(self, image_dir, json_files, manual_features, labels, transform=None):
         self.image_dir = image_dir
         self.json_files = json_files
+        self.manual_features = manual_features
+        self.labels = labels
         self.transform = transform
 
     def __len__(self):
@@ -669,49 +814,33 @@ class AppleDataset(Dataset):
 
     def __getitem__(self, idx):
         json_path = self.json_files[idx]
-        with open(json_path, 'r') as f:
-            data = json.load(f)
-
         image_name = os.path.splitext(os.path.basename(json_path))[0] + ".jpg"
         image_path = os.path.join(self.image_dir, image_name)
-        image = cv2.imread(image_path)
-        if image is None:
-            return None
 
-        points = np.array(data['annotations']['segmentation']).reshape((-1, 2)).astype(np.int32)
-        mask = np.zeros((data['images']['img_height'], data['images']['img_width']), dtype=np.uint8)
-        cv2.fillPoly(mask, [points], 255)
+        image = Image.open(image_path).convert("RGB")
+        image_tensor = self.transform(image) if self.transform else transforms.ToTensor()(image)
 
-        manual_feats = extract_features(image, mask)
-        manual_feats = torch.tensor(manual_feats, dtype=torch.float32).to(device)
+        manual_feat = torch.tensor(self.manual_features[idx], dtype=torch.float32)
+        label = torch.tensor(self.labels[idx], dtype=torch.float32)
 
-        image_pil = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        image_pil = transforms.ToPILImage()(image_pil)
-        if self.transform:
-            image_tensor = self.transform(image_pil)
-        else:
-            image_tensor = transforms.ToTensor()(image_pil)
+        return image_tensor, manual_feat, label
 
-        label = float(data['collection'].get('sugar_content_nir', 0))
-        return image_tensor.to(device), manual_feats, torch.tensor(label, dtype=torch.float32).to(device)
+# ✅ 데이터 불러오기
+manual_features = np.load(os.path.join(FEATURE_DIR, "manual_features.npy"))
+labels = np.load(os.path.join(FEATURE_DIR, "labels.npy"))
+json_files = sorted([os.path.join(JSON_DIR, f) for f in os.listdir(JSON_DIR) if f.endswith('.json')])
 
-# ✅ collate_fn
-def custom_collate(batch):
-    batch = [b for b in batch if b is not None]
-    return torch.utils.data.dataloader.default_collate(batch)
-
-# ✅ 데이터 준비
-json_files = [os.path.join(JSON_DIR, f) for f in os.listdir(JSON_DIR) if f.endswith('.json')]
-dataset = AppleDataset(IMG_DIR, json_files, transform=transform)
+dataset = AppleDataset(IMG_DIR, json_files, manual_features, labels, transform=transform)
 val_size = int(0.2 * len(dataset))
 train_size = len(dataset) - val_size
 train_dataset, val_dataset = random_split(dataset, [train_size, val_size])
 
-train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=0, pin_memory=True, collate_fn=custom_collate)
-val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=0, pin_memory=True, collate_fn=custom_collate)
-
-# ✅ 모델
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=48, pin_memory=True)
+val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=48, pin_memory=True)
+
+# ✅ 모델 및 학습 세팅
 model = FusionModel(manual_feature_dim).to(device)
 criterion = nn.MSELoss()
 optimizer = optim.Adam(model.parameters(), lr=lr)
@@ -724,13 +853,19 @@ for epoch in range(num_epochs):
     model.train()
     train_loss, all_preds, all_labels = 0.0, [], []
     for images, feats, labels in tqdm(train_loader, desc=f"Epoch {epoch+1}/{num_epochs}"):
+        images = images.to(device)
+        feats = feats.to(device)
+        labels = labels.to(device)
+
         optimizer.zero_grad()
-        with autocast(device_type='cuda', dtype=torch.float16):
+        with autocast():
             outputs = model(images, feats).squeeze()
             loss = criterion(outputs, labels)
+
         scaler.scale(loss).backward()
         scaler.step(optimizer)
         scaler.update()
+
         train_loss += loss.item()
         all_preds.extend(outputs.detach().cpu().numpy())
         all_labels.extend(labels.detach().cpu().numpy())
@@ -738,10 +873,15 @@ for epoch in range(num_epochs):
     train_mae = np.mean(np.abs(np.array(all_preds) - np.array(all_labels)))
     print(f"✅ Epoch {epoch+1} | Loss: {train_loss:.4f} | MAE: {train_mae:.4f}")
 
+    # ✅ 검증
     model.eval()
     val_preds, val_labels = [], []
     with torch.no_grad():
         for images, feats, labels in val_loader:
+            images = images.to(device)
+            feats = feats.to(device)
+            labels = labels.to(device)
+
             outputs = model(images, feats).squeeze()
             val_preds.extend(outputs.cpu().numpy())
             val_labels.extend(labels.cpu().numpy())

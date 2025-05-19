@@ -1,6 +1,5 @@
 # ai/services/predict_service.py
 
-
 def predict(model_name: str, image_bytes: bytes):
     if model_name == "cnn_lgbm_bbox":
         from services.cnn_lgbm_bbox.predict.predictor import (
@@ -51,28 +50,48 @@ def predict(model_name: str, image_bytes: bytes):
         return predict_xgb_seg(image_bytes)
 
     elif model_name == "model_a":
-        from services.model_a.predictor import predict as predict_a
+        from services.model_a.predictor import (
+            predict as predict_a,
+        )
 
+        print("model_a 모델 사용")
         return predict_a(image_bytes)
 
-    elif model_name == "model_b":
-        from services.model_b.predictor import predict as predict_b
+    # elif model_name == "model_b":
+    #     from services.model_b.predictor import predict as predict_b
 
-        return predict_b(image_bytes)
+    #     return predict_b(image_bytes)
     
         
     elif model_name == "model_jmk2":
-        from services.model_jmk2.predictor import predict_bytes as predict_jmk2
+        from services.model_jmk2.predictor import (
+            predict_bytes as predict_jmk2,
+        )
         
+        print("model_jmk2 사용")
         return predict_jmk2(image_bytes)
+    
+    elif model_name == "cnn_feature_enhanced_seg":
+        from services.cnn_feature_enhanced_seg.predictor import (
+            predict_bytes as predict_cnn_feature_enhanced_seg,
+        )
+        print("cnn_feature_enhanced_seg 모델 사용")
+        return predict_cnn_feature_enhanced_seg(image_bytes)
 
-    # elif model_name == "model_jmk3":
-    #     from services.model_jmk3.predictor import predict_bytes as predict_jmk3
-    #     return predict_jmk3(image_bytes)
 
-    # elif model_name == "model_jmk4":
-    #     from services.model_jmk4.predictor import predict_bytes as predict_jmk4
-    #     return predict_jmk4(image_bytes)
+    elif model_name == "model_jmk3":
+        from services.model_jmk3.predictor import (
+            predict_bytes as predict_jmk3
+        )
+        print("model_jmk3 사용")
+        return predict_jmk3(image_bytes)
+
+    elif model_name == "model_jmk4":
+        from services.model_jmk4.predictor import (
+            predict_bytes as predict_jmk4
+        )
+        print("model_jmk4 사용")
+        return predict_jmk4(image_bytes)
 
     else:
         raise ValueError(f"Unknown model: {model_name!r}")

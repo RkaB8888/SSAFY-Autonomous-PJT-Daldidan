@@ -3,7 +3,7 @@ import base64, io, time, os
 import imghdr
 from typing import Optional, List
 
-from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, File, Form, HTTPException, UploadFile, Query
 from PIL import Image, ImageDraw
 from io import BytesIO
 from datetime import datetime
@@ -59,6 +59,7 @@ async def health_check():
 async def predict_image(
     image: Optional[UploadFile] = File(None),
     image_base64: Optional[str] = Form(None),
+    model: str = Query("xgb_seg") 
 ):
     if (image is None and image_base64 is None) or (image and image_base64):
         raise HTTPException(
@@ -143,9 +144,9 @@ async def predict_image(
         crop.save(buf, format="JPEG")
         image_bytes = buf.getvalue()
 
-        # 당도 추론
-        sugar = predict(PREDICT_MODEL_NAME, image_bytes)
-
+        sugar = predict(
+            model, image_bytes
+        )  # ← bytes/PIL 둘 중 하나에 맞춰 predict 수정
         # 🔴 박스 시각화
         draw.rectangle(
             [int(xmin), int(ymin), int(xmax), int(ymax)], outline="red", width=4
