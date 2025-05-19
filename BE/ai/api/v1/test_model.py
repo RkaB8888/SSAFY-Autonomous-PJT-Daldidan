@@ -12,7 +12,7 @@ actual_sugars = [
     11.4, 10.2, 12.8, 9.5, 9.7
 ]
   # 총 45개, 1번 ~ 45번 이미지의 실제값
-model_names = ["cnn_lgbm_bbox", "model_jmk2", "xgb_seg", "lgbm_bbox"]
+model_names = [ "model_jmk3", "model_jmk4", "cnn_lgbm_bbox", "model_jmk2", "xgb_seg", "lgbm_bbox", "cnn_feature_enhanced_seg"]
 server_url = "http://localhost:9000/predict"
 
 # 결과 저장용 리스트
@@ -50,6 +50,6 @@ df = pd.DataFrame(results)
 
 # 저장 경로 (예: 바깥으로 이동할것)
 os.makedirs("ai/tmp", exist_ok=True)
-# save_path = "ai/tmp/predict_log.csv" # 경로 수정요함
+save_path = "ai/tmp/predict_log.csv" # 경로 수정요함
 df.to_csv(save_path, index=False)
 print(f"\n📁 결과 저장 완료: {save_path}")
