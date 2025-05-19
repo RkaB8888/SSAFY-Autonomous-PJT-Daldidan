@@ -109,7 +109,7 @@ if __name__ == "__main__":
 
     scaler = StandardScaler().fit(features)
 
-    SAVE_PATH = "/home/j-k12e206/jmk/S12P31E206/BE/ai/services/cnn_feature/meme/scaler.pkl"
+    SAVE_PATH = "/home/j-k12e206/jmk/S12P31E206/BE/ai/services/cnn_feature_seg/meme/scaler.pkl"
     joblib.dump(scaler, SAVE_PATH)
 
     end_time = time.time()
