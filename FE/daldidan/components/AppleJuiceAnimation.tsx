@@ -22,7 +22,7 @@ export default function AppleJuiceAnimation({
   return (
     <LottieView
       ref={animationRef}
-      source={require('../assets/lottie/apple_pop.json')}
+      source={require('../assets/lottie/pop_2.json')}
       style={[
         StyleSheet.absoluteFill,
         position && {
