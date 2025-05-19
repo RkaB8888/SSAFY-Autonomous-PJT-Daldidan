@@ -28,6 +28,7 @@ import InfoTooltip from './InfoTooltip';
 import ShakeReminder from './ShakeReminder';
 import AppleToastStack from './AppleToastStack';
 import TopNAppleSelector from './TopNAppleSelector';
+import AppleJuiceAnimation from './AppleJuiceAnimation';
 
 interface Props {
   results: AnalyzedObjectResult[];
@@ -149,6 +150,30 @@ const createSkiaPathForClosedPolygonCurves = (
   return path;
 };
 
+const transformBboxToScreen = (
+  bbox: { xmin: number; ymin: number; xmax: number; ymax: number },
+  originalWidth: number,
+  originalHeight: number,
+  screenWidth: number,
+  screenHeight: number
+) => {
+  const rotatedX1 = originalHeight - bbox.ymax;
+  const rotatedY1 = bbox.xmin;
+  const rotatedX2 = originalHeight - bbox.ymin;
+  const rotatedY2 = bbox.xmax;
+  const rotatedImageWidth = originalHeight;
+  const rotatedImageHeight = originalWidth;
+  const scale = screenHeight / rotatedImageHeight;
+  const offsetX = (screenWidth - rotatedImageWidth * scale) / 2;
+  const offsetY = (screenHeight - rotatedImageHeight * scale) / 2;
+  return {
+    x1: Math.floor(rotatedX1 * scale + offsetX),
+    y1: Math.floor(rotatedY1 * scale + offsetY),
+    x2: Math.ceil(rotatedX2 * scale + offsetX),
+    y2: Math.ceil(rotatedY2 * scale + offsetY),
+  };
+};
+
 export default function AnalyzedResultOverlay({
   results,
   screenSize,
@@ -157,6 +182,14 @@ export default function AnalyzedResultOverlay({
   const [selectedAppleId, setSelectedAppleId] = useState<
     string | number | null
   >(null);
+  const [juiceAnimations, setJuiceAnimations] = useState<
+    {
+      id: string;
+      color: string;
+      position: { x: number; y: number };
+      size: number;
+    }[]
+  >([]);
 
   type FilterMode = 'topN' | 'slider';
   const [filterMode, setFilterMode] = useState<FilterMode>('topN');
@@ -215,13 +248,35 @@ export default function AnalyzedResultOverlay({
     }
   }, [results.length, topN]);
 
-  // 기존 transformBboxToScreen 함수는 이제 사용되지 않으므로 삭제하거나 주석 처리 가능
-  // const transformBboxToScreen = ( ... ) => { ... };
+  const handleApplePress = (result: AnalyzedObjectResult) => {
+    if (result.bbox) {
+      const screenBbox = transformBboxToScreen(
+        result.bbox,
+        originalImageSize.width,
+        originalImageSize.height,
+        screenSize.width,
+        screenSize.height
+      );
+      const centerX = (screenBbox.x1 + screenBbox.x2) / 2;
+      const centerY = (screenBbox.y1 + screenBbox.y2) / 2;
 
-  // handleApplePress 함수는 현재 사용되지 않지만, 추후 개별 사과 선택 기능에 필요할 수 있어 유지
-  // const handleApplePress = (appleId: string | number) => {
-  //   setSelectedAppleId(appleId);
-  // };
+      // 사과 객체의 크기 계산 (너비와 높이 중 더 큰 값 사용)
+      const appleWidth = screenBbox.x2 - screenBbox.x1;
+      const appleHeight = screenBbox.y2 - screenBbox.y1;
+      const appleSize = Math.max(appleWidth, appleHeight) * 3.5;
+
+      const animationId = `${result.id}-${Date.now()}`;
+      setJuiceAnimations((prev) => [
+        ...prev,
+        {
+          id: animationId,
+          color: '#ff6b6b',
+          position: { x: centerX, y: centerY },
+          size: appleSize,
+        },
+      ]);
+    }
+  };
 
   // 세그멘테이션 선 스타일
   const SEGMENTATION_STROKE_WIDTH = 4; // 선 두께 (조절 가능)
@@ -318,8 +373,7 @@ export default function AnalyzedResultOverlay({
 
           if (
             isHighlighted &&
-            result.segmentation &&
-            result.segmentation.points &&
+            result.segmentation?.points &&
             result.segmentation.points.length > 0 // 최소 1개의 점이라도 있어야 함 (Path 함수 내부에서 3개 미만 처리)
           ) {
             const originalPoints = result.segmentation.points;
@@ -333,7 +387,7 @@ export default function AnalyzedResultOverlay({
               );
             }
 
-            const screenPoints = pointsToProcess.map((p) =>
+            const screenPoints = pointsToProcess.map((p: number[]) =>
               transformPointToScreen(
                 p,
                 originalImageSize.width,
@@ -363,14 +417,26 @@ export default function AnalyzedResultOverlay({
         })}
       </Canvas>
 
-      {/* 바운딩 박스 시각화용 디버그 View 삭제됨 */}
-
       <AppleToastStack
         results={results}
         screenSize={screenSize}
         originalImageSize={originalImageSize}
-        // transformPointFunction={transformPointToScreen} // 필요하다면 토스트 위치 계산에 사용
+        onApplePress={handleApplePress}
       />
+
+      {juiceAnimations.map((animation) => (
+        <AppleJuiceAnimation
+          key={animation.id}
+          color={animation.color}
+          position={animation.position}
+          size={animation.size}
+          onAnimationEnd={() => {
+            setJuiceAnimations((prev) =>
+              prev.filter((a) => a.id !== animation.id)
+            );
+          }}
+        />
+      ))}
 
       <Animated.View
         style={[styles.infoButton, { transform: [{ scale: scaleAnim }] }]}
@@ -397,17 +463,6 @@ export default function AnalyzedResultOverlay({
 }
 
 const styles = StyleSheet.create({
-  // textContainer, text, selectedText는 현재 코드에서 직접 사용되지 않음
-  // textContainer: {},
-  // text: {
-  //   color: "white",
-  //   fontWeight: "bold",
-  //   textAlign: "center",
-  // },
-  // selectedText: {
-  //   color: "#000",
-  //   fontWeight: "bold",
-  // },
   infoButton: {
     position: 'absolute',
     bottom: 20,
