@@ -481,7 +481,17 @@ export default function AnalyzedResultOverlay({
         </Pressable>
       </Animated.View>
 
+      {/* ✅ 왕관은 여기! */}
+      {highest?.bbox &&
+        !showTooltip && ( // showTooltip이 false일 때만 왕관 렌더링
+          <TopAppleCrown
+            bbox={highest.bbox}
+            originalSize={originalImageSize}
+            screenSize={screenSize}
+          />
+        )}
       {showTooltip && <InfoTooltip onDismiss={() => setShowTooltip(false)} />}
+
       <ShakeReminder />
     </View>
   );
