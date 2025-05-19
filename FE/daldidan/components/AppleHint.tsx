@@ -23,16 +23,11 @@ export default function AppleHint() {
       true
     );
   }, []);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: translateY.value }],
-  }));
-
   return (
     <View style={styles.container}>
-      <Animated.View style={[StyleSheet.absoluteFillObject, animatedStyle]}>
+      <Animated.View style={[StyleSheet.absoluteFillObject]}>
         <LottieView
-          source={require('../assets/lottie/scan.json')}
+          source={require('../assets/lottie/scan_2.json')}
           autoPlay
           loop
           style={styles.lottie}
@@ -55,11 +50,13 @@ const styles = StyleSheet.create({
   },
   lottie: {
     width: '100%',
-    height: 300, // 스캔 바 높이
+    height: 500,
+    position: 'absolute',
+    bottom: '20%',
   },
   overlay: {
     position: 'absolute',
-    bottom: '15%',
+    bottom: '30%',
     alignItems: 'center',
   },
   subtitle: {
