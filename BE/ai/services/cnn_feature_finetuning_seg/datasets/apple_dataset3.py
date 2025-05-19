@@ -14,7 +14,7 @@ class AppleDataset(Dataset):
         self.image_dir = image_dir
         self.json_files = json_files
         self.transform = transform
-        self.scaler = joblib.load("/home/j-k12e206/jmk/S12P31E206/BE/ai/services/model_jmk3/me/scaler3.pkl")
+        self.scaler = joblib.load("/home/j-k12e206/jmk/S12P31E206/BE/ai/services/cnn_feature_finetuning_seg/me/scaler3.pkl")
 
     def __len__(self):
         return len(self.json_files)
