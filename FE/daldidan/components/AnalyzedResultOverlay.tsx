@@ -30,6 +30,8 @@ import AppleToastStack from './AppleToastStack';
 import TopNAppleSelector from './TopNAppleSelector';
 import AppleJuiceAnimation from './AppleJuiceAnimation';
 import { useInfoTooltip } from "./InfoTooltipContext";
+import TopAppleGlow from './TopAppleGlow';
+
 
 interface Props {
   results: AnalyzedObjectResult[];
@@ -235,6 +237,10 @@ export default function AnalyzedResultOverlay({
     .slice(0, topN)
     .map((r) => r.id);
 
+  const highest = [...results]
+  .filter(r => r.sugar_content !== undefined && r.sugar_content !== null)
+  .sort((a, b) => b.sugar_content! - a.sugar_content!)[0];
+
   useEffect(() => {
     Animated.loop(
       Animated.sequence([
@@ -374,6 +380,23 @@ export default function AnalyzedResultOverlay({
           />
         </Group>
 
+        {/* ✅ 가장 당도 높은 사과에 Glow 추가 */}
+        {(() => {
+            const highest = [...results]
+            .filter(r => r.sugar_content !== undefined && r.sugar_content !== null)
+            .sort((a, b) => b.sugar_content! - a.sugar_content!)[0];
+
+            if (!highest || !highest.bbox) return null;
+
+            return (
+            <TopAppleGlow
+                bbox={highest.bbox}
+                originalSize={originalImageSize}
+                screenSize={screenSize}
+            />
+            );
+        })()}
+
         {/* 세그멘테이션 영역 클리핑 */}
         {results.map((result, index) => {
           const isHighlighted =
@@ -483,9 +506,8 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   infoIcon: {
-    width: 88,
-    height: 88,
-    bottom: 20,
+    width: 58,
+    height: 68,
     resizeMode: "contain",
   },
 });
