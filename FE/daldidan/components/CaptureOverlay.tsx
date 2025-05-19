@@ -4,10 +4,14 @@ import { View, Image, StyleSheet, Text, Dimensions } from "react-native";
 import LottieView from "lottie-react-native";
 import Animated, { useSharedValue, useAnimatedStyle, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
 
+interface FramePair {
+  character: any;
+  camera: any;
+}
+
 interface CaptureOverlayProps {
   visible: boolean;
-  /** 화면에 표시할 애니메이션 프레임 */
-  frameSource: any;
+  framePair: FramePair;
 }
 
 interface Flash {
@@ -18,7 +22,7 @@ interface Flash {
 
 export default function CaptureOverlay({
   visible,
-  frameSource,
+  framePair,
 }: CaptureOverlayProps) {
   const [flashes, setFlashes] = useState<Flash[]>([]);
   const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -73,7 +77,10 @@ export default function CaptureOverlay({
         />
       ))}
 
-      <Animated.Image source={frameSource} style={[styles.image, animatedStyle]} />
+        <View style={styles.dualImageContainer}>
+        <Animated.Image source={framePair.character} style={[styles.characterImage, animatedStyle]} />
+        <Animated.Image source={framePair.camera} style={[styles.cameraImage, animatedStyle]} />
+      </View>
       
       <Text style={styles.text}>사과를 찍고 있어요!</Text>
     </View>
@@ -88,16 +95,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     zIndex: 100,
   },
+  dualImageContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    zIndex: 102,
+  },
+  characterImage: {
+    width: 130,
+    height: 130,
+    marginRight: 5,
+  },
+  cameraImage: {
+    width: 200,
+    height: 200,
+  },
   flash: {
     position: 'absolute',
     width: 100,
     height: 100,
     zIndex: 101,
-  },
-  image: {
-    width: 200,
-    height: 200,
-    zIndex: 102,
   },
   text: {
     position: 'absolute',
@@ -108,4 +124,4 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     zIndex: 103,
   },
-})
+});
