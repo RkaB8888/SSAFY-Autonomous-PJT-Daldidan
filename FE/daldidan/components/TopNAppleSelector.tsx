@@ -29,7 +29,7 @@ export default function TopNAppleSelector({ topN, onChange, maxN }: Props) {
 const styles = StyleSheet.create({
   dropdownWrapper: {
     position: 'absolute',
-    top: 85,
+    top: 100,
     left: 10,
     zIndex: 100,
     backgroundColor: 'white',
