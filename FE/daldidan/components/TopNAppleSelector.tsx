@@ -6,7 +6,7 @@ import { Picker } from '@react-native-picker/picker';
 interface Props {
   topN: number;
   onChange: (n: number) => void;
-  maxN : number;
+  maxN: number;
 }
 
 export default function TopNAppleSelector({ topN, onChange, maxN }: Props) {
@@ -14,12 +14,16 @@ export default function TopNAppleSelector({ topN, onChange, maxN }: Props) {
     <View style={styles.dropdownWrapper}>
       <Picker
         selectedValue={topN}
-        style={styles.picker}
+        style={[styles.picker, { fontFamily: 'Maplestory' }]}
         onValueChange={(value) => onChange(value)}
-        itemStyle={{ fontSize: 10 }}  // ✅ 글자 크기 작게 조절
       >
         {Array.from({ length: maxN }, (_, i) => i + 1).map((n) => (
-          <Picker.Item key={n} label={`Top ${n}`} value={n} />
+          <Picker.Item
+            key={n}
+            label={`Top ${n}`}
+            value={n}
+            style={{ fontFamily: 'Maplestory' }}
+          />
         ))}
       </Picker>
     </View>

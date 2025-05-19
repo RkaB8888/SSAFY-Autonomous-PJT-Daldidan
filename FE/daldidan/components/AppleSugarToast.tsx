@@ -1,11 +1,11 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Animated,
   Text,
   StyleSheet,
   View,
   LayoutChangeEvent,
-} from "react-native";
+} from 'react-native';
 
 interface AppleSugarToastProps {
   visible: boolean;
@@ -80,57 +80,45 @@ export default function AppleSugarToast({
       ]}
       onLayout={handleLayout}
     >
-      <View style={styles.gradientBg}>
-        <Text style={styles.sugarText}>
-          {sugarContent}
-          <Text style={styles.bx}>Bx</Text>
-        </Text>
-      </View>
+      <Text style={[styles.sugarText, { fontFamily: 'Maplestory' }]}>
+        {sugarContent}
+        <Text style={[styles.bx, { fontFamily: 'Maplestory' }]}>Bx</Text>
+      </Text>
     </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
   toast: {
-    position: "absolute",
+    position: 'absolute',
     zIndex: 999,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#b71c1c",
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#b71c1c',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.7,
     shadowRadius: 18,
     elevation: 18,
   },
-  gradientBg: {
-    paddingVertical: 5,
-    paddingHorizontal: 10,
-    borderRadius: 22,
-    borderWidth: 2,
-    borderColor: "#fffbe6",
-    backgroundColor: "#d32f2f",
-    // 붉은 사과 느낌의 진한 배경
-    shadowColor: "#ff5252",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.4,
-    shadowRadius: 10,
-  },
   sugarText: {
-    color: "#fffbe6",
-    fontWeight: "900",
+    color: '#fffbe6',
+    fontFamily: 'Maplestory',
     fontSize: 20,
-    textShadowColor: "#b71c1c",
+    textShadowColor: '#b71c1c',
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 8,
     letterSpacing: 1,
+    includeFontPadding: false,
   },
   bx: {
-    color: "#ffd600",
-    fontWeight: "bold",
+    color: '#ffd600',
+    fontFamily: 'Maplestory',
+    fontWeight: 'bold',
     fontSize: 18,
     marginLeft: 2,
-    textShadowColor: "#b71c1c",
+    textShadowColor: '#b71c1c',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 4,
+    includeFontPadding: false,
   },
 });

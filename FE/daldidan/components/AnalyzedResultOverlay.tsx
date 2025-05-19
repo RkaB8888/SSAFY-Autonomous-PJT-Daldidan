@@ -29,7 +29,7 @@ import ShakeReminder from './ShakeReminder';
 import AppleToastStack from './AppleToastStack';
 import TopNAppleSelector from './TopNAppleSelector';
 import AppleJuiceAnimation from './AppleJuiceAnimation';
-import { useInfoTooltip } from "./InfoTooltipContext";
+import { useInfoTooltip } from './InfoTooltipContext';
 import TopAppleCrown from './TopAppleCrown';
 
 interface Props {
@@ -37,7 +37,6 @@ interface Props {
   screenSize: { width: number; height: number };
   originalImageSize: { width: number; height: number };
 }
-
 
 // 각 포인트를 화면 좌표로 변환하는 함수
 const transformPointToScreen = (
@@ -224,7 +223,7 @@ export default function AnalyzedResultOverlay({
       setHasShown(true);
     }
   }, [hasShown]);
-  
+
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
   const [topN, setTopN] = useState(3);
@@ -237,8 +236,8 @@ export default function AnalyzedResultOverlay({
     .map((r) => r.id);
 
   const highest = [...results]
-  .filter(r => r.sugar_content !== undefined && r.sugar_content !== null)
-  .sort((a, b) => b.sugar_content! - a.sugar_content!)[0];
+    .filter((r) => r.sugar_content !== undefined && r.sugar_content !== null)
+    .sort((a, b) => b.sugar_content! - a.sugar_content!)[0];
 
   useEffect(() => {
     Animated.loop(
@@ -324,7 +323,7 @@ export default function AnalyzedResultOverlay({
         >
           <Text
             style={{
-              fontWeight: 'bold',
+              fontFamily: 'Maplestory_Light',
               color: filterMode === 'topN' ? 'white' : 'black',
             }}
           >
@@ -342,7 +341,7 @@ export default function AnalyzedResultOverlay({
         >
           <Text
             style={{
-              fontWeight: 'bold',
+              fontFamily: 'Maplestory_Light',
               color: filterMode === 'slider' ? 'white' : 'black',
             }}
           >
@@ -434,7 +433,14 @@ export default function AnalyzedResultOverlay({
         })}
       </Canvas>
 
-
+      {/* ✅ 왕관은 여기! */}
+      {highest?.bbox && (
+        <TopAppleCrown
+          bbox={highest.bbox}
+          originalSize={originalImageSize}
+          screenSize={screenSize}
+        />
+      )}
 
       <AppleToastStack
         results={results}
@@ -475,13 +481,14 @@ export default function AnalyzedResultOverlay({
         </Pressable>
       </Animated.View>
 
-                      {/* ✅ 왕관은 여기! */}
-        {highest?.bbox && !showTooltip && ( // showTooltip이 false일 때만 왕관 렌더링
-            <TopAppleCrown
+      {/* ✅ 왕관은 여기! */}
+      {highest?.bbox &&
+        !showTooltip && ( // showTooltip이 false일 때만 왕관 렌더링
+          <TopAppleCrown
             bbox={highest.bbox}
             originalSize={originalImageSize}
             screenSize={screenSize}
-            />
+          />
         )}
       {showTooltip && <InfoTooltip onDismiss={() => setShowTooltip(false)} />}
 
@@ -502,6 +509,6 @@ const styles = StyleSheet.create({
     width: 88,
     height: 88,
     bottom: 20,
-    resizeMode: "contain",
+    resizeMode: 'contain',
   },
 });
