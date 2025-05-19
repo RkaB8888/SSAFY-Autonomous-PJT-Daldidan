@@ -225,7 +225,7 @@ export function useObjectDetection(format: any) {
   const runOnJSThread = useRef(
     Worklets.createRunOnJS(processExtractedData)
   ).current;
-  const SAMPLE_RATE = 15;
+  const SAMPLE_RATE = 28;
 
   const frameProcessor = useFrameProcessor(
     async (frame) => {
@@ -274,7 +274,7 @@ export function useObjectDetection(format: any) {
       try {
         console.log('Attempting to load model...');
         const model = await loadTensorflowModel(
-          require('../assets/model.tflite'),
+          require('../assets/1.tflite'),
           'gpu' as TensorflowModelDelegate
         );
         console.log('Model loaded successfully');
