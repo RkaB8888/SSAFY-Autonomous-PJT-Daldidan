@@ -13,6 +13,7 @@ import Animated, {
 interface FramePair {
   character: any;
   camera: any;
+  message: string;
 }
 
 interface CaptureOverlayProps {
@@ -97,8 +98,8 @@ export default function CaptureOverlay({
           style={[styles.cameraImage, animatedStyle]}
         />
       </View>
-
-      <Text style={styles.text}>사과를 찍고 있어요!</Text>
+      
+      <Text style={styles.text}>{framePair.message}</Text>
     </View>
   );
 }
@@ -133,7 +134,7 @@ const styles = StyleSheet.create({
   },
   text: {
     position: 'absolute',
-    bottom: 100,
+    bottom: 250,
     color: 'white',
     fontSize: 25,
     fontFamily: 'Maplestory',
