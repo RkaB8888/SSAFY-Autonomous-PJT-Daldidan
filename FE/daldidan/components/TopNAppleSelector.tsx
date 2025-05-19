@@ -1,44 +1,68 @@
-// components/TopNAppleSelector.tsx
-import React from 'react';
-import { View, StyleSheet } from 'react-native';
-import { Picker } from '@react-native-picker/picker';
+import React, { useState } from 'react';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 
-interface Props {
+const TopNAppleSelector = ({ topN, onChange, maxN }: {
   topN: number;
   onChange: (n: number) => void;
-  maxN : number;
-}
+  maxN: number;
+}) => {
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const options = Array.from({ length: maxN }, (_, i) => i + 1);
 
-export default function TopNAppleSelector({ topN, onChange, maxN }: Props) {
+  const handleSelect = (n: number) => {
+    onChange(n);
+    setIsDropdownOpen(false);
+  };
+
   return (
-    <View style={styles.dropdownWrapper}>
-      <Picker
-        selectedValue={topN}
-        style={styles.picker}
-        onValueChange={(value) => onChange(value)}
-        itemStyle={{ fontSize: 10 }}  // ✅ 글자 크기 작게 조절
+    <View style={{ marginBottom: 10, zIndex: 9999 }}>
+      <Pressable
+        onPress={() => setIsDropdownOpen(prev => !prev)}
+        style={styles.button}
       >
-        {Array.from({ length: maxN }, (_, i) => i + 1).map((n) => (
-          <Picker.Item key={n} label={`Top ${n}`} value={n} />
-        ))}
-      </Picker>
+        <Text style={styles.buttonText}>Top {topN}개 보기 ▼</Text>
+      </Pressable>
+
+      {isDropdownOpen && (
+        <View style={styles.dropdown}>
+          {options.map((n) => (
+            <Pressable key={n} onPress={() => handleSelect(n)} style={styles.option}>
+              <Text style={styles.optionText}>{n}개</Text>
+            </Pressable>
+          ))}
+        </View>
+      )}
     </View>
   );
-}
+};
+
+export default TopNAppleSelector;
 
 const styles = StyleSheet.create({
-  dropdownWrapper: {
-    position: 'absolute',
-    top: 100,
-    left: 10,
-    zIndex: 100,
-    backgroundColor: 'white',
-    borderRadius: 4,
+  button: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: '#ff8c00',
+    borderRadius: 6,
   },
-  picker: {
-    width: 120,
-    height: 50,
-    paddingTop: -4,
-    paddingBottom: -4,
+  buttonText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  dropdown: {
+    marginTop: 5,
+    position: 'absolute',
+    backgroundColor: 'white',
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 4,
+    elevation: 10,
+    width: 100,
+  },
+  option: {
+    padding: 10,
+  },
+  optionText: {
+    fontSize: 14,
   },
 });
