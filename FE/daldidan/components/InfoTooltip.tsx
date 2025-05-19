@@ -77,6 +77,9 @@ export default function InfoTooltip({ onDismiss }: Props) {
             <Text style={styles.text}>
               🍎 14 brix 이상의 맛있는 사과를 골라봐요!
             </Text>
+            <Text style={styles.text}>
+              🍎 당도 정보는 참고용입니다. 정확하지 않을 수 있어요 !
+            </Text>
           </View>
           <View style={styles.arrow} />
         </Animated.View>

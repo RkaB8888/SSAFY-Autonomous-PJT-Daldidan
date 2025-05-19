@@ -30,6 +30,7 @@ import AppleToastStack from './AppleToastStack';
 import TopNAppleSelector from './TopNAppleSelector';
 import AppleJuiceAnimation from './AppleJuiceAnimation';
 import { useInfoTooltip } from "./InfoTooltipContext";
+import TopAppleCrown from './TopAppleCrown';
 
 interface Props {
   results: AnalyzedObjectResult[];
@@ -235,6 +236,10 @@ export default function AnalyzedResultOverlay({
     .slice(0, topN)
     .map((r) => r.id);
 
+  const highest = [...results]
+  .filter(r => r.sugar_content !== undefined && r.sugar_content !== null)
+  .sort((a, b) => b.sugar_content! - a.sugar_content!)[0];
+
   useEffect(() => {
     Animated.loop(
       Animated.sequence([
@@ -428,6 +433,15 @@ export default function AnalyzedResultOverlay({
           return null;
         })}
       </Canvas>
+
+        {/* ✅ 왕관은 여기! */}
+        {highest?.bbox && (
+            <TopAppleCrown
+            bbox={highest.bbox}
+            originalSize={originalImageSize}
+            screenSize={screenSize}
+            />
+        )}
 
       <AppleToastStack
         results={results}
