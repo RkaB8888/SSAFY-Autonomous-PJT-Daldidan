@@ -22,7 +22,12 @@ def detect(
     if key not in model_registry:
         raise ValueError(f"[detect_service] Unknown model: {key}")
 
-    predictor_cls = model_registry[key]
-    predictor = predictor_cls()  # 필요 시 config 넣어줄 수도 있음
-    raw_boxes = predictor.predict(image)
-    return [{"bbox": box, "seg": None} for box in raw_boxes]
+    predictor = model_registry[key]()
+    raw = predictor.predict(image)
+
+    # ── segmentation 모델은 이미 dict 리스트({ "bbox":…, "seg":… }) 형태
+    if isinstance(raw, list) and raw and isinstance(raw[0], dict):
+        return raw
+
+    # ── bbox 전용 모델: list of [xmin, ymin, xmax, ymax]
+    return [{"bbox": box, "seg": None} for box in raw]

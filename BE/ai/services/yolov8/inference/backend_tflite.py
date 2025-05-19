@@ -16,12 +16,12 @@ class TFLiteYoloV8Backend:
 
         self.input_dtype = self.input_details[0]["dtype"]
 
-    def infer(self, input_tensor: np.ndarray) -> np.ndarray:
+    def infer(self, input_tensor: np.ndarray) -> list[np.ndarray]:
         """
         Args:
-            input_tensor (np.ndarray): [1, H, W, 3] float32 normalized tensor
+            input_tensor (np.ndarray): [1, H, W, 3] float32 or uint8 tensor
         Returns:
-            np.ndarray: YOLOv8 TFLite raw output tensor
+            list[np.ndarray]: raw output tensors from all output layers
         """
         # 입력 텐서 설정
         self.interpreter.set_tensor(self.input_details[0]["index"], input_tensor)
@@ -29,6 +29,8 @@ class TFLiteYoloV8Backend:
         # 추론 실행
         self.interpreter.invoke()
 
-        # 출력 결과 추출
-        output_data = self.interpreter.get_tensor(self.output_details[0]["index"])
-        return output_data
+        outputs = [
+            self.interpreter.get_tensor(output["index"])
+            for output in self.output_details
+        ]
+        return outputs
