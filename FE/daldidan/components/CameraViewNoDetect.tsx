@@ -45,12 +45,16 @@ export default function CameraView() {
   const justReset = useRef(false);
   const [autoCaptureEnabled, setAutoCaptureEnabled] = useState(true);
   const lastCenterRef = useRef<{ x: number; y: number } | null>(null);
-  const captureFrames = [captureImg, captureImg2, captureImg3]
   const [frameIndex, setFrameIndex] = useState(0)
   const countdownSoundRef = useRef<Sound | null>(null);
   const [showCaptureImage, setShowCaptureImage] = useState(false);
   const capturingRef = useRef(false);
   const [freezeDetection, setFreezeDetection] = useState(false);
+  const captureFrames = [
+  { character: require('../assets/images/apple_char1.png'), camera: require('../assets/images/apple_capture.png') },
+  { character: require('../assets/images/apple_char2.png'), camera: require('../assets/images/apple_capture2.png') },
+  { character: require('../assets/images/apple_char3.png'), camera: require('../assets/images/apple_capture3.png') },
+];
 
   // ★★★ useAnalysisApiHandler 훅 사용 ★★★
   // useAnalysisApiHandler.ts 파일에 이 훅 구현 코드가 있어야 합니다. (resetAnalysis, originalImageSize 반환 포함)
@@ -209,24 +213,26 @@ export default function CameraView() {
 }, [analyzedResults, isAnalyzing]);
 
 
+
     // 3) 사운드 재생 → 캡처 & 이미지 토글 함수
   const startCaptureSequence = () => {
-    if (isAnalyzing || analyzedResults !== null || showCaptureImage|| capturingRef.current || freezeDetection) return;
-    
-    capturingRef.current = true;
-    // 이미지 보여주기
-    setShowCaptureImage(true);
+  if (isAnalyzing || analyzedResults !== null || showCaptureImage || capturingRef.current || freezeDetection) return;
 
-    // 음성 재생 후 콜백으로 캡처 실행
-    countdownSoundRef.current?.play((success) => {
-      handleCaptureAndAnalyze();
-      
-      // 재생 끝난 뒤 이미지 숨기기
-      setShowCaptureImage(false);
-      capturingRef.current = false
+  capturingRef.current = true;
+  setShowCaptureImage(true);
+  setFreezeDetection(true);
 
-    });
-  };
+  // 🟡 사운드 재생 후에 촬영
+  countdownSoundRef.current?.play((success) => {
+    if (success) {
+      handleCaptureAndAnalyze(); // ✅ 사운드 끝나고 촬영 시작
+    }
+
+    // 이미지 숨기기
+    setShowCaptureImage(false);
+    capturingRef.current = false;
+  });
+};
 
 
   // AppleButton 또는 다른 캡쳐 트리거 UI 표시 여부 결정
@@ -358,10 +364,11 @@ useShake(() => {
             <AppleHint />
           ) : null}
 
-          <CaptureOverlay
-           visible={showCaptureImage}
-           frameSource={captureFrames[frameIndex]}
-         />
+         <CaptureOverlay
+          visible={showCaptureImage}
+          framePair={captureFrames[frameIndex]}
+        />
+
 
           {/* analysisError 상태 표시 (필요시) */}
           {/* analysisError && !isAnalyzing ? (
