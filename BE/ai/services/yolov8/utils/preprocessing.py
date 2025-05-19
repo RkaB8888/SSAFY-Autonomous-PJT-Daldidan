@@ -21,6 +21,7 @@ def preprocess_image(
         scale (float): resize 비율
         pad (tuple): (pad_w, pad_h)
     """
+
     if isinstance(image, Image.Image):
         image = np.array(image.convert("RGB"))
 
@@ -46,7 +47,12 @@ def preprocess_image(
         value=(114, 114, 114),
     )
 
-    input_tensor = padded.astype(np.float32) / 255.0
+    if dtype == np.uint8:
+        input_tensor = padded.astype(np.uint8)
+    elif dtype == np.float16:
+        input_tensor = (padded.astype(np.float16)) / np.float16(255.0)
+    else:
+        input_tensor = (padded.astype(np.float32)) / 255.0
 
     # 배치 차원 추가
     input_tensor = np.expand_dims(input_tensor, axis=0)

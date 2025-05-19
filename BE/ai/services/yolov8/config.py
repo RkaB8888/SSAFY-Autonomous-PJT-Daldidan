@@ -2,10 +2,15 @@
 
 from pathlib import Path
 
-# YOLOv8 TFLite 모델 경로
-DEFAULT_MODEL_PATH = str(
-    Path(__file__).resolve().parent / "models" / "yolov8n_coco_int8.tflite"
-)
+# 지원하는 모델 버전들
+MODEL_FILES = {
+    "bbox_int8": "yolov8n_bbox_int8.tflite",
+    "seg_float32": "yolov8n_seg_float32.tflite",
+    "seg_float16": "yolov8n_seg_float16.tflite",
+}
+
+# TFLite 모델 경로
+MODEL_DIR = Path(__file__).resolve().parent / "models"
 
 # 입력 크기 (YOLOv8 기본값: 640x640)
 INPUT_SIZE = (640, 640)
