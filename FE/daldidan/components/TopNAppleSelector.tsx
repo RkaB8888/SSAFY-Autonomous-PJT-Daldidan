@@ -20,7 +20,7 @@ const TopNAppleSelector = ({ topN, onChange, maxN }: {
         onPress={() => setIsDropdownOpen(prev => !prev)}
         style={styles.button}
       >
-        <Text style={styles.buttonText}>Top {topN}개 보기 ▼</Text>
+        <Text style={[styles.buttonText]}>Top {topN}개 보기 ▼</Text>
       </Pressable>
 
       {isDropdownOpen && (

@@ -29,7 +29,7 @@ import ShakeReminder from './ShakeReminder';
 import AppleToastStack from './AppleToastStack';
 import TopNAppleSelector from './TopNAppleSelector';
 import AppleJuiceAnimation from './AppleJuiceAnimation';
-import { useInfoTooltip } from "./InfoTooltipContext";
+import { useInfoTooltip } from './InfoTooltipContext';
 import TopAppleCrown from './TopAppleCrown';
 
 interface Props {
@@ -37,7 +37,6 @@ interface Props {
   screenSize: { width: number; height: number };
   originalImageSize: { width: number; height: number };
 }
-
 
 // 각 포인트를 화면 좌표로 변환하는 함수
 const transformPointToScreen = (
@@ -224,7 +223,7 @@ export default function AnalyzedResultOverlay({
       setHasShown(true);
     }
   }, [hasShown]);
-  
+
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
   const [topN, setTopN] = useState(3);
@@ -242,8 +241,8 @@ export default function AnalyzedResultOverlay({
 
 
   const highest = [...results]
-  .filter(r => r.sugar_content !== undefined && r.sugar_content !== null)
-  .sort((a, b) => b.sugar_content! - a.sugar_content!)[0];
+    .filter((r) => r.sugar_content !== undefined && r.sugar_content !== null)
+    .sort((a, b) => b.sugar_content! - a.sugar_content!)[0];
 
   useEffect(() => {
     Animated.loop(
@@ -309,10 +308,10 @@ export default function AnalyzedResultOverlay({
 
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents='box-none'>
-      <View style={{ position: 'absolute', top: 50, left: 20, zIndex: 1000 }} pointerEvents="auto">
+      <View style={{ position: 'absolute', top: 50, left: 20, zIndex: 1000, fontFamily: 'Maplestory_Light', }} pointerEvents="auto">
         <TopNAppleSelector topN={topN} onChange={setTopN} maxN={Math.max(1, results.length)} />
       </View>
-      <View style={{ position: 'absolute', top: 40, right: 10, height: 300, width: 60, zIndex: 1000 }} pointerEvents="box-none">
+      <View style={{ position: 'absolute', top: 40, right: 10, height: 300, width: 60, zIndex: 1000, fontFamily: 'Maplestory_Light', }} pointerEvents="box-none">
         <View style={{ flex: 1 }} pointerEvents="auto">
           <VisualBar results={results} minSugar={minSugar} onChangeMinSugar={setMinSugar} />
         </View>
@@ -386,14 +385,14 @@ export default function AnalyzedResultOverlay({
         })}
       </Canvas>
 
-        {/* ✅ 왕관은 여기! */}
-        {highest?.bbox && (
-            <TopAppleCrown
-            bbox={highest.bbox}
-            originalSize={originalImageSize}
-            screenSize={screenSize}
-            />
-        )}
+      {/* ✅ 왕관은 여기! */}
+      {highest?.bbox && (
+        <TopAppleCrown
+          bbox={highest.bbox}
+          originalSize={originalImageSize}
+          screenSize={screenSize}
+        />
+      )}
 
       <AppleToastStack
         results={results}
@@ -434,7 +433,17 @@ export default function AnalyzedResultOverlay({
         </Pressable>
       </Animated.View>
 
+      {/* ✅ 왕관은 여기! */}
+      {highest?.bbox &&
+        !showTooltip && ( // showTooltip이 false일 때만 왕관 렌더링
+          <TopAppleCrown
+            bbox={highest.bbox}
+            originalSize={originalImageSize}
+            screenSize={screenSize}
+          />
+        )}
       {showTooltip && <InfoTooltip onDismiss={() => setShowTooltip(false)} />}
+
       <ShakeReminder />
     </View>
   );
@@ -452,6 +461,6 @@ const styles = StyleSheet.create({
     width: 88,
     height: 88,
     bottom: 20,
-    resizeMode: "contain",
+    resizeMode: 'contain',
   },
 });
