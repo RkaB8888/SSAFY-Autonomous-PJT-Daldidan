@@ -2,7 +2,7 @@
 // useAnalysisApiHandler 훅에서 올바른 배열과 원본 해상도를 넘겨준다면 이 코드는 정상 작동합니다.
 // (변환 로직, 렌더링 로직 포함)
 
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import {
   Animated,
   StyleSheet,
@@ -11,9 +11,9 @@ import {
   Easing,
   Pressable,
   Image,
-} from 'react-native';
-import { AnalyzedObjectResult } from '../hooks/types/objectDetection'; // 이 타입에 segmentation 필드 추가 필요
-import VisualBar from './VisualBar';
+} from "react-native";
+import { AnalyzedObjectResult } from "../hooks/types/objectDetection"; // 이 타입에 segmentation 필드 추가 필요
+import VisualBar from "./VisualBar";
 import {
   Canvas,
   Rect,
@@ -21,16 +21,16 @@ import {
   Skia,
   Path,
   SkPath,
-} from '@shopify/react-native-skia'; // Path 추가
-import InfoTooltip from './InfoTooltip';
+} from "@shopify/react-native-skia"; // Path 추가
+import InfoTooltip from "./InfoTooltip";
 // import question_apple from "../assets/images/question_apple.png"; // 사용되지 않으므로 주석 처리 또는 삭제 가능
-import ShakeReminder from './ShakeReminder';
-import AppleToastStack from './AppleToastStack';
-import TopNAppleSelector from './TopNAppleSelector';
-import AppleJuiceAnimation from './AppleJuiceAnimation';
-import { useInfoTooltip } from './InfoTooltipContext';
-import TopAppleCrown from './TopAppleCrown';
-import LottieView from 'lottie-react-native';
+import ShakeReminder from "./ShakeReminder";
+import AppleToastStack from "./AppleToastStack";
+import TopNAppleSelector from "./TopNAppleSelector";
+import AppleJuiceAnimation from "./AppleJuiceAnimation";
+import { useInfoTooltip } from "./InfoTooltipContext";
+import TopAppleCrown from "./TopAppleCrown";
+import LottieView from "lottie-react-native";
 
 interface Props {
   results: AnalyzedObjectResult[];
@@ -193,8 +193,8 @@ export default function AnalyzedResultOverlay({
     }[]
   >([]);
 
-  type FilterMode = 'topN' | 'slider';
-  const [filterMode, setFilterMode] = useState<FilterMode>('topN');
+  type FilterMode = "topN" | "slider";
+  const [filterMode, setFilterMode] = useState<FilterMode>("topN");
 
   if (
     !results ||
@@ -207,7 +207,7 @@ export default function AnalyzedResultOverlay({
     originalImageSize.height <= 0
   ) {
     console.log(
-      '[AnalyzedResultOverlay] Not rendering: results empty or size info missing.',
+      "[AnalyzedResultOverlay] Not rendering: results empty or size info missing.",
       { results, screenSize, originalImageSize }
     );
     return null;
@@ -228,6 +228,18 @@ export default function AnalyzedResultOverlay({
 
   const [topN, setTopN] = useState(3);
   const [minSugar, setMinSugar] = useState(10);
+
+  // minSugar가 변경될 때 filterMode를 'slider'로 변경
+  const handleMinSugarChange = (sugar: number) => {
+    setMinSugar(sugar);
+    setFilterMode("slider");
+  };
+
+  // topN이 변경될 때 filterMode를 'topN'으로 변경
+  const handleTopNChange = (n: number) => {
+    setTopN(n);
+    setFilterMode("topN");
+  };
 
   // topNIds를 useMemo로 메모이제이션
   const topNIds = useMemo(
@@ -299,7 +311,7 @@ export default function AnalyzedResultOverlay({
         ...prev,
         {
           id: animationId,
-          color: '#ff6b6b',
+          color: "#ff6b6b",
           position: { x: centerX, y: centerY },
           size: appleSize,
         },
@@ -309,7 +321,7 @@ export default function AnalyzedResultOverlay({
 
   // 세그멘테이션 선 스타일
   const SEGMENTATION_STROKE_WIDTH = 4; // 선 두께 (조절 가능)
-  const SEGMENTATION_STROKE_COLOR = 'rgba(209, 14, 14, 0.85)'; // 선 색상 (라임 그린, 반투명, 조절 가능)
+  const SEGMENTATION_STROKE_COLOR = "rgba(209, 14, 14, 0.85)"; // 선 색상 (라임 그린, 반투명, 조절 가능)
   // 직선 보간 레벨 (0: 사용 안함, 1 이상: 해당 개수만큼 중간점 추가)
   // 동서남북 각진 부분을 완화하기 위해 Catmull-Rom을 직접 사용하거나, 약간의 보간 후 사용
   const LINEAR_INTERPOLATION_LEVEL = 1; // 0 또는 1로 테스트해보세요.
@@ -326,7 +338,7 @@ export default function AnalyzedResultOverlay({
 
     results.forEach((result) => {
       const isHighlighted =
-        filterMode === 'topN'
+        filterMode === "topN"
           ? topNIds.includes(result.id)
           : result.sugar_content !== undefined &&
             result.sugar_content !== null &&
@@ -384,18 +396,41 @@ export default function AnalyzedResultOverlay({
   }, [results, filterMode, topNIds, minSugar, screenSize, originalImageSize]);
 
   return (
-    <View style={StyleSheet.absoluteFill} pointerEvents='box-none'>
-      <View style={{ position: 'absolute', top: 50, left: 20, zIndex: 1000, fontFamily: 'Maplestory_Light', }} pointerEvents="auto">
-        <TopNAppleSelector topN={topN} onChange={setTopN} maxN={Math.max(1, results.length)} />
+    <View style={StyleSheet.absoluteFill} pointerEvents="auto">
+      <View
+        style={{ position: "absolute", top: 50, left: 20, zIndex: 1000 }}
+        pointerEvents="auto"
+      >
+        <TopNAppleSelector
+          topN={topN}
+          onChange={handleTopNChange}
+          maxN={Math.max(1, results.length)}
+        />
       </View>
-      <View style={{ position: 'absolute', top: 40, right: 10, height: 300, width: 60, zIndex: 1000, fontFamily: 'Maplestory_Light', }} pointerEvents="box-none">
+      <View
+        style={{
+          position: "absolute",
+          top: 40,
+          right: 10,
+          height: 300,
+          width: 60,
+          zIndex: 1000,
+        }}
+        pointerEvents="auto"
+      >
         <View style={{ flex: 1 }} pointerEvents="auto">
-          <VisualBar results={results} minSugar={minSugar} onChangeMinSugar={setMinSugar} />
+          <VisualBar
+            results={results}
+            minSugar={minSugar}
+            onChangeMinSugar={handleMinSugarChange}
+          />
         </View>
       </View>
 
-
-      <Canvas style={[StyleSheet.absoluteFill, { zIndex: 0 }]} pointerEvents="none">
+      <Canvas
+        style={[StyleSheet.absoluteFill, { zIndex: 1 }]}
+        pointerEvents="none"
+      >
         {/* 전체 어두운 레이어 */}
         <Group>
           <Rect
@@ -403,14 +438,14 @@ export default function AnalyzedResultOverlay({
             y={0}
             width={screenSize.width}
             height={screenSize.height}
-            color='rgba(0, 0, 0, 0.5)' // 반투명 검은색
+            color="rgba(0, 0, 0, 0.5)" // 반투명 검은색
           />
         </Group>
 
         {/* 세그멘테이션 영역 클리핑 */}
         {results.map((result, index) => {
           const isHighlighted =
-            filterMode === 'topN'
+            filterMode === "topN"
               ? topNIds.includes(result.id)
               : result.sugar_content !== undefined &&
                 result.sugar_content !== null &&
@@ -446,10 +481,10 @@ export default function AnalyzedResultOverlay({
             if (skPath.countPoints() > 0) {
               return (
                 <React.Fragment key={`segment-group-${result.id}-${index}`}>
-                  <Path path={skPath} color='rgba(0,0,0,0)' blendMode='clear' />
+                  <Path path={skPath} color="rgba(0,0,0,0)" blendMode="clear" />
                   <Path
                     path={skPath}
-                    style='stroke'
+                    style="stroke"
                     strokeWidth={SEGMENTATION_STROKE_WIDTH}
                     color={SEGMENTATION_STROKE_COLOR}
                   />
@@ -466,22 +501,22 @@ export default function AnalyzedResultOverlay({
         <View
           key={`animation-${index}`}
           style={{
-            position: 'absolute',
+            position: "absolute",
             left: pos.x - pos.size / 2,
             top: pos.y - pos.size / 2,
             width: pos.size,
             height: pos.size,
             zIndex: 1000,
-            pointerEvents: 'none',
+            pointerEvents: "none",
           }}
         >
           <LottieView
             ref={animationRef}
-            source={require('../assets/lottie/tap.json')}
+            source={require("../assets/lottie/tap.json")}
             autoPlay
             loop
-            style={{ width: '100%', height: '100%' }}
-            renderMode='AUTOMATIC'
+            style={{ width: "100%", height: "100%" }}
+            renderMode="AUTOMATIC"
             speed={1}
           />
         </View>
@@ -498,11 +533,12 @@ export default function AnalyzedResultOverlay({
 
       <View
         style={{
-          position: 'absolute',
-          width: '100%',
-          height: '100%',
-          zIndex: 2000,
+          position: "absolute",
+          width: "100%",
+          height: "100%",
+          zIndex: 2,
         }}
+        pointerEvents="auto"
       >
         <AppleToastStack
           results={results}
@@ -528,16 +564,14 @@ export default function AnalyzedResultOverlay({
 
       <Animated.View
         style={[styles.infoButton, { transform: [{ scale: scaleAnim }] }]}
+        pointerEvents="auto"
       >
-        <Pressable
-          onPress={() => setShowTooltip((prev) => !prev)}
-          // style={styles.infoButton} // Animated.View에 스타일이 이미 적용됨
-        >
+        <Pressable onPress={() => setShowTooltip((prev) => !prev)}>
           <Image
             source={
               showTooltip
-                ? require('../assets/images/explamation_apple.png')
-                : require('../assets/images/question_apple.png')
+                ? require("../assets/images/explamation_apple.png")
+                : require("../assets/images/question_apple.png")
             }
             style={styles.infoIcon}
           />
@@ -545,33 +579,46 @@ export default function AnalyzedResultOverlay({
       </Animated.View>
 
       {/* ✅ 왕관은 여기! */}
-      {highest?.bbox &&
-        !showTooltip && ( // showTooltip이 false일 때만 왕관 렌더링
-          <TopAppleCrown
-            bbox={highest.bbox}
-            originalSize={originalImageSize}
-            screenSize={screenSize}
-          />
-        )}
-      {showTooltip && <InfoTooltip onDismiss={() => setShowTooltip(false)} />}
+      {highest?.bbox && !showTooltip && (
+        <TopAppleCrown
+          bbox={highest.bbox}
+          originalSize={originalImageSize}
+          screenSize={screenSize}
+        />
+      )}
 
       <ShakeReminder />
+
+      {/* InfoTooltip을 최상위로 이동 */}
+      {showTooltip && (
+        <View
+          style={{
+            position: "absolute",
+            width: "100%",
+            height: "100%",
+            zIndex: 9999,
+          }}
+          pointerEvents="auto"
+        >
+          <InfoTooltip onDismiss={() => setShowTooltip(false)} />
+        </View>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   infoButton: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 20,
     right: 5,
-    zIndex: 1000, // AppleToastStack 보다 위에 오도록 충분히 높은 값
+    zIndex: 1000,
     elevation: 10,
   },
   infoIcon: {
     width: 88,
     height: 88,
     bottom: 20,
-    resizeMode: 'contain',
+    resizeMode: "contain",
   },
 });
