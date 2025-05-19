@@ -94,6 +94,7 @@ const styles = StyleSheet.create({
     bottom: 140,
     right: 20,
     zIndex: 999,
+    elevation: 10,
     alignItems: "flex-end",
   },
   bubble: {
@@ -101,6 +102,7 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 8,
     maxWidth: 350,
+    zIndex: 999,
     elevation: 5,
   },
   icon: {
