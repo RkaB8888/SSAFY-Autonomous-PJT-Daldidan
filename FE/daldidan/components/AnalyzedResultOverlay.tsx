@@ -2,8 +2,7 @@
 // useAnalysisApiHandler 훅에서 올바른 배열과 원본 해상도를 넘겨준다면 이 코드는 정상 작동합니다.
 // (변환 로직, 렌더링 로직 포함)
 
-import React, { useState } from 'react';
-import { useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   Animated,
   StyleSheet,
@@ -31,6 +30,7 @@ import TopNAppleSelector from './TopNAppleSelector';
 import AppleJuiceAnimation from './AppleJuiceAnimation';
 import { useInfoTooltip } from './InfoTooltipContext';
 import TopAppleCrown from './TopAppleCrown';
+import LottieView from 'lottie-react-native';
 
 interface Props {
   results: AnalyzedObjectResult[];
@@ -229,20 +229,28 @@ export default function AnalyzedResultOverlay({
   const [topN, setTopN] = useState(3);
   const [minSugar, setMinSugar] = useState(10);
 
-  const topNIds = [...results]
-    .filter(r =>
-      r.sugar_content !== undefined &&
-      r.sugar_content !== null &&
-      r.sugar_content >= minSugar // ✅ 최소 당도 조건 추가
-    )
-    .sort((a, b) => b.sugar_content! - a.sugar_content!)
-    .slice(0, topN)
-    .map(r => r.id);
+  // topNIds를 useMemo로 메모이제이션
+  const topNIds = useMemo(
+    () =>
+      [...results]
+        .filter(
+          (r) => r.sugar_content !== undefined && r.sugar_content !== null
+        )
+        .sort((a, b) => b.sugar_content! - a.sugar_content!)
+        .slice(0, topN)
+        .map((r) => r.id),
+    [results, topN]
+  );
 
-
-  const highest = [...results]
-    .filter((r) => r.sugar_content !== undefined && r.sugar_content !== null)
-    .sort((a, b) => b.sugar_content! - a.sugar_content!)[0];
+  const highest = useMemo(
+    () =>
+      [...results]
+        .filter(
+          (r) => r.sugar_content !== undefined && r.sugar_content !== null
+        )
+        .sort((a, b) => b.sugar_content! - a.sugar_content!)[0],
+    [results]
+  );
 
   useEffect(() => {
     Animated.loop(
@@ -306,6 +314,75 @@ export default function AnalyzedResultOverlay({
   // 동서남북 각진 부분을 완화하기 위해 Catmull-Rom을 직접 사용하거나, 약간의 보간 후 사용
   const LINEAR_INTERPOLATION_LEVEL = 1; // 0 또는 1로 테스트해보세요.
 
+  // 애니메이션 ref 추가
+  const animationRef = useRef<LottieView>(null);
+  const [animationPositions, setAnimationPositions] = useState<
+    Array<{ x: number; y: number; size: number }>
+  >([]);
+
+  // 애니메이션 위치 업데이트를 위한 useEffect
+  useEffect(() => {
+    const newPositions: Array<{ x: number; y: number; size: number }> = [];
+
+    results.forEach((result) => {
+      const isHighlighted =
+        filterMode === 'topN'
+          ? topNIds.includes(result.id)
+          : result.sugar_content !== undefined &&
+            result.sugar_content !== null &&
+            result.sugar_content >= minSugar;
+
+      if (
+        isHighlighted &&
+        result.segmentation?.points &&
+        result.segmentation.points.length > 0
+      ) {
+        const originalPoints = result.segmentation.points;
+        let pointsToProcess = originalPoints;
+
+        if (LINEAR_INTERPOLATION_LEVEL > 0 && originalPoints.length >= 2) {
+          pointsToProcess = interpolateOriginalPoints(
+            originalPoints,
+            LINEAR_INTERPOLATION_LEVEL
+          );
+        }
+
+        const screenPoints = pointsToProcess.map((p: number[]) =>
+          transformPointToScreen(
+            p,
+            originalImageSize.width,
+            originalImageSize.height,
+            screenSize.width,
+            screenSize.height
+          )
+        );
+
+        // 중앙점 계산
+        const centerX =
+          screenPoints.reduce(
+            (sum: number, p: { x: number; y: number }) => sum + p.x,
+            0
+          ) / screenPoints.length;
+        const centerY =
+          screenPoints.reduce(
+            (sum: number, p: { x: number; y: number }) => sum + p.y,
+            0
+          ) / screenPoints.length;
+
+        // 사과 크기 계산
+        const xCoords = screenPoints.map((p) => p.x);
+        const yCoords = screenPoints.map((p) => p.y);
+        const width = Math.max(...xCoords) - Math.min(...xCoords);
+        const height = Math.max(...yCoords) - Math.min(...yCoords);
+        const size = Math.max(width, height) * 1.5; // 크기 조정 계수 (필요에 따라 조정 가능)
+
+        newPositions.push({ x: centerX, y: centerY, size });
+      }
+    });
+
+    setAnimationPositions(newPositions);
+  }, [results, filterMode, topNIds, minSugar, screenSize, originalImageSize]);
+
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents='box-none'>
       <View style={{ position: 'absolute', top: 50, left: 20, zIndex: 1000, fontFamily: 'Maplestory_Light', }} pointerEvents="auto">
@@ -342,13 +419,12 @@ export default function AnalyzedResultOverlay({
           if (
             isHighlighted &&
             result.segmentation?.points &&
-            result.segmentation.points.length > 0 // 최소 1개의 점이라도 있어야 함 (Path 함수 내부에서 3개 미만 처리)
+            result.segmentation.points.length > 0
           ) {
             const originalPoints = result.segmentation.points;
             let pointsToProcess = originalPoints;
 
             if (LINEAR_INTERPOLATION_LEVEL > 0 && originalPoints.length >= 2) {
-              // 2개 이상 점이 있을 때 보간 가능
               pointsToProcess = interpolateOriginalPoints(
                 originalPoints,
                 LINEAR_INTERPOLATION_LEVEL
@@ -385,6 +461,32 @@ export default function AnalyzedResultOverlay({
         })}
       </Canvas>
 
+      {/* Canvas 밖에서 애니메이션 렌더링 */}
+      {animationPositions.map((pos, index) => (
+        <View
+          key={`animation-${index}`}
+          style={{
+            position: 'absolute',
+            left: pos.x - pos.size / 2,
+            top: pos.y - pos.size / 2,
+            width: pos.size,
+            height: pos.size,
+            zIndex: 1000,
+            pointerEvents: 'none',
+          }}
+        >
+          <LottieView
+            ref={animationRef}
+            source={require('../assets/lottie/tap.json')}
+            autoPlay
+            loop
+            style={{ width: '100%', height: '100%' }}
+            renderMode='AUTOMATIC'
+            speed={1}
+          />
+        </View>
+      ))}
+
       {/* ✅ 왕관은 여기! */}
       {highest?.bbox && (
         <TopAppleCrown
@@ -394,12 +496,21 @@ export default function AnalyzedResultOverlay({
         />
       )}
 
-      <AppleToastStack
-        results={results}
-        screenSize={screenSize}
-        originalImageSize={originalImageSize}
-        onApplePress={handleApplePress}
-      />
+      <View
+        style={{
+          position: 'absolute',
+          width: '100%',
+          height: '100%',
+          zIndex: 2000,
+        }}
+      >
+        <AppleToastStack
+          results={results}
+          screenSize={screenSize}
+          originalImageSize={originalImageSize}
+          onApplePress={handleApplePress}
+        />
+      </View>
 
       {juiceAnimations.map((animation) => (
         <AppleJuiceAnimation
