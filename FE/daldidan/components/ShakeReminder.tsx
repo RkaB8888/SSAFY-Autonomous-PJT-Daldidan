@@ -72,9 +72,9 @@ const styles = StyleSheet.create({
     resizeMode: 'contain',
   },
   text: {
+    fontFamily: 'Maplestory',
     color: '#fff',
     marginTop: 6,
-    fontSize: 14,
-    fontWeight: 'bold',
+    fontSize: 20,
   },
 });

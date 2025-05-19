@@ -61,8 +61,8 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     color: 'white',
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: 25,
+    fontFamily: 'Maplestory',
     textAlign: 'center',
     paddingHorizontal: 20,
   },

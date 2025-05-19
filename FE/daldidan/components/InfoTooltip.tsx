@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -6,7 +6,7 @@ import {
   StyleSheet,
   Animated,
   TouchableWithoutFeedback,
-} from "react-native";
+} from 'react-native';
 
 interface Props {
   onDismiss: () => void;
@@ -90,14 +90,14 @@ export default function InfoTooltip({ onDismiss }: Props) {
 
 const styles = StyleSheet.create({
   tooltipContainer: {
-    position: "absolute",
+    position: 'absolute',
     bottom: 140,
     right: 20,
     zIndex: 999,
-    alignItems: "flex-end",
+    alignItems: 'flex-end',
   },
   bubble: {
-    backgroundColor: "white",
+    backgroundColor: 'white',
     padding: 15,
     borderRadius: 8,
     maxWidth: 350,
@@ -106,29 +106,30 @@ const styles = StyleSheet.create({
   icon: {
     width: 40,
     height: 40,
-    alignSelf: "center",
+    alignSelf: 'center',
     marginBottom: 6,
   },
   maintext: {
     fontSize: 18,
-    fontWeight: "bold",
+    fontFamily: 'Maplestory',
     marginBottom: 13,
-    color: "orange",
+    color: 'orange',
   },
   text: {
     fontSize: 14,
     marginBottom: 13,
+    fontFamily: 'Maplestory_Light',
   },
   arrow: {
     width: 0,
     height: 0,
     borderTopWidth: 10,
-    borderTopColor: "white",
+    borderTopColor: 'white',
     borderLeftWidth: 8,
-    borderLeftColor: "transparent",
+    borderLeftColor: 'transparent',
     borderRightWidth: 8,
-    borderRightColor: "transparent",
-    alignSelf: "flex-end",
+    borderRightColor: 'transparent',
+    alignSelf: 'flex-end',
     marginRight: 16,
   },
 });
