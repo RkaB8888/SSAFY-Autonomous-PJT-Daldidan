@@ -26,9 +26,6 @@ import AnalyzedResultOverlay from './AnalyzedResultOverlay'; // 임포트 주석
 import AppleProcessing from './AppleProcessing';
 import { useShake } from '../hooks/useShake';
 import * as SplashScreen from 'expo-splash-screen';
-import captureImg from '../assets/images/apple_capture.png'
-import captureImg2 from '../assets/images/apple_capture2.png'
-import captureImg3 from '../assets/images/apple_capture3.png'
 import Sound from 'react-native-sound';
 import countdownAudio from '../assets/sounds/countdown.mp3';
 import CaptureOverlay from './CaptureOverlay';
@@ -51,9 +48,21 @@ export default function CameraView() {
   const capturingRef = useRef(false);
   const [freezeDetection, setFreezeDetection] = useState(false);
   const captureFrames = [
-  { character: require('../assets/images/apple_char1.png'), camera: require('../assets/images/apple_capture.png') },
-  { character: require('../assets/images/apple_char2.png'), camera: require('../assets/images/apple_capture2.png') },
-  { character: require('../assets/images/apple_char3.png'), camera: require('../assets/images/apple_capture3.png') },
+  {
+    character: require('../assets/images/apple_char1.png'),
+    camera: require('../assets/images/apple_capture.png'),
+    message: '사과를 찾았어요!',
+  },
+  {
+    character: require('../assets/images/apple_char2.png'),
+    camera: require('../assets/images/apple_capture2.png'),
+    message: '포즈 잡는중... 카메라를 가만히 들고 있어주세요!',
+  },
+  {
+    character: require('../assets/images/apple_char3.png'),
+    camera: require('../assets/images/apple_capture3.png'),
+    message: '애플~~',
+  },
 ];
 
   // ★★★ useAnalysisApiHandler 훅 사용 ★★★
@@ -77,16 +86,16 @@ export default function CameraView() {
         }, []);
       
     useEffect(() => {
-    let timer: NodeJS.Timeout
-    if (showCaptureImage) {
-      timer = setInterval(() => {
-        setFrameIndex(i => (i + 1) % captureFrames.length)
-      }, 1000)
-    } else {
-      setFrameIndex(0)
-    }
-    return () => { timer && clearInterval(timer) }
-  }, [showCaptureImage])
+  let timer: NodeJS.Timeout;
+  if (showCaptureImage) {
+    timer = setInterval(() => {
+      setFrameIndex(i => (i + 1) % captureFrames.length);
+    }, 2000); 
+  } else {
+    setFrameIndex(0);
+  }
+  return () => { clearInterval(timer); };
+}, [showCaptureImage]);
 
   // API 훅의 상태 (isAnalyzing, analyzedResults, analysisError)와 원본 해상도를 이 컴포넌트에서 직접 접근하여 UI 업데이트에 사용합니다.
 
