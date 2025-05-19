@@ -341,8 +341,7 @@ export default function AnalyzedResultOverlay({
         >
           <Text
             style={{
-              fontFamily: 'Maplestory',
-              // fontWeight: 'bold',
+              fontFamily: 'Maplestory_Light',
               color: filterMode === 'slider' ? 'white' : 'black',
             }}
           >
