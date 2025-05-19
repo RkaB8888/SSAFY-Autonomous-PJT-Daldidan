@@ -1,4 +1,4 @@
-# ai/api/v1/routes.p y
+# ai/api/v1/routes.py
 import base64, io, time, os
 import imghdr
 from typing import Optional, List
@@ -12,6 +12,41 @@ from schemas.predict import PredictResponse, ApplePred, BBox, Segmentation
 from services.predict_service import predict  # crop → 당도 추정
 from services.detect_service import detect  # ▶︎ YOLO 등 (bytes → list[dict])
 
+"""
+-------추론 모델------------------------
+{ 
+    cnn_lgbm_bbox,
+    cnn_lgbm_seg,
+    lgbm_bbox,
+    lgbm_seg,
+    xgb_bbox,
+    xgb_seg,
+    model_jmk2,
+}
+-------인식 모델------------------------
+{ 
+    yolov8,
+    yolov8_pt,
+}
+{
+    bbox_int8,
+    seg_float16,
+    seg_float32,
+    s,
+    m,
+    l,
+}
+"""
+# -----------------------------
+# 사용할 모델 상수 정의
+# -----------------------------
+# 사과 인식 모델: detect()에 전달할 이름 및 버전
+DETECT_MODEL_NAME: str = "yolov8_pt"
+DETECT_MODEL_VERSION: str = "m"
+# 당도 추론 모델: predict()에 전달할 모델 식별자
+PREDICT_MODEL_NAME: str = "xgb_seg"
+# -----------------------------
+
 router = APIRouter()
 
 
@@ -20,24 +55,7 @@ async def health_check():
     return {"status": "AI server is running"}
 
 
-"""
-{ 추론 모델
-cnn_lgbm_bbox,
-cnn_lgbm_seg,
-lgbm_bbox,
-lgbm_seg,
-xgb_bbox,
-xgb_seg,
-model_jmk2,
-}
-{ 인식 모델
-yolov8_tflite
-}
-"""
-
-
 @router.post("/predict", response_model=PredictResponse)
-# @router.post("/predict")
 async def predict_image(
     image: Optional[UploadFile] = File(None),
     image_base64: Optional[str] = Form(None),
@@ -76,10 +94,11 @@ async def predict_image(
         raise HTTPException(status_code=400, detail=f"Invalid image: {e}")
 
     # 2️⃣  사과 탐지 -------------------------------------------------------------
-    # detect_apples : bytes/RGB → [{"bbox":(xmin,ymin,xmax,ymax), "seg": [[...]]}, ...]
-    apples = detect("yolov8", pil_img, version="coco_int8")  # type: List[dict]
+    print("[/predict] 🔍 detect() 호출 시작")
+
+    apples = detect(DETECT_MODEL_NAME, pil_img, version=DETECT_MODEL_VERSION)
+    print(f"[/predict] 🔍 사과 탐지 결과: {len(apples)}개")
     if not apples:
-        print("사과 없음")
         return PredictResponse(results=[])
 
     # 🔴 바운딩 박스 그리기용 복제본 생성
@@ -91,7 +110,36 @@ async def predict_image(
     for idx, det in enumerate(apples):
         xmin, ymin, xmax, ymax = det["bbox"]
 
-        crop = pil_img.crop((xmin, ymin, xmax, ymax))
+        # pts_list 초기화
+        pts_list = None
+
+        # 🔧 segmentation이 있는 경우 마스크 기반으로 crop
+        if det.get("seg"):
+            # 1) 전체 크기의 빈 'L' 모드(흑백) 마스크 생성
+            mask = Image.new("L", pil_img.size, 0)
+            mask_draw = ImageDraw.Draw(mask)
+
+            # det["seg"]는 [[x,y], …] 형태
+            pts_list = [(int(x), int(y)) for x, y in det["seg"]]
+            mask_draw.polygon(pts_list, fill=255)
+
+            # 2) 원본 이미지에서 마스크 영역만 추출
+            segmented = Image.new("RGB", pil_img.size)
+            segmented.paste(pil_img, mask=mask)
+
+            # 3) bbox 범위로 잘라내기
+            crop = segmented.crop((xmin, ymin, xmax, ymax))
+
+        else:
+            # 기본 bbox crop
+            crop = pil_img.crop((xmin, ymin, xmax, ymax))
+
+        # 디버그용 crop 저장
+        crop_debug_path = os.path.join(save_dir, f"{timestamp}_crop_{idx}.jpg")
+        crop.save(crop_debug_path)
+        print(f"🔍 Crop saved: {crop_debug_path}")
+
+        # 4) 당도 추론을 위한 JPEG 바이트로 변환
         buf = io.BytesIO()
         crop.save(buf, format="JPEG")
         image_bytes = buf.getvalue()
@@ -112,6 +160,10 @@ async def predict_image(
             stroke_fill="white",
         )
 
+        # 🔴 segmentation 윤곽선 그리기
+        if pts_list:
+            draw.polygon(pts_list, outline="blue", width=2)
+
         item = ApplePred(
             id=idx,
             sugar_content=float(sugar),
@@ -121,14 +173,14 @@ async def predict_image(
                 xmax=int(xmax),
                 ymax=int(ymax),
             ),
-            segmentation=Segmentation(points=det["seg"]) if det.get("seg") else None,
+            segmentation=Segmentation(points=pts_list) if pts_list else None,
         )
         results.append(item)
 
-    # ✅ 바운딩 박스 시각화 이미지 저장 -----------------------------------------
+    # ✅ 시각화 이미지 저장 -----------------------------------------
     drawn_path = os.path.join(save_dir, f"predict_{timestamp}_drawn.{ext}")
     draw_img.save(drawn_path)
-    print(f"✅ 바운딩 박스 이미지 저장: {drawn_path}")
+    print(f"✅ 시각화 이미지 저장: {drawn_path}")
 
     # 4️⃣  응답 + 로그 -----------------------------------------------------------
     print(
