@@ -23,7 +23,14 @@ export interface AnalyzedObjectResult {
     xmax: number;
     ymax: number;
   };
-  segmentation?: any; // 응답 예시에 segmentation이 있네요 (null 또는 다른 형태일 수 있습니다)
+  segmentation:{
+    id: string | number;
+    sugar_content?: number | null;
+    bbox?: { xmin: number; ymin: number; xmax: number; ymax: number }; // bbox는 API 응답에 따라 유지되거나 제거될 수 있음
+    segmentation?: {
+    points: number[][]; // 예: [[x1, y1], [x2, y2], [x3, y3], ...]
+  } | null;
+  // ... 기타 필드 // 응답 예시에 segmentation이 있네요 (null 또는 다른 형태일 수 있습니다)
   // TODO: 백엔드 응답에 'class_id'나 'label', 'score' 등이 직접 포함되어 있는지 확인 필요
   // 현재 예시 응답에는 없지만, 객체의 종류를 구분하려면 이 정보가 필요합니다.
   // 만약 백엔드가 id만 반환한다면, 이 id를 프론트엔드에서 클래스/라벨에 매핑하는 로직이 필요할 수 있습니다.
