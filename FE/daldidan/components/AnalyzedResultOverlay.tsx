@@ -36,6 +36,10 @@ export default function AnalyzedResultOverlay({
     string | number | null
   >(null);
 
+  type FilterMode = 'topN' | 'slider';
+
+  const [filterMode, setFilterMode] = useState<FilterMode>('topN');
+
   // results가 null이거나 비어있으면 렌더링 안 함 (훅에서 제대로 넘겨준다면 이 체크는 통과될 것입니다)
   if (
     !results ||
@@ -133,13 +137,55 @@ export default function AnalyzedResultOverlay({
     <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
 
       {/* topN 선택 드롭다운 */}
-      <TopNAppleSelector
+      {/* <TopNAppleSelector
         topN={topN}
         onChange={setTopN}
         maxN={Math.max(1, results.length)} // ✅ 최소 1개는 보장
-      />
+      /> */}
 
-      <VisualBar results={results} onChangeMinSugar={setMinSugar} minSugar={minSugar} />
+      <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 50, zIndex: 10 }}>
+        <Pressable
+          onPress={() => setFilterMode('topN')}
+          style={{
+            paddingHorizontal: 12,
+            paddingVertical: 6,
+            marginRight: 10,
+            backgroundColor: filterMode === 'topN' ? '#ff8c00' : '#e0e0e0',
+            borderRadius: 8,
+          }}
+        >
+          <Text style={{ fontWeight: 'bold', color: filterMode === 'topN' ? 'white' : 'black' }}>TopN 모드</Text>
+        </Pressable>
+        <Pressable
+          onPress={() => setFilterMode('slider')}
+          style={{
+            paddingHorizontal: 12,
+            paddingVertical: 6,
+            backgroundColor: filterMode === 'slider' ? '#ff8c00' : '#e0e0e0',
+            borderRadius: 8,
+          }}
+        >
+          <Text style={{ fontWeight: 'bold', color: filterMode === 'slider' ? 'white' : 'black' }}>최소 당도 모드</Text>
+        </Pressable>
+      </View>
+      {filterMode === 'topN' && (
+        <TopNAppleSelector
+          topN={topN}
+          onChange={setTopN}
+          maxN={Math.max(1, results.length)}
+        />
+      )}
+
+      {filterMode === 'slider' && (
+        <VisualBar
+          results={results}
+          minSugar={minSugar}
+          onChangeMinSugar={setMinSugar}
+        />
+      )}
+
+
+      {/* <VisualBar results={results} onChangeMinSugar={setMinSugar} minSugar={minSugar} /> */}
       {/* 🔶 Skia 마스킹 캔버스 */}
       <Canvas style={StyleSheet.absoluteFill}>
         {/* 전체 어두운 레이어 */}
@@ -165,7 +211,10 @@ export default function AnalyzedResultOverlay({
           const screenWidth = screenBbox.x2 - screenBbox.x1;
           const screenHeight = screenBbox.y2 - screenBbox.y1;
 
-          const isHighlighted = topNIds.includes(result.id);  // topN에 선택된 사과들
+          const isHighlighted =
+            filterMode === 'topN'
+              ? topNIds.includes(result.id)
+              : result.sugar_content !== undefined && result.sugar_content >= minSugar;
           console.log(
             `[TopN Debug] id=${result.id}, 당도=${result.sugar_content}, isHighlighted=${isHighlighted}`
           );

@@ -15,7 +15,7 @@ interface VisualBarProps {
   minSugar: number;
 }
 
-const tastyImage = require('../assets/images/tasty.png');
+const appleImage = require('../assets/apple.png');
 
 export default function VisualBar({ results, onChangeMinSugar, minSugar }: VisualBarProps) {
   const barRef = useRef<View>(null);
@@ -45,7 +45,7 @@ export default function VisualBar({ results, onChangeMinSugar, minSugar }: Visua
     <View style={styles.container}>
       <View
         ref={barRef}
-        style={{ height: 15, width: '100%', marginLeft: '10%' }} // 🔥 최소한의 높이와 너비 지정!
+        style={{ height: 10, width: '100%', marginLeft: '10%' }} // 🔥 최소한의 높이와 너비 지정!
         onLayout={(e) => {
           barWidthRef.current = e.nativeEvent.layout.width;
           barLeftRef.current = e.nativeEvent.layout.x;
@@ -103,7 +103,7 @@ export default function VisualBar({ results, onChangeMinSugar, minSugar }: Visua
             }}
           >
             <Image
-              source={tastyImage}
+              source={appleImage}
               style={{ width: 35, height: 35 }}
               resizeMode="contain"
             />
@@ -111,7 +111,7 @@ export default function VisualBar({ results, onChangeMinSugar, minSugar }: Visua
         </LinearGradient>
       </View>
 
-      <View style={{ position: 'absolute', left: 5, top: 25, zIndex: 1 }}>
+      <View style={{ position: 'absolute', left: 5, top: 10, zIndex: 1 }}>
         <Text style={{ fontSize: 24 }}>🍯</Text>
       </View>
     </View>
