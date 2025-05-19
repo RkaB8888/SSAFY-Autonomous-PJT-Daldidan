@@ -1,6 +1,6 @@
 // components/TopAppleCrown.tsx
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, Platform } from 'react-native';
 import LottieView from 'lottie-react-native';
 
 interface Props {
@@ -43,7 +43,7 @@ export default function TopAppleCrown({ bbox, originalSize, screenSize }: Props)
   const cx = (x1 + x2) / 2;
   const top = Math.min(y1, y2);
 
-  const crownWidth = Math.max(x2 - x1, y2 - y1) * 0.5;
+  const crownWidth = Math.max(x2 - x1, y2 - y1) * 0.4;
 
   return (
     <View
@@ -53,15 +53,18 @@ export default function TopAppleCrown({ bbox, originalSize, screenSize }: Props)
         top: top - crownWidth * 0.9,
         width: crownWidth,
         height: crownWidth,
-        zIndex: 100,
+        zIndex: 10,
+        elevation: 0,
       }}
       pointerEvents="none"
+      needsOffscreenAlphaCompositing={true} // 추가
     >
       <LottieView
         source={require('../assets/lottie/crown.json')}
         autoPlay
         loop={false}
         style={StyleSheet.absoluteFill}
+        {...(Platform.OS === 'android' && { renderMode: 'SOFTWARE' })} // Android에서만 renderMode를 SOFTWARE로 설정
       />
     </View>
   );
