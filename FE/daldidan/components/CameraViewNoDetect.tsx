@@ -1,6 +1,6 @@
 // daldidan/components/CameraViewNoDetect.tsx
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   StyleSheet,
   Text,
@@ -10,37 +10,45 @@ import {
   Button,
   ActivityIndicator,
   Alert,
-} from 'react-native';
-import { Camera, useCameraDevice } from 'react-native-vision-camera'; // Photo 타입 임포트
-import { useObjectDetection } from '../hooks/useObjectDetection';
-import DetectionOverlay from './DetectionOverlay'; // 실시간 탐지 결과 오버레이
-import AppleHint from './AppleHint'; // 탐지되지 않았을 때 힌트 컴포넌트
+} from "react-native";
+import { Camera, useCameraDevice } from "react-native-vision-camera"; // Photo 타입 임포트
+import { useObjectDetection } from "../hooks/useObjectDetection";
+import DetectionOverlay from "./DetectionOverlay"; // 실시간 탐지 결과 오버레이
+import AppleHint from "./AppleHint"; // 탐지되지 않았을 때 힌트 컴포넌트
 // ★★★ useAnalysisApiHandler 훅 임포트 ★★★
 // useAnalysisApiHandler.ts 파일에 이 훅 구현 코드가 있어야 합니다. (resetAnalysis, originalImageSize 반환 포함)
-import { useAnalysisApiHandler } from '../hooks/useAnalysisApiHandler';
+import { useAnalysisApiHandler } from "../hooks/useAnalysisApiHandler";
 // API 응답 타입 임포트 (훅 내부에서 관리되지만, 결과 오버레이에 전달)
 
 // ★★★ API 분석 결과를 표시할 새로운 오버레이 컴포넌트 임포트 ★★★
 // AnalyzedResultOverlay.tsx 파일에 구현 코드가 있어야 합니다. (이전 답변 코드 참고)
-import AnalyzedResultOverlay from './AnalyzedResultOverlay'; // 임포트 주석 해제!
-import AppleProcessing from './AppleProcessing';
-import { useShake } from '../hooks/useShake';
+import AnalyzedResultOverlay from "./AnalyzedResultOverlay"; // 임포트 주석 해제!
+import AppleProcessing from "./AppleProcessing";
+import { useShake } from "../hooks/useShake";
 
-import * as SplashScreen from 'expo-splash-screen';
+import * as SplashScreen from "expo-splash-screen";
+import Sound from "react-native-sound";
+import { Image } from "react-native";
+import captureImg from "../assets/images/apple_capture.png";
+import countdownAudio from "../assets/sounds/countdown.mp3";
 
 SplashScreen.preventAutoHideAsync(); // Splash 화면을 수동으로 제어하겠다는 선언
 
 export default function CameraView() {
-  const device = useCameraDevice('back');
+  const device = useCameraDevice("back");
+  const appleSoundRef = useRef<Sound | null>(null);
   // screenSize 상태는 onLayout 이벤트에서 업데이트됩니다. 초기값은 { width: 0, height: 0 }
   const [screenSize, setScreenSize] = useState({ width: 0, height: 0 }); // <-- 여기가 screenSize 선언 및 초기화
-  const [appState, setAppState] = useState('active');
+  const [appState, setAppState] = useState("active");
   const [countdown, setCountdown] = useState<number | null>(null);
   const countdownTimer = useRef<NodeJS.Timeout | null>(null);
   const justReset = useRef(false);
   const [autoCaptureEnabled, setAutoCaptureEnabled] = useState(true);
   const lastCenterRef = useRef<{ x: number; y: number } | null>(null);
 
+  const countdownSoundRef = useRef<Sound | null>(null);
+  const [showCaptureImage, setShowCaptureImage] = useState(false);
+  const capturingRef = useRef(false);
   // ★★★ useAnalysisApiHandler 훅 사용 ★★★
   // useAnalysisApiHandler.ts 파일에 이 훅 구현 코드가 있어야 합니다. (resetAnalysis, originalImageSize 반환 포함)
   const {
@@ -52,12 +60,23 @@ export default function CameraView() {
     resetAnalysis, // ★★★ 분석 결과 초기화 함수 (useAnalysisApiHandler 훅에서 반환 필요) ★★★
   } = useAnalysisApiHandler(); // 훅 호출
 
+  useEffect(() => {
+    Sound.setCategory("Playback");
+    const snd = new Sound(countdownAudio, Sound.MAIN_BUNDLE, (err) => {
+      if (err) console.warn("Countdown sound load error", err);
+    });
+    countdownSoundRef.current = snd;
+    return () => {
+      snd.release();
+    };
+  }, []);
+
   // API 훅의 상태 (isAnalyzing, analyzedResults, analysisError)와 원본 해상도를 이 컴포넌트에서 직접 접근하여 UI 업데이트에 사용합니다.
 
   // App 상태 변화 감지
   useEffect(() => {
-    const subscription = AppState.addEventListener('change', (nextAppState) => {
-      console.log('[AppState] changed:', nextAppState);
+    const subscription = AppState.addEventListener("change", (nextAppState) => {
+      console.log("[AppState] changed:", nextAppState);
       setAppState(nextAppState);
     });
     return () => subscription.remove();
@@ -84,38 +103,57 @@ export default function CameraView() {
   }, [device, hasPermission, format]);
 
   useEffect(() => {
-    // 사과가 감지되지 않았을 때 카운트다운 초기화
-    if (!hasApple && countdown !== null) {
-      setCountdown(null);
-      if (countdownTimer.current) {
-        clearInterval(countdownTimer.current);
-        countdownTimer.current = null;
-      }
-    }
-    if (
-      !hasApple ||
-      isAnalyzing ||
-      analyzedResults !== null ||
-      countdown !== null ||
-      !autoCaptureEnabled ||
-      justReset.current
-    )
-      return;
-    startCountdownAndCapture();
-  }, [detections, countdown, isAnalyzing, analyzedResults, autoCaptureEnabled]);
+  // 사과가 감지되었을 때(hasApple), 
+  // 분석 중(isAnalyzing) 아니고 
+  // 시퀀스 중(capturingRef) 아니고
+  // 결과가 남아 있지 않을 때만
+  if (
+    !hasApple ||
+    isAnalyzing ||
+    capturingRef.current ||
+    analyzedResults !== null ||
+    !autoCaptureEnabled ||
+    justReset.current
+  ) {
+    return;
+  }
+  startCaptureSequence();
+}, [hasApple, isAnalyzing, analyzedResults, autoCaptureEnabled]);
+
+
+  // useEffect(() => {
+  //   // 사과가 감지되지 않았을 때 카운트다운 초기화
+  //   if (!hasApple && countdown !== null) {
+  //     setCountdown(null);
+  //     if (countdownTimer.current) {
+  //       clearInterval(countdownTimer.current);
+  //       countdownTimer.current = null;
+  //     }
+  //   }
+  //   if (
+  //     !hasApple ||
+  //     isAnalyzing ||
+  //     analyzedResults !== null ||
+  //     // countdown !== null ||
+  //     !autoCaptureEnabled ||
+  //     justReset.current
+  //   )
+  //     return;
+  //   startCaptureSequence();
+  // }, [detections, hasApple, isAnalyzing, analyzedResults, autoCaptureEnabled]);
 
   // 전체 화면 캡쳐 및 API 요청 함수
   const handleCaptureAndAnalyze = useCallback(async () => {
     // cameraRef를 takePhoto에 사용
     if (!cameraRef.current) {
-      console.error('[Capture] Camera ref is not set.');
-      Alert.alert('Error', 'Camera not ready.');
+      console.error("[Capture] Camera ref is not set.");
+      Alert.alert("Error", "Camera not ready.");
       return;
     }
     // isAnalyzing 상태는 useAnalysisApiHandler 훅에서 관리되며, 훅 내부에서 중복 실행 방지됩니다.
     if (isAnalyzing) {
       // 훅에서 가져온 isAnalyzing 사용
-      console.log('[API] Analysis already in progress. Skipping capture.');
+      console.log("[API] Analysis already in progress. Skipping capture.");
       return;
     }
 
@@ -123,11 +161,11 @@ export default function CameraView() {
     // 이 상태 변경을 Camera 컴포넌트의 isActive prop이 감지하여 카메라가 멈춥니다.
 
     try {
-      console.log('[CameraView] Starting photo capture...');
+      console.log("[CameraView] Starting photo capture...");
 
       // cameraRef.current.takePhoto() 메서드를 사용하여 카메라 영상 캡처
       const photo = await cameraRef.current.takePhoto({
-        qualityPrioritization: 'speed', // 속도 우선
+        qualityPrioritization: "speed", // 속도 우선
         enableShutterAnimation: false, // 셔터 애니메이션 비활성화
       });
 
@@ -135,12 +173,12 @@ export default function CameraView() {
       const photoOriginalWidth = photo.width; // 캡처된 원본 이미지 너비
       const photoOriginalHeight = photo.height; // 캡처된 원본 이미지 높이
 
-      if (!uri || uri === 'file://undefined') {
+      if (!uri || uri === "file://undefined") {
         console.error(
-          '[Capture] Failed to capture photo, URI is null or invalid:',
+          "[Capture] Failed to capture photo, URI is null or invalid:",
           uri
         );
-        Alert.alert('Error', 'Failed to capture photo.');
+        Alert.alert("Error", "Failed to capture photo.");
         return;
       }
 
@@ -152,15 +190,15 @@ export default function CameraView() {
       // 캡처된 사진 파일의 URI와 원본 해상도 정보를 함께 훅으로 전달
       await triggerAnalysis(uri, photoOriginalWidth, photoOriginalHeight);
 
-      console.log('[CameraView] Triggered analysis process.');
+      console.log("[CameraView] Triggered analysis process.");
     } catch (error: any) {
       console.error(
-        '[CameraView] Error during photo capture or triggering analysis:',
+        "[CameraView] Error during photo capture or triggering analysis:",
         error
       );
       Alert.alert(
-        'Analysis Failed',
-        error.message || 'An error occurred during analysis.'
+        "Analysis Failed",
+        error.message || "An error occurred during analysis."
       );
     } finally {
       // 카메라 일시 정지/재개 로직은 isAnalyzing 상태에 의해 자동으로 처리됩니다.
@@ -168,24 +206,42 @@ export default function CameraView() {
     setCountdown(null);
   }, [isAnalyzing, triggerAnalysis, cameraRef]);
 
-  const startCountdownAndCapture = () => {
-    if (countdownTimer.current || isAnalyzing || analyzedResults !== null)
-      return;
+  // const startCountdownAndCapture = () => {
+  //   if (countdownTimer.current || isAnalyzing || analyzedResults !== null)
+  //     return;
 
-    setCountdown(3); // 시작 숫자
-    let current = 3;
+  //   setCountdown(3); // 시작 숫자
+  //   let current = 3;
 
-    countdownTimer.current = setInterval(() => {
-      current -= 1;
-      if (current > 0) {
-        setCountdown(current);
-      } else {
-        clearInterval(countdownTimer.current!);
-        countdownTimer.current = null;
+  //   countdownTimer.current = setInterval(() => {
+  //     current -= 1;
+  //     if (current > 0) {
+  //       setCountdown(current);
+  //     } else {
+  //       clearInterval(countdownTimer.current!);
+  //       countdownTimer.current = null;
 
-        handleCaptureAndAnalyze(); // 자동 캡처 실행
+  //       handleCaptureAndAnalyze(); // 자동 캡처 실행
+  //     }
+  //   }, 1000);
+  // };
+
+  // 3) 사운드 재생 → 캡처 & 이미지 토글 함수
+  const startCaptureSequence = () => {
+    if (isAnalyzing || analyzedResults !== null || showCaptureImage) return;
+
+    capturingRef.current = true;
+    // 이미지 보여주기
+    setShowCaptureImage(true);
+
+    // 음성 재생 후 콜백으로 캡처 실행
+    countdownSoundRef.current?.play((success) => {
+      if (success) {
+        handleCaptureAndAnalyze();
       }
-    }, 1000);
+      // 재생 끝난 뒤 이미지 숨기기
+      setShowCaptureImage(false);
+    });
   };
 
   // AppleButton 또는 다른 캡쳐 트리거 UI 표시 여부 결정
@@ -196,19 +252,23 @@ export default function CameraView() {
   // 분석 완료 상태 판단: analyzedResults가 null이 아니고 배열이며, isAnalyzing이 false일 때
   const analysisFinished = analyzedResults !== null && !isAnalyzing;
 
-useShake(() => {
-  if (analysisFinished) {
-    console.log('[Shake] 감지됨 → 분석 초기화');
-    justReset.current = true; // ✅ 자동 캡처 방지 플래그 ON
-    resetAnalysis();
+  useShake(
+    () => {
+      if (analysisFinished) {
+        console.log("[Shake] 감지됨 → 분석 초기화");
+        justReset.current = true; // ✅ 자동 캡처 방지 플래그 ON
+        resetAnalysis();
 
-    // ✅ 일정 시간 후 자동 캡처 다시 허용
-    setTimeout(() => {
-      justReset.current = false;
-      console.log('[Shake] 자동 캡처 재허용됨');
-    }, 2000); // 2초 뒤에 자동 캡처 허용
-  }
-}, 2.0, 700);
+        // ✅ 일정 시간 후 자동 캡처 다시 허용
+        setTimeout(() => {
+          justReset.current = false;
+          console.log("[Shake] 자동 캡처 재허용됨");
+        }, 2000); // 2초 뒤에 자동 캡처 허용
+      }
+    },
+    2.0,
+    700
+  );
 
   // ★★★ React 컴포넌트는 하나의 루트 엘리먼트만 반환해야 합니다. ★★★
   return (
@@ -220,12 +280,12 @@ useShake(() => {
         // 이 부분이 setScreenSize를 호출하여 screenSize를 0이 아닌 실제 값으로 업데이트합니다.
         const { width, height } = event.nativeEvent.layout;
         setScreenSize({ width, height });
-        console.log('[CameraView] screenSize updated:', { width, height }); // screenSize 업데이트 로그
+        console.log("[CameraView] screenSize updated:", { width, height }); // screenSize 업데이트 로그
       }}
     >
       {!hasPermission || !device || !format ? (
         <View style={styles.container}>
-          <Text style={{ color: 'white' }}>
+          <Text style={{ color: "white" }}>
             카메라 설정 또는 권한 확인 중...
           </Text>
         </View>
@@ -234,7 +294,7 @@ useShake(() => {
           {/* Camera 컴포넌트 */}
           {/* appState가 'active' 상태일 때만 Camera 마운트 */}
           {/* isAnalyzing 중이거나 analysisFinished 상태일 때 isActive는 false */}
-          {appState === 'active' ? (
+          {appState === "active" ? (
             <Camera
               ref={cameraRef}
               style={StyleSheet.absoluteFill}
@@ -295,20 +355,31 @@ useShake(() => {
           </View>
        ) : null}
      */}
-          {countdown !== null && (
+          {/* {countdown !== null && (
             <View style={styles.countdownOverlay}>
               <Text style={styles.countdownText}>{'🍎'.repeat(countdown)}</Text>
+            </View>
+          )} */}
+
+          {showCaptureImage && (
+            <View style={styles.captureOverlay}>
+              <Image
+                source={captureImg}
+                style={styles.captureImage}
+                resizeMode="contain"
+              />
             </View>
           )}
 
           {/* 분석 중 인디케이터 표시 */}
-          {isAnalyzing && <AppleProcessing status='juicing' />}
+          {isAnalyzing && <AppleProcessing status="juicing" />}
 
           {/* 탐지된 객체가 없을 때 힌트 메시지 */}
           {/* detections.length === 0 이고, isAnalyzing 중이 아니고, 분석 완료 상태가 아닐 때 표시 */}
           {detections.length === 0 &&
           !isAnalyzing &&
-          analyzedResults === null ? (
+          analyzedResults === null &&
+          !capturingRef.current ? (
             <AppleHint />
           ) : null}
 
@@ -340,52 +411,52 @@ useShake(() => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'black',
+    backgroundColor: "black",
   },
   grayedCamera: { opacity: 0.7 },
   captureButtonContainer: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 100,
-    alignSelf: 'center',
+    alignSelf: "center",
     zIndex: 10,
   },
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    justifyContent: "center",
+    alignItems: "center",
     zIndex: 20,
   },
   loadingText: {
-    color: 'white',
+    color: "white",
     marginTop: 10,
     fontSize: 16,
   },
   noDetectionMessage: {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
+    position: "absolute",
+    top: "50%",
+    left: "50%",
     transform: [{ translateX: -100 }, { translateY: -50 }],
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
     padding: 15,
     borderRadius: 10,
     zIndex: 5,
   },
   noDetectionText: {
-    color: 'white',
+    color: "white",
     fontSize: 18,
-    textAlign: 'center',
+    textAlign: "center",
   },
   resumeButtonContainer: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 50,
-    alignSelf: 'center',
+    alignSelf: "center",
     zIndex: 15,
   },
   countdownOverlay: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 120,
-    alignSelf: 'center',
+    alignSelf: "center",
     // backgroundColor: 'rgba(0, 0, 0, 0.6)',
     paddingVertical: 16,
     paddingHorizontal: 24,
@@ -394,7 +465,18 @@ const styles = StyleSheet.create({
   },
   countdownText: {
     fontSize: 48,
-    fontWeight: 'bold',
-    color: 'white',
+    fontWeight: "bold",
+    color: "white",
+  },
+  captureOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.5)",
+    zIndex: 100,
+  },
+  captureImage: {
+    width: 200,
+    height: 200,
   },
 });
