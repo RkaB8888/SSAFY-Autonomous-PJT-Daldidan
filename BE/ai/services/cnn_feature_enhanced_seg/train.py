@@ -782,7 +782,8 @@ from models.fusion_model import FusionModel
 # ✅ 경로 설정
 IMG_DIR = "/home/j-k12e206/ai-hub/Fuji/train/images"
 JSON_DIR = "/home/j-k12e206/ai-hub/Fuji/train/jsons"
-SAVE_DIR = "/home/j-k12e206/jmk/S12P31E206/BE/ai/services/model_jmk2/meme/checkpoints"
+# SAVE_DIR = "/home/j-k12e206/jmk/S12P31E206/BE/ai/services/model_jmk2/meme/checkpoints"
+SAVE_DIR = "/home/j-k12e206/jmk/S12P31E206/BE/ai/services/cnn_feature_enhanced_seg/me/checkpoints"
 FEATURE_DIR = "/home/j-k12e206/jmk/S12P31E206/BE/ai/services/cnn_feature_enhanced_seg/me"
 os.makedirs(SAVE_DIR, exist_ok=True)
 
