@@ -29,12 +29,14 @@ import ShakeReminder from './ShakeReminder';
 import AppleToastStack from './AppleToastStack';
 import TopNAppleSelector from './TopNAppleSelector';
 import AppleJuiceAnimation from './AppleJuiceAnimation';
+import { useInfoTooltip } from "./InfoTooltipContext";
 
 interface Props {
   results: AnalyzedObjectResult[];
   screenSize: { width: number; height: number };
   originalImageSize: { width: number; height: number };
 }
+
 
 // 각 포인트를 화면 좌표로 변환하는 함수
 const transformPointToScreen = (
@@ -211,7 +213,17 @@ export default function AnalyzedResultOverlay({
     return null;
   }
 
+  // 상단 useState 추가
+  const { hasShown, setHasShown } = useInfoTooltip();
   const [showTooltip, setShowTooltip] = useState(false);
+
+  useEffect(() => {
+    if (!hasShown) {
+      setShowTooltip(true);
+      setHasShown(true);
+    }
+  }, [hasShown]);
+  
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
   const [topN, setTopN] = useState(3);
@@ -471,8 +483,9 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   infoIcon: {
-    width: 58,
-    height: 68,
-    resizeMode: 'contain',
+    width: 88,
+    height: 88,
+    bottom: 20,
+    resizeMode: "contain",
   },
 });
