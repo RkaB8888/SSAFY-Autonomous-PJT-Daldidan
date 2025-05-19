@@ -385,70 +385,17 @@ export default function AnalyzedResultOverlay({
 
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents='box-none'>
-      <View
-        style={{
-          flexDirection: 'row',
-          justifyContent: 'center',
-          marginTop: 50,
-          zIndex: 10,
-        }}
-      >
-        <Pressable
-          onPress={() => setFilterMode('topN')}
-          style={{
-            paddingHorizontal: 12,
-            paddingVertical: 6,
-            marginRight: 10,
-            backgroundColor: filterMode === 'topN' ? '#ff8c00' : '#e0e0e0',
-            borderRadius: 8,
-          }}
-        >
-          <Text
-            style={{
-              fontFamily: 'Maplestory_Light',
-              color: filterMode === 'topN' ? 'white' : 'black',
-            }}
-          >
-            TopN 모드
-          </Text>
-        </Pressable>
-        <Pressable
-          onPress={() => setFilterMode('slider')}
-          style={{
-            paddingHorizontal: 12,
-            paddingVertical: 6,
-            backgroundColor: filterMode === 'slider' ? '#ff8c00' : '#e0e0e0',
-            borderRadius: 8,
-          }}
-        >
-          <Text
-            style={{
-              fontFamily: 'Maplestory_Light',
-              color: filterMode === 'slider' ? 'white' : 'black',
-            }}
-          >
-            최소 당도 모드
-          </Text>
-        </Pressable>
+      <View style={{ position: 'absolute', top: 50, left: 20, zIndex: 1000, fontFamily: 'Maplestory_Light', }} pointerEvents="auto">
+        <TopNAppleSelector topN={topN} onChange={setTopN} maxN={Math.max(1, results.length)} />
+      </View>
+      <View style={{ position: 'absolute', top: 40, right: 10, height: 300, width: 60, zIndex: 1000, fontFamily: 'Maplestory_Light', }} pointerEvents="box-none">
+        <View style={{ flex: 1 }} pointerEvents="auto">
+          <VisualBar results={results} minSugar={minSugar} onChangeMinSugar={setMinSugar} />
+        </View>
       </View>
 
-      {filterMode === 'topN' && (
-        <TopNAppleSelector
-          topN={topN}
-          onChange={setTopN}
-          maxN={Math.max(1, results.length)}
-        />
-      )}
 
-      {filterMode === 'slider' && (
-        <VisualBar
-          results={results}
-          minSugar={minSugar}
-          onChangeMinSugar={setMinSugar}
-        />
-      )}
-
-      <Canvas style={StyleSheet.absoluteFill}>
+      <Canvas style={[StyleSheet.absoluteFill, { zIndex: 0 }]} pointerEvents="none">
         {/* 전체 어두운 레이어 */}
         <Group>
           <Rect
