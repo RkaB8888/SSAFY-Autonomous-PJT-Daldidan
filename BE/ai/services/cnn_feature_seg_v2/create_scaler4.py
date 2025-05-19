@@ -56,7 +56,7 @@ if __name__ == "__main__":
 
     scaler = StandardScaler().fit(features)
 
-    SAVE_PATH = "/home/j-k12e206/jmk/S12P31E206/BE/ai/services/model_jmk4/me/scaler4.pkl"
+    SAVE_PATH = "/home/j-k12e206/jmk/S12P31E206/BE/ai/services/cnn_feature_seg_v2/me/scaler4.pkl"
     joblib.dump(scaler, SAVE_PATH)
 
     end_time = time.time()

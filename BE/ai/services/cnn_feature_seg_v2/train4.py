@@ -59,7 +59,7 @@ criterion = nn.MSELoss()
 optimizer = optim.Adam(model.parameters(), lr=lr)
 scaler = GradScaler()
 
-SAVE_DIR = "/home/j-k12e206/jmk/S12P31E206/BE/ai/services/model_jmk4/me/checkpoints"
+SAVE_DIR = "/home/j-k12e206/jmk/S12P31E206/BE/ai/services/cnn_feature_seg_v2/me/checkpoints"
 os.makedirs(SAVE_DIR, exist_ok=True)
 
 # === 학습 루프
