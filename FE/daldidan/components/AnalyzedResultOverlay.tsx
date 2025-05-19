@@ -14,6 +14,7 @@ import question_apple from "../assets/images/question_apple.png";
 import { Image } from "react-native"; // ✅ 추가
 import ShakeReminder from "./ShakeReminder";
 import AppleToastStack from "./AppleToastStack";
+import TopNAppleSelector from "./TopNAppleSelector";  // topN 사과 선택 드롭다운 코드
 
 interface Props {
   // useAnalysisApiHandler 훅에서 받아온 분석 결과 리스트 (null 아님이 상위에서 보장됨)
@@ -34,6 +35,10 @@ export default function AnalyzedResultOverlay({
   const [selectedAppleId, setSelectedAppleId] = useState<
     string | number | null
   >(null);
+
+  type FilterMode = 'topN' | 'slider';
+
+  const [filterMode, setFilterMode] = useState<FilterMode>('topN');
 
   // results가 null이거나 비어있으면 렌더링 안 함 (훅에서 제대로 넘겨준다면 이 체크는 통과될 것입니다)
   if (
@@ -56,6 +61,17 @@ export default function AnalyzedResultOverlay({
   const [showTooltip, setShowTooltip] = useState(false);
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
+  const [topN, setTopN] = useState(3); // 기본 top N : 3개
+
+  const [minSugar, setMinSugar] = useState(10); // 슬라이더로 설정할 최소 당도 값(기본 최소값 10Bx)
+
+  const topNIds = [...results]
+    .filter(r => r.sugar_content !== undefined && r.sugar_content !== null)
+    .sort((a, b) => b.sugar_content! - a.sugar_content!) // 내림차순 정렬
+    .slice(0, topN)
+    .map(r => r.id);
+
+
   useEffect(() => {
     Animated.loop(
       Animated.sequence([
@@ -74,6 +90,13 @@ export default function AnalyzedResultOverlay({
       ])
     ).start();
   }, []);
+
+  useEffect(() => {
+    if (topN > results.length) {
+      setTopN(results.length);
+    }
+  }, [results.length]);
+
 
   const transformBboxToScreen = (
     bbox: { xmin: number; ymin: number; xmax: number; ymax: number },
@@ -112,7 +135,57 @@ export default function AnalyzedResultOverlay({
   };
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
-      <VisualBar results={results} onApplePress={handleApplePress} />
+
+      {/* topN 선택 드롭다운 */}
+      {/* <TopNAppleSelector
+        topN={topN}
+        onChange={setTopN}
+        maxN={Math.max(1, results.length)} // ✅ 최소 1개는 보장
+      /> */}
+
+      <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 50, zIndex: 10 }}>
+        <Pressable
+          onPress={() => setFilterMode('topN')}
+          style={{
+            paddingHorizontal: 12,
+            paddingVertical: 6,
+            marginRight: 10,
+            backgroundColor: filterMode === 'topN' ? '#ff8c00' : '#e0e0e0',
+            borderRadius: 8,
+          }}
+        >
+          <Text style={{ fontWeight: 'bold', color: filterMode === 'topN' ? 'white' : 'black' }}>TopN 모드</Text>
+        </Pressable>
+        <Pressable
+          onPress={() => setFilterMode('slider')}
+          style={{
+            paddingHorizontal: 12,
+            paddingVertical: 6,
+            backgroundColor: filterMode === 'slider' ? '#ff8c00' : '#e0e0e0',
+            borderRadius: 8,
+          }}
+        >
+          <Text style={{ fontWeight: 'bold', color: filterMode === 'slider' ? 'white' : 'black' }}>최소 당도 모드</Text>
+        </Pressable>
+      </View>
+      {filterMode === 'topN' && (
+        <TopNAppleSelector
+          topN={topN}
+          onChange={setTopN}
+          maxN={Math.max(1, results.length)}
+        />
+      )}
+
+      {filterMode === 'slider' && (
+        <VisualBar
+          results={results}
+          minSugar={minSugar}
+          onChangeMinSugar={setMinSugar}
+        />
+      )}
+
+
+      {/* <VisualBar results={results} onChangeMinSugar={setMinSugar} minSugar={minSugar} /> */}
       {/* 🔶 Skia 마스킹 캔버스 */}
       <Canvas style={StyleSheet.absoluteFill}>
         {/* 전체 어두운 레이어 */}
@@ -138,17 +211,29 @@ export default function AnalyzedResultOverlay({
           const screenWidth = screenBbox.x2 - screenBbox.x1;
           const screenHeight = screenBbox.y2 - screenBbox.y1;
 
-          return (
-            <Rect
-              key={`mask-${index}`}
-              x={screenBbox.x1}
-              y={screenBbox.y1}
-              width={screenWidth}
-              height={screenHeight}
-              color="rgba(0, 0, 0, 0)"
-              blendMode="clear" // 핵심! 이걸로 해당 영역만 비워줌
-            />
+          const isHighlighted =
+            filterMode === 'topN'
+              ? topNIds.includes(result.id)
+              : result.sugar_content !== undefined && result.sugar_content >= minSugar;
+          console.log(
+            `[TopN Debug] id=${result.id}, 당도=${result.sugar_content}, isHighlighted=${isHighlighted}`
           );
+
+          if (isHighlighted) {
+            return (
+              <Rect
+                key={`mask-${index}`}
+                x={screenBbox.x1}
+                y={screenBbox.y1}
+                width={screenWidth}
+                height={screenHeight}
+                color={isHighlighted ? "rgba(0, 0, 0, 0)" : "rgba(0, 0, 0, 0.5)"}
+                blendMode="clear" // 핵심! 이걸로 해당 영역만 비워줌
+              />
+            );
+          } else {
+            return null;
+          }
         })}
       </Canvas>
 
