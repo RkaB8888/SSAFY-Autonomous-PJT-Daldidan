@@ -2,19 +2,20 @@
 // useAnalysisApiHandler 훅에서 올바른 배열과 원본 해상도를 넘겨준다면 이 코드는 정상 작동합니다.
 // (변환 로직, 렌더링 로직 포함)
 
-import React, { useState } from "react";
-import { useEffect, useRef } from "react";
-import { Animated, StyleSheet, Text, View, Easing } from "react-native";
-import { AnalyzedObjectResult } from "../hooks/types/objectDetection";
-import VisualBar from "./VisualBar";
-import { Canvas, Rect, Group, Skia } from "@shopify/react-native-skia";
-import { Pressable } from "react-native";
-import InfoTooltip from "./InfoTooltip"; // 상단에 import 추가
-import question_apple from "../assets/images/question_apple.png";
-import { Image } from "react-native"; // ✅ 추가
-import ShakeReminder from "./ShakeReminder";
-import AppleToastStack from "./AppleToastStack";
-import TopNAppleSelector from "./TopNAppleSelector";  // topN 사과 선택 드롭다운 코드
+import React, { useState } from 'react';
+import { useEffect, useRef } from 'react';
+import { Animated, StyleSheet, Text, View, Easing } from 'react-native';
+import { AnalyzedObjectResult } from '../hooks/types/objectDetection';
+import VisualBar from './VisualBar';
+import { Canvas, Rect, Group, Skia } from '@shopify/react-native-skia';
+import { Pressable } from 'react-native';
+import InfoTooltip from './InfoTooltip'; // 상단에 import 추가
+import question_apple from '../assets/images/question_apple.png';
+import { Image } from 'react-native'; // ✅ 추가
+import ShakeReminder from './ShakeReminder';
+import AppleToastStack from './AppleToastStack';
+import TopNAppleSelector from './TopNAppleSelector'; // topN 사과 선택 드롭다운 코드
+import * as Haptics from 'expo-haptics';
 
 interface Props {
   // useAnalysisApiHandler 훅에서 받아온 분석 결과 리스트 (null 아님이 상위에서 보장됨)
@@ -52,7 +53,7 @@ export default function AnalyzedResultOverlay({
     originalImageSize.height <= 0
   ) {
     console.log(
-      "[AnalyzedResultOverlay] Not rendering: results empty or size info missing.",
+      '[AnalyzedResultOverlay] Not rendering: results empty or size info missing.',
       { results, screenSize, originalImageSize }
     );
     return null;
@@ -66,11 +67,10 @@ export default function AnalyzedResultOverlay({
   const [minSugar, setMinSugar] = useState(10); // 슬라이더로 설정할 최소 당도 값(기본 최소값 10Bx)
 
   const topNIds = [...results]
-    .filter(r => r.sugar_content !== undefined && r.sugar_content !== null)
+    .filter((r) => r.sugar_content !== undefined && r.sugar_content !== null)
     .sort((a, b) => b.sugar_content! - a.sugar_content!) // 내림차순 정렬
     .slice(0, topN)
-    .map(r => r.id);
-
+    .map((r) => r.id);
 
   useEffect(() => {
     Animated.loop(
@@ -96,7 +96,6 @@ export default function AnalyzedResultOverlay({
       setTopN(results.length);
     }
   }, [results.length]);
-
 
   const transformBboxToScreen = (
     bbox: { xmin: number; ymin: number; xmax: number; ymax: number },
@@ -134,8 +133,7 @@ export default function AnalyzedResultOverlay({
     setSelectedAppleId(appleId);
   };
   return (
-    <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
-
+    <View style={StyleSheet.absoluteFill} pointerEvents='box-none'>
       {/* topN 선택 드롭다운 */}
       {/* <TopNAppleSelector
         topN={topN}
@@ -143,7 +141,14 @@ export default function AnalyzedResultOverlay({
         maxN={Math.max(1, results.length)} // ✅ 최소 1개는 보장
       /> */}
 
-      <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 50, zIndex: 10 }}>
+      <View
+        style={{
+          flexDirection: 'row',
+          justifyContent: 'center',
+          marginTop: 50,
+          zIndex: 10,
+        }}
+      >
         <Pressable
           onPress={() => setFilterMode('topN')}
           style={{
@@ -154,7 +159,14 @@ export default function AnalyzedResultOverlay({
             borderRadius: 8,
           }}
         >
-          <Text style={{ fontWeight: 'bold', color: filterMode === 'topN' ? 'white' : 'black' }}>TopN 모드</Text>
+          <Text
+            style={{
+              fontWeight: 'bold',
+              color: filterMode === 'topN' ? 'white' : 'black',
+            }}
+          >
+            TopN 모드
+          </Text>
         </Pressable>
         <Pressable
           onPress={() => setFilterMode('slider')}
@@ -165,7 +177,14 @@ export default function AnalyzedResultOverlay({
             borderRadius: 8,
           }}
         >
-          <Text style={{ fontWeight: 'bold', color: filterMode === 'slider' ? 'white' : 'black' }}>최소 당도 모드</Text>
+          <Text
+            style={{
+              fontWeight: 'bold',
+              color: filterMode === 'slider' ? 'white' : 'black',
+            }}
+          >
+            최소 당도 모드
+          </Text>
         </Pressable>
       </View>
       {filterMode === 'topN' && (
@@ -184,7 +203,6 @@ export default function AnalyzedResultOverlay({
         />
       )}
 
-
       {/* <VisualBar results={results} onChangeMinSugar={setMinSugar} minSugar={minSugar} /> */}
       {/* 🔶 Skia 마스킹 캔버스 */}
       <Canvas style={StyleSheet.absoluteFill}>
@@ -195,7 +213,7 @@ export default function AnalyzedResultOverlay({
             y={0}
             width={screenSize.width}
             height={screenSize.height}
-            color="rgba(0, 0, 0, 0.5)"
+            color='rgba(0, 0, 0, 0.5)'
           />
         </Group>
 
@@ -214,7 +232,9 @@ export default function AnalyzedResultOverlay({
           const isHighlighted =
             filterMode === 'topN'
               ? topNIds.includes(result.id)
-              : result.sugar_content !== undefined && result.sugar_content >= minSugar;
+              : result.sugar_content !== undefined &&
+                result.sugar_content !== null &&
+                result.sugar_content >= minSugar;
           console.log(
             `[TopN Debug] id=${result.id}, 당도=${result.sugar_content}, isHighlighted=${isHighlighted}`
           );
@@ -227,8 +247,10 @@ export default function AnalyzedResultOverlay({
                 y={screenBbox.y1}
                 width={screenWidth}
                 height={screenHeight}
-                color={isHighlighted ? "rgba(0, 0, 0, 0)" : "rgba(0, 0, 0, 0.5)"}
-                blendMode="clear" // 핵심! 이걸로 해당 영역만 비워줌
+                color={
+                  isHighlighted ? 'rgba(0, 0, 0, 0)' : 'rgba(0, 0, 0, 0.5)'
+                }
+                blendMode='clear' // 핵심! 이걸로 해당 영역만 비워줌
               />
             );
           } else {
@@ -251,18 +273,23 @@ export default function AnalyzedResultOverlay({
         // bbox 시각화용 디버그 뷰
         return (
           <React.Fragment key={result.id ?? index}>
-            <View
+            <Pressable
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                if (result.id !== undefined) {
+                  handleApplePress(result.id);
+                }
+              }}
               style={{
-                position: "absolute",
+                position: 'absolute',
                 left: screenBbox.x1,
                 top: screenBbox.y1,
                 width: screenWidth,
                 height: screenHeight,
                 borderWidth: 2,
-                borderColor: "rgba(255,0,0,0.5)",
-                backgroundColor: "rgba(255,0,0,0.08)",
+                borderColor: 'rgba(255,0,0,0.5)',
+                backgroundColor: 'rgba(255,0,0,0.08)',
                 zIndex: 100,
-                pointerEvents: "none",
               }}
             />
           </React.Fragment>
@@ -287,8 +314,8 @@ export default function AnalyzedResultOverlay({
           <Image
             source={
               showTooltip
-                ? require("../assets/images/explamation_apple.png")
-                : require("../assets/images/question_apple.png")
+                ? require('../assets/images/explamation_apple.png')
+                : require('../assets/images/question_apple.png')
             }
             style={styles.infoIcon}
           />
@@ -306,16 +333,16 @@ export default function AnalyzedResultOverlay({
 const styles = StyleSheet.create({
   textContainer: {},
   text: {
-    color: "white",
-    fontWeight: "bold",
-    textAlign: "center",
+    color: 'white',
+    fontWeight: 'bold',
+    textAlign: 'center',
   },
   selectedText: {
-    color: "#000",
-    fontWeight: "bold",
+    color: '#000',
+    fontWeight: 'bold',
   },
   infoButton: {
-    position: "absolute",
+    position: 'absolute',
     bottom: 20,
     right: 5,
     zIndex: 1000,
@@ -324,6 +351,6 @@ const styles = StyleSheet.create({
   infoIcon: {
     width: 58,
     height: 68,
-    resizeMode: "contain",
+    resizeMode: 'contain',
   },
 });
