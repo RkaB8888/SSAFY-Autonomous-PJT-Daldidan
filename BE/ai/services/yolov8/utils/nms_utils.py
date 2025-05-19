@@ -1,6 +1,7 @@
 # services/yolov8/utils/nms_utils.py
 import numpy as np
 import cv2
+from itertools import chain
 
 
 def area(box):
@@ -71,27 +72,29 @@ def remove_cutoff_with_area(
     """
     filtered = []
     for det in dets:
-        seg = det.get("seg") or []
+        seg_contours = det.get("seg", [])  # List of contours
         xmin, ymin, xmax, ymax = det["bbox"]
 
-        # 1) Bounding Box가 이미지 밖으로 벗어나면 제외
+        # 1) bbox가 이미지 밖으로 닿으면 컷
         if xmin <= tol or ymin <= tol or xmax >= img_w - tol or ymax >= img_h - tol:
             continue
 
-        if seg:
-            # 2) Segmentation 접촉 비율 판정 (이미지 경계 기준)
-            total = len(seg)
+        if seg_contours:
+            # 2) 모든 점(flatten)으로 접촉 비율 계산
+            all_pts = list(chain.from_iterable(seg_contours))
+            total = len(all_pts)
             contact = sum(
                 1
-                for x, y in seg
+                for x, y in all_pts
                 if x <= tol or y <= tol or x >= img_w - tol or y >= img_h - tol
             )
             if contact / total >= min_ratio:
                 continue
 
-            # 3) Mask 면적 대비 Bounding Box 면적 판정
+            # 3) mask_area / bbox_area 비율 계산 (잘린 경우 mask_area가 작아야 컷)
             mask = np.zeros((img_h, img_w), dtype=np.uint8)
-            pts = np.array(seg, dtype=np.int32).reshape(-1, 1, 2)
+            # all_pts 를 하나의 contour로 변환
+            pts = np.array(all_pts, dtype=np.int32).reshape(-1, 1, 2)
             cv2.fillPoly(mask, [pts], 255)
             mask_crop = mask[ymin:ymax, xmin:xmax]
             mask_area = cv2.countNonZero(mask_crop)
@@ -101,3 +104,47 @@ def remove_cutoff_with_area(
 
         filtered.append(det)
     return filtered
+
+
+def smooth_polygons(
+    polygons_normalized,
+    img_w,
+    img_h,
+    open_kernel=17,
+    close_kernel=19,
+    approx_epsilon=0.005,
+):
+    """정규화된 폴리곤 좌표를 받아 스무딩 처리 후 절대 좌표 폴리곤을 반환합니다."""
+    smoothed_polygons_abs = []
+    for polygon_norm in polygons_normalized:
+        denormalized_points = []
+        for x_norm, y_norm in polygon_norm:
+            x_abs = int(round(x_norm * img_w))
+            y_abs = int(round(y_norm * img_h))
+            denormalized_points.append([x_abs, y_abs])
+
+        if not denormalized_points:
+            continue
+
+        mask = np.zeros((img_h, img_w), dtype=np.uint8)
+        points = np.array(denormalized_points, dtype=np.int32).reshape((-1, 1, 2))
+        cv2.drawContours(mask, [points], -1, color=255, thickness=cv2.FILLED)
+
+        k_open = cv2.getStructuringElement(
+            cv2.MORPH_ELLIPSE, (open_kernel, open_kernel)
+        )
+        k_close = cv2.getStructuringElement(
+            cv2.MORPH_ELLIPSE, (close_kernel, close_kernel)
+        )
+        mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, k_open)
+        mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, k_close)
+
+        contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+        if contours:
+            largest_contour = max(contours, key=cv2.contourArea)
+            epsilon = approx_epsilon * cv2.arcLength(largest_contour, True)
+            approx_contour = cv2.approxPolyDP(largest_contour, epsilon, True)
+            smoothed_polygons_abs.append(approx_contour.reshape(-1, 2).tolist())
+
+    return smoothed_polygons_abs

@@ -5,7 +5,6 @@ from typing import Optional, List
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from PIL import Image, ImageDraw
-from io import BytesIO
 from datetime import datetime
 
 from schemas.predict import PredictResponse, ApplePred, BBox, Segmentation
@@ -85,8 +84,8 @@ async def predict_image(
         filename = f"predict_{timestamp}.{ext}"
         save_path = os.path.join(save_dir, filename)
 
-        with open(save_path, "wb") as f:
-            f.write(img_bytes)
+        # with open(save_path, "wb") as f:
+        #     f.write(img_bytes)
 
         pil_img = Image.open(io.BytesIO(img_bytes)).convert("RGB")
     except Exception as e:
@@ -97,6 +96,7 @@ async def predict_image(
 
     apples = detect(DETECT_MODEL_NAME, pil_img, version=DETECT_MODEL_VERSION)
     print(f"[/predict] 🔍 사과 탐지 결과: {len(apples)}개")
+
     if not apples:
         return PredictResponse(results=[])
 
@@ -134,9 +134,9 @@ async def predict_image(
             crop = pil_img.crop((xmin, ymin, xmax, ymax))
 
         # 디버그용 crop 저장
-        crop_debug_path = os.path.join(save_dir, f"{timestamp}_crop_{idx}.jpg")
-        crop.save(crop_debug_path)
-        print(f"🔍 Crop saved: {crop_debug_path}")
+        # crop_debug_path = os.path.join(save_dir, f"{timestamp}_crop_{idx}.jpg")
+        # crop.save(crop_debug_path)
+        # print(f"🔍 Crop saved: {crop_debug_path}")
 
         # 4) 당도 추론을 위한 JPEG 바이트로 변환
         buf = io.BytesIO()
@@ -147,17 +147,17 @@ async def predict_image(
         sugar = predict(PREDICT_MODEL_NAME, image_bytes)
 
         # 🔴 박스 시각화
-        draw.rectangle(
-            [int(xmin), int(ymin), int(xmax), int(ymax)], outline="red", width=4
-        )
-        text_y = int(ymin) - 10 if ymin > 10 else int(ymin) + 10
-        draw.text(
-            (int(xmin), text_y),
-            f"id={idx} | {sugar:.2f}",
-            fill="red",
-            stroke_width=1,
-            stroke_fill="white",
-        )
+        # draw.rectangle(
+        #     [int(xmin), int(ymin), int(xmax), int(ymax)], outline="red", width=4
+        # )
+        # text_y = int(ymin) - 10 if ymin > 10 else int(ymin) + 10
+        # draw.text(
+        #     (int(xmin), text_y),
+        #     f"id={idx} | {sugar:.2f}",
+        #     fill="red",
+        #     stroke_width=1,
+        #     stroke_fill="white",
+        # )
 
         # 🔴 segmentation 윤곽선 그리기
         if pts_list:
