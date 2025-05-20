@@ -4,7 +4,7 @@ from ultralytics import YOLO
 from PIL import Image
 import numpy as np
 
-
+from services.yolov8.config import MODEL_DIR, MODEL_FILES_PT
 from services.yolov8.utils.nms_utils import (
     remove_enclosing_big_boxes,
     remove_cutoff_with_area,
@@ -14,8 +14,18 @@ from services.yolov8.utils.nms_utils import (
 
 class YoloV8PtSegPredictor:
     def __init__(self, model_size: str = "m"):
-        self.model_size = model_size
-        self.model = YOLO(f"yolov8{model_size}-seg.pt")
+        # 1) 모델 파일명 선택
+        if model_size not in MODEL_FILES_PT:
+            raise ValueError(f"지원하지 않는 model_size '{model_size}' 입니다.")
+        weight_name = MODEL_FILES_PT[model_size]
+
+        # 2) 절대경로 생성
+        weight_path = MODEL_DIR / weight_name
+        if not weight_path.exists():
+            raise FileNotFoundError(f"모델 파일이 없습니다: {weight_path}")
+
+        print(f"[INFO] YOLOv8 {model_size}-seg 모델 로드: {weight_path}")
+        self.model = YOLO(str(weight_path))
 
     def predict(self, image: Image.Image | np.ndarray) -> list[dict]:
         # Determine image dimensions (needed for filtering)
