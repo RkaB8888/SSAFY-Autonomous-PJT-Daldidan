@@ -3,7 +3,7 @@ import json
 import numpy as np
 from sklearn.preprocessing import StandardScaler
 import joblib
-from features.extract_features4 import extract_features
+from features.extract_features3 import extract_features_extended
 import cv2
 from tqdm import tqdm
 import time
@@ -34,7 +34,7 @@ def process_file(json_path):
         mask = np.zeros((img_h, img_w), dtype=np.uint8)
         cv2.fillPoly(mask, [points], 255)
 
-        feature = extract_features(image, mask)
+        feature = extract_features_extended(image, mask)
         return feature
 
     except Exception as e:
@@ -44,19 +44,19 @@ def process_file(json_path):
 if __name__ == "__main__":
     start_time = time.time()
 
-    num_workers = 48  # 서버 코어수에 맞춰 (ex: 48, 64, 96 등 조절)
+    num_workers = 48  # 서버 코어 수 맞게 조절
     print(f"✅ 멀티프로세싱 시작 (workers: {num_workers})")
 
     with Pool(processes=num_workers) as pool:
         results = list(tqdm(pool.imap(process_file, json_files), total=len(json_files), desc="Feature 추출 진행중"))
 
-    # None 결과 제거
     features = [res for res in results if res is not None]
     features = np.array(features)
 
     scaler = StandardScaler().fit(features)
 
-    SAVE_PATH = "/home/j-k12e206/jmk/S12P31E206/BE/ai/services/model_jmk4/me/scaler4.pkl"
+    SAVE_PATH = "/home/j-k12e206/jmk/S12P31E206/BE/ai/services/cnn_feature_finetuning_seg/me/scaler3.pkl"
+    os.makedirs(os.path.dirname(SAVE_PATH), exist_ok=True)
     joblib.dump(scaler, SAVE_PATH)
 
     end_time = time.time()
