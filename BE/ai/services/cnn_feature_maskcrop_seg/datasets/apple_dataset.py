@@ -6,7 +6,7 @@ from torch.utils.data import Dataset
 from PIL import Image
 from torchvision import transforms
 import numpy as np
-from features.extract_features4 import extract_features
+from features.extract_features import extract_features
 import joblib
 
 class AppleDataset(Dataset):
@@ -15,7 +15,7 @@ class AppleDataset(Dataset):
         self.json_files = json_files
         self.transform = transform
         # 서버 내 저장된 scaler load
-        self.scaler = joblib.load("/home/j-k12e206/jmk/S12P31E206/BE/ai/services/model_jmk4/me/scaler4.pkl")
+        self.scaler = joblib.load("/home/j-k12e206/jmk/S12P31E206/BE/ai/services/cnn_feature_maskcrop_seg/meme/scaler.pkl")
 
 
     def __len__(self):
@@ -47,9 +47,32 @@ class AppleDataset(Dataset):
         manual_features_scaled = self.scaler.transform([manual_features_raw])[0]
         manual_features = torch.tensor(manual_features_scaled, dtype=torch.float32)
 
-        image_pil = Image.open(img_path).convert("RGB")
+        # ROI crop from segmentation mask
+        x, y, w, h = cv2.boundingRect(mask)
+        roi = image[y:y+h, x:x+w]
+
+        # YOLO-style letterbox resize (to 224x224)
+        target_size = (224, 224)
+        h0, w0 = roi.shape[:2]
+        scale = min(target_size[1] / h0, target_size[0] / w0)
+        nh, nw = int(h0 * scale), int(w0 * scale)
+        resized = cv2.resize(roi, (nw, nh))
+
+        top = (target_size[1] - nh) // 2
+        bottom = target_size[1] - nh - top
+        left = (target_size[0] - nw) // 2
+        right = target_size[0] - nw - left
+
+        padded = cv2.copyMakeBorder(
+            resized, top, bottom, left, right,
+            borderType=cv2.BORDER_CONSTANT,
+            value=(114, 114, 114)
+        )
+
+        image_pil = Image.fromarray(padded)
         if self.transform:
             image_tensor = self.transform(image_pil)
+
         else:
             image_tensor = transforms.ToTensor()(image_pil)
 
