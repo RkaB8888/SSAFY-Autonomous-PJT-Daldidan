@@ -56,7 +56,7 @@ export default function CameraView() {
   {
     character: require('../assets/images/apple_char2.png'),
     camera: require('../assets/images/apple_capture2.png'),
-    message: '포즈 잡는중... 카메라를 가만히 들고 있어주세요!',
+    message: '포즈 잡는중... \n카메라를 가만히 들고 있어주세요!',
   },
   {
     character: require('../assets/images/apple_char3.png'),
@@ -281,10 +281,12 @@ useShake(() => {
     >
       {!hasPermission || !device || !format ? (
         <View style={styles.container}>
-          <Text style={{ color: 'white' }}>
-            카메라 설정 또는 권한 확인 중...
-          </Text>
-        </View>
+        <ActivityIndicator size="large" color="white" />
+        <Text style={{ color: 'white', marginTop: 12 }}>
+          카메라 설정 또는 권한 확인 중...
+        </Text>
+      </View>
+
       ) : (
         <>
           {/* Camera 컴포넌트 */}
@@ -406,9 +408,11 @@ useShake(() => {
 }
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: 'black',
-  },
+  flex: 1,
+  backgroundColor: 'black',
+  justifyContent: 'center', // 수직 중앙
+  alignItems: 'center',     // 수평 중앙
+},
   grayedCamera: { opacity: 0.7 },
   captureButtonContainer: {
     position: 'absolute',

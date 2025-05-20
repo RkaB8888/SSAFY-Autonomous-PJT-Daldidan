@@ -69,13 +69,13 @@ export default function InfoTooltip({ onDismiss }: Props) {
         >
           <View style={styles.bubble}>
             <Text style={styles.maintext}>Tips !</Text>
-            <Text style={styles.text}>🍎 슬라이더로 당도를 설정해보세요!</Text>
-            <Text style={styles.text}>🍎 사과를 터치하면 당도가 나와요!</Text>
+            <Text style={styles.text}>🍎 <Text style={styles.boldtext}>슬라이더</Text>로 <Text style={styles.boldtext}>최소당도</Text>를 설정해보세요!</Text>
+            <Text style={styles.text}>🍎 <Text style={styles.boldtext}>사과를 터치</Text>하면 당도가 나와요!</Text>
             <Text style={styles.text}>
-              🍎 당도가 높은 사과들만 골라볼 수 있어요!
+              🍎 가장 맛있는 <Text style={styles.boldtext}>3개의 사과</Text>만 볼 수 있어요!
             </Text>
             <Text style={styles.text}>
-              🍎 14 brix 이상의 맛있는 사과를 골라봐요!
+              🍎 <Text style={styles.boldtext}>14 brix</Text> 이상의 맛있는 사과를 골라봐요!
             </Text>
             <Text style={styles.text}>
               🍎 당도 정보는 참고용입니다. 정확하지 않을 수 있어요 !
@@ -118,9 +118,15 @@ const styles = StyleSheet.create({
     color: 'orange',
   },
   text: {
-    fontSize: 14,
+    fontSize: 13,
     marginBottom: 13,
     fontFamily: 'Maplestory_Light',
+  },
+  boldtext: {
+    fontSize: 13,
+    fontFamily: 'Maplestory',
+    marginBottom: 13,
+    color: 'orange',
   },
   arrow: {
     width: 0,
