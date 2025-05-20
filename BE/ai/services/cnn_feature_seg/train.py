@@ -256,7 +256,7 @@ def train(model, train_loader, val_loader, optimizer, criterion, device, num_epo
         val_mae = np.mean(np.abs(np.array(val_preds) - np.array(val_labels)))
         val_r2 = r2_score(val_labels, val_preds)
 
-        SAVE_DIR = r"/home/j-k12e206/jmk/S12P31E206/BE/ai/services/model_jmk2/meme/checkpoints"
+        SAVE_DIR = r"/home/j-k12e206/jmk/S12P31E206/BE/ai/services/cnn_feature_seg/meme/checkpoints"
         os.makedirs(SAVE_DIR, exist_ok=True)
         if val_loss < best_val_loss:
             best_val_loss = val_loss

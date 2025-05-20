@@ -8,8 +8,8 @@ import joblib
 import time
 
 # 경로 설정
-MODEL_PATH = "services/model_jmk2/meme/checkpoints/best_val_r2.pth"
-SCALER_PATH = "services/model_jmk2/meme/scaler.pkl"
+MODEL_PATH = "services/cnn_feature_seg/meme/checkpoints/best_val_r2.pth"
+SCALER_PATH = "services/cnn_feature_seg/meme/scaler.pkl"
 
 # 모델 및 장치
 manual_feature_dim = 6
