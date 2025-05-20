@@ -34,7 +34,7 @@ class YoloV8PtSegPredictor:
         else:
             img_h, img_w = image.shape[:2]
 
-        results = self.model(image, conf=0.2, iou=0.8, classes=47)
+        results = self.model(image, conf=0.15, iou=0.45, classes=47)
 
         # .xyn 사용을 위해 조건 변경
         if (
@@ -80,14 +80,14 @@ class YoloV8PtSegPredictor:
         # 필터링 함수들은 이제 스케일링된 'seg' 좌표를 사용하게 됩니다.
         # remove_cutoff_with_area 함수는 img_w, img_h를 올바르게 사용하게 됩니다.
         filtered_detections = remove_enclosing_big_boxes(detections, contain_thresh=0.9)
-        filtered_detections = remove_cutoff_with_area(
-            filtered_detections,
-            img_w=img_w,  # 원본 이미지 너비
-            img_h=img_h,  # 원본 이미지 높이
-            tol=5,
-            min_ratio=0.05,
-            area_thresh=1,  # 이 조건은 문제 없음
-        )
+        # filtered_detections = remove_cutoff_with_area(
+        #     filtered_detections,
+        #     img_w=img_w,  # 원본 이미지 너비
+        #     img_h=img_h,  # 원본 이미지 높이
+        #     tol=5,
+        #     min_ratio=0.05,
+        #     area_thresh=1,  # 이 조건은 문제 없음
+        # )
 
         # --- 최종 출력 형식 변환 ---
         results_json = []

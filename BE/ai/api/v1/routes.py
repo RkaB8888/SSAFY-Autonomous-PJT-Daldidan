@@ -43,7 +43,7 @@ from services.detect_service import detect  # ▶︎ YOLO 등 (bytes → list[di
 # -----------------------------
 # 사과 인식 모델: detect()에 전달할 이름 및 버전
 DETECT_MODEL_NAME: str = "yolov8_pt"
-DETECT_MODEL_VERSION: str = "m"
+DETECT_MODEL_VERSION: str = "l"
 # 당도 추론 모델: predict()에 전달할 모델 식별자
 PREDICT_MODEL_NAME: str = "cnn_feature_maskcrop_seg"
 # -----------------------------
@@ -87,8 +87,8 @@ async def predict_image(
         save_path = os.path.join(save_dir, filename)
 
         # 전달받은 이미지 저장
-        # with open(save_path, "wb") as f:
-        #     f.write(img_bytes)
+        with open(save_path, "wb") as f:
+            f.write(img_bytes)
 
         pil_img = Image.open(io.BytesIO(img_bytes)).convert("RGB")
     except Exception as e:
