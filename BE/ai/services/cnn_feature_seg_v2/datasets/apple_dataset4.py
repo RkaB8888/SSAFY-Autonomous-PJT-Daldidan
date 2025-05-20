@@ -1,12 +1,12 @@
 import os
 import json
 import cv2
-import numpy as np
-from PIL import Image
 import torch
 from torch.utils.data import Dataset
+from PIL import Image
 from torchvision import transforms
-from features.extract_features3 import extract_features_extended
+import numpy as np
+from features.extract_features4 import extract_features
 import joblib
 
 class AppleDataset(Dataset):
@@ -14,7 +14,9 @@ class AppleDataset(Dataset):
         self.image_dir = image_dir
         self.json_files = json_files
         self.transform = transform
-        self.scaler = joblib.load("/home/j-k12e206/jmk/S12P31E206/BE/ai/services/model_jmk3/me/scaler3.pkl")
+        # 서버 내 저장된 scaler load
+        self.scaler = joblib.load("/home/j-k12e206/jmk/S12P31E206/BE/ai/services/cnn_feature_seg_v2/me/scaler4.pkl")
+
 
     def __len__(self):
         return len(self.json_files)
@@ -30,13 +32,18 @@ class AppleDataset(Dataset):
 
         image = cv2.imread(img_path)
         if image is None:
-            return None
+            print(f"[WARNING] Image not found: {img_path}")
+            return None  # collate_fn에서 filter
 
-        points = np.array(data['annotations']['segmentation']).reshape((-1,2)).astype(np.int32)
-        mask = np.zeros((data['images']['img_height'], data['images']['img_width']), dtype=np.uint8)
+
+        points = np.array(data['annotations']['segmentation']).reshape((-1, 2)).astype(np.int32)
+        img_h = data['images']['img_height']
+        img_w = data['images']['img_width']
+        mask = np.zeros((img_h, img_w), dtype=np.uint8)
         cv2.fillPoly(mask, [points], 255)
 
-        manual_features_raw = extract_features_extended(image, mask)
+        # manual feature 추출 → scaler로 scaling
+        manual_features_raw = extract_features(image, mask)
         manual_features_scaled = self.scaler.transform([manual_features_raw])[0]
         manual_features = torch.tensor(manual_features_scaled, dtype=torch.float32)
 
@@ -47,4 +54,8 @@ class AppleDataset(Dataset):
             image_tensor = transforms.ToTensor()(image_pil)
 
         label = float(data['collection'].get('sugar_content_nir', 0))
+
+        if idx % 100 == 0:
+            print(f"[INFO] {idx}/{len(self)}번째 데이터 feature 추출 완료")
+
         return image_tensor, manual_features, torch.tensor(label, dtype=torch.float32)

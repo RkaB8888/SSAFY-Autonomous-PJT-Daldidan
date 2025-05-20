@@ -18,6 +18,11 @@ register_model(
     version="l",
     predictor_cls=lambda: YoloV8PtSegPredictor(model_size="l"),
 )
+register_model(
+    name="yolov8_pt",
+    version="x",
+    predictor_cls=lambda: YoloV8PtSegPredictor(model_size="x"),
+)
 
 register_model(
     name="yolov8",
