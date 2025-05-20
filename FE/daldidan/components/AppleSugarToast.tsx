@@ -103,7 +103,7 @@ const styles = StyleSheet.create({
   sugarText: {
     color: '#fffbe6',
     fontFamily: 'Maplestory',
-    fontSize: 20,
+    fontSize: 30,
     textShadowColor: '#b71c1c',
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 8,
@@ -114,7 +114,7 @@ const styles = StyleSheet.create({
     color: '#ffd600',
     fontFamily: 'Maplestory',
     fontWeight: 'bold',
-    fontSize: 18,
+    fontSize: 25,
     marginLeft: 2,
     textShadowColor: '#b71c1c',
     textShadowOffset: { width: 0, height: 1 },

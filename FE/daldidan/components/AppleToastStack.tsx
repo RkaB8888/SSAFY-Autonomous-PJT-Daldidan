@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Pressable } from 'react-native';
+import { Pressable, View } from 'react-native';
 import AppleSugarToast from './AppleSugarToast';
 import { AnalyzedObjectResult } from '../hooks/types/objectDetection';
 import * as Haptics from 'expo-haptics';
@@ -67,10 +67,25 @@ export default function AppleToastStack({
         const screenWidth = Math.max(0, screenBbox.x2 - screenBbox.x1);
         const screenHeight = Math.max(0, screenBbox.y2 - screenBbox.y1);
         const baseX = screenBbox.x1 + screenWidth / 2;
-        const baseY = Math.max(0, screenBbox.y1 - 40);
+
+        // 현재 사과가 가장 높은 당도인지 확인
+        const isHighest =
+          results.some(
+            (r) =>
+              r.sugar_content !== undefined &&
+              r.sugar_content !== null &&
+              r.sugar_content > (result.sugar_content ?? -1)
+          ) === false;
+
+        // 가장 높은 당도를 가진 사과의 경우 중앙보다 약간 위에서 시작
+        const baseY = isHighest
+          ? Math.max(0, screenBbox.y1 + screenHeight * 0.3) // 중앙보다 약간 위
+          : Math.max(0, screenBbox.y1 - 40); // 기존 위치
+
         const toastCount = toasts.filter(
           (t) => Math.abs(t.position.x - baseX) < 2
         ).length;
+
         return (
           <Pressable
             key={result.id ?? index}
@@ -106,21 +121,22 @@ export default function AppleToastStack({
       {toasts.map((toast) => {
         const width = toastWidths[toast.id] ?? 80;
         return (
-          <AppleSugarToast
-            key={toast.id}
-            visible={true}
-            sugarContent={toast.sugarContent}
-            position={{
-              x: toast.position.x - width / 2,
-              y: toast.position.y,
-            }}
-            onHide={() =>
-              setToasts((prev) => prev.filter((t) => t.id !== toast.id))
-            }
-            onLayoutMeasured={(w: number) =>
-              setToastWidths((prev) => ({ ...prev, [toast.id]: w }))
-            }
-          />
+          <View key={toast.id} style={{ position: 'absolute', zIndex: 1002 }}>
+            <AppleSugarToast
+              visible={true}
+              sugarContent={toast.sugarContent}
+              position={{
+                x: toast.position.x - width / 2,
+                y: toast.position.y,
+              }}
+              onHide={() =>
+                setToasts((prev) => prev.filter((t) => t.id !== toast.id))
+              }
+              onLayoutMeasured={(w: number) =>
+                setToastWidths((prev) => ({ ...prev, [toast.id]: w }))
+              }
+            />
+          </View>
         );
       })}
     </>
