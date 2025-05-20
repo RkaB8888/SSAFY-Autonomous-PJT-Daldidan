@@ -16,6 +16,7 @@ interface VisualBarProps {
   minSugar: number;
 }
 
+
 const appleImage = require('../assets/apple_40.png');
 const FIXED_MIN_BRIX = 8;
 const FIXED_MAX_BRIX = 18;
