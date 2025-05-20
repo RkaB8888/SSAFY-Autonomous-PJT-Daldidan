@@ -5,7 +5,6 @@ from typing import Optional, List
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile, Query
 from PIL import Image, ImageDraw
-from io import BytesIO
 from datetime import datetime
 
 from schemas.predict import PredictResponse, ApplePred, BBox, Segmentation
@@ -35,6 +34,7 @@ from services.detect_service import detect  # ▶︎ YOLO 등 (bytes → list[di
     s,
     m,
     l,
+    x,
 }
 """
 # -----------------------------
@@ -86,8 +86,9 @@ async def predict_image(
         filename = f"predict_{timestamp}.{ext}"
         save_path = os.path.join(save_dir, filename)
 
-        with open(save_path, "wb") as f:
-            f.write(img_bytes)
+        # 전달받은 이미지 저장
+        # with open(save_path, "wb") as f:
+        #     f.write(img_bytes)
 
         pil_img = Image.open(io.BytesIO(img_bytes)).convert("RGB")
     except Exception as e:
@@ -98,6 +99,7 @@ async def predict_image(
 
     apples = detect(DETECT_MODEL_NAME, pil_img, version=DETECT_MODEL_VERSION)
     print(f"[/predict] 🔍 사과 탐지 결과: {len(apples)}개")
+
     if not apples:
         return PredictResponse(results=[])
 
@@ -135,9 +137,9 @@ async def predict_image(
             crop = pil_img.crop((xmin, ymin, xmax, ymax))
 
         # 디버그용 crop 저장
-        crop_debug_path = os.path.join(save_dir, f"{timestamp}_crop_{idx}.jpg")
-        crop.save(crop_debug_path)
-        print(f"🔍 Crop saved: {crop_debug_path}")
+        # crop_debug_path = os.path.join(save_dir, f"{timestamp}_crop_{idx}.jpg")
+        # crop.save(crop_debug_path)
+        # print(f"🔍 Crop saved: {crop_debug_path}")
 
         # 4) 당도 추론을 위한 JPEG 바이트로 변환
         buf = io.BytesIO()
