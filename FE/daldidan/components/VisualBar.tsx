@@ -1,11 +1,12 @@
-import { LinearGradient } from 'expo-linear-gradient';
-import React, { useRef } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
+  View,
+  Text,
+  StyleSheet,
   Image,
   PanResponder,
-  StyleSheet,
-  Text,
-  View,
+  GestureResponderEvent,
+  PanResponderGestureState,
 } from 'react-native';
 import { AnalyzedObjectResult } from '../hooks/types/objectDetection';
 
@@ -15,98 +16,46 @@ interface VisualBarProps {
   minSugar: number;
 }
 
-const appleImage = require('../assets/apple.png');
+
+const appleImage = require('../assets/apple_40.png');
+const FIXED_MIN_BRIX = 8;
+const FIXED_MAX_BRIX = 18;
+const SLIDER_HEIGHT = 300;
+const THUMB_SIZE = 36;
 
 export default function VisualBar({ results, onChangeMinSugar, minSugar }: VisualBarProps) {
-  const barRef = useRef<View>(null);
-  const barHeightRef = useRef(1);
-  const barTopRef = useRef(0);
+  const [internalSugar, setInternalSugar] = useState(minSugar);
 
-  const FIXED_MIN_BRIX = 8;
-  const FIXED_MAX_BRIX = 18;
-  const BAR_HEIGHT = 300;
+  const handlePan = useCallback((gestureState: PanResponderGestureState) => {
+    const clampedY = Math.max(0, Math.min(SLIDER_HEIGHT, gestureState.dy + SLIDER_HEIGHT * (1 - (minSugar - FIXED_MIN_BRIX) / (FIXED_MAX_BRIX - FIXED_MIN_BRIX))));
+    const ratio = 1 - clampedY / SLIDER_HEIGHT;
+    const newSugar = Math.round((FIXED_MIN_BRIX + (FIXED_MAX_BRIX - FIXED_MIN_BRIX) * ratio) * 10) / 10;
+    setInternalSugar(newSugar);
+    onChangeMinSugar?.(newSugar);
+  }, [minSugar]);
 
-  // 🍎 사과 핸들용 PanResponder
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: (_, gestureState) => {
-        const y = gestureState.y0 - barTopRef.current;
-        const ratio = 1 - Math.max(0, Math.min(1, y / barHeightRef.current));
-        const sugarValue = FIXED_MIN_BRIX + ratio * (FIXED_MAX_BRIX - FIXED_MIN_BRIX);
-        const rounded = parseFloat(sugarValue.toFixed(1));
-        onChangeMinSugar?.(rounded);
-        return true;
-      },
-      onPanResponderMove: (_, gestureState) => {
-        const y = gestureState.moveY - barTopRef.current;
-        const ratio = 1 - Math.max(0, Math.min(1, y / barHeightRef.current));
-        const sugarValue = FIXED_MIN_BRIX + ratio * (FIXED_MAX_BRIX - FIXED_MIN_BRIX);
-        const rounded = parseFloat(sugarValue.toFixed(1));
-        onChangeMinSugar?.(rounded);
-      },
-    })
-  ).current;
+  const panResponder = PanResponder.create({
+    onStartShouldSetPanResponder: () => true,
+    onMoveShouldSetPanResponder: () => true,
+    onPanResponderMove: (_, gestureState) => handlePan(gestureState),
+    onPanResponderGrant: (_, gestureState) => handlePan(gestureState),
+    onPanResponderRelease: (_, gestureState) => handlePan(gestureState),
+  });
 
-  const appleTop = ((1 - (minSugar - FIXED_MIN_BRIX) / (FIXED_MAX_BRIX - FIXED_MIN_BRIX)) * BAR_HEIGHT) - 17.5;
+  const ratio = (internalSugar - FIXED_MIN_BRIX) / (FIXED_MAX_BRIX - FIXED_MIN_BRIX);
+  const topPosition = (1 - ratio) * SLIDER_HEIGHT - THUMB_SIZE / 2;
 
   return (
     <View style={styles.container}>
-      <View
-        ref={barRef}
-        style={{ height: BAR_HEIGHT, width: 20, justifyContent: 'center' }}
-        onLayout={() => {
-          barRef.current?.measureInWindow((x, y, width, height) => {
-            barTopRef.current = y;
-            barHeightRef.current = height;
-          });
-        }}
-      >
-        <LinearGradient
-          colors={['#a8e063', '#ff5f6d']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 0, y: 1 }}
-          style={{ height: '100%', width: '100%', borderRadius: 10 }}
-        />
+      <Text style={styles.sugarText}>{internalSugar.toFixed(1)} Bx</Text>
 
-        {/* 🔥 사과 핸들 드래그 가능 */}
+      <View style={styles.sliderTrack}>
+        <View style={styles.sliderBar} />
         <View
+          style={[styles.thumb, { top: topPosition }]}
           {...panResponder.panHandlers}
-          style={{
-            position: 'absolute',
-            top: appleTop,
-            left: -7.5,
-            zIndex: 10,
-          }}
         >
-          <Image
-            source={appleImage}
-            style={{ width: 35, height: 35 }}
-            resizeMode="contain"
-          />
-        </View>
-
-        {/* 실시간 최소 당도 표시 */}
-        <View
-          style={{
-            position: 'absolute',
-            top: appleTop - 25,
-            left: -50,
-            zIndex: 20,
-          }}
-          pointerEvents="none"
-        >
-          <Text
-            style={{
-              backgroundColor: 'rgba(0,0,0,0.7)',
-              color: 'white',
-              fontSize: 12,
-              paddingHorizontal: 6,
-              paddingVertical: 2,
-              borderRadius: 4,
-            }}
-          >
-            {minSugar.toFixed(1)} Bx
-          </Text>
+          <Image source={appleImage} style={styles.appleImage} />
         </View>
       </View>
     </View>
@@ -116,8 +65,51 @@ export default function VisualBar({ results, onChangeMinSugar, minSugar }: Visua
 const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
-    marginVertical: 12,
-    width: '100%',
+    height: SLIDER_HEIGHT + 50,
+    justifyContent: 'center',
     paddingHorizontal: 20,
+  },
+  sugarText: {
+    position: 'absolute',
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    bottom : -100,
+    color: 'white',
+    fontSize: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+    minWidth: 60,
+    textAlign: 'center',
+  },
+  sliderTrack: {
+    height: SLIDER_HEIGHT,
+    width: 40,
+    backgroundColor: 'transparent',
+    justifyContent: 'flex-start',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  sliderBar: {
+    position: 'absolute',
+    width: 4,
+    backgroundColor: '#a8e063',
+    top: 0,
+    bottom: 0,
+    left: '50%',
+    transform: [{ translateX: -2 }],
+    borderRadius: 2,
+  },
+  thumb: {
+    position: 'absolute',
+    width: THUMB_SIZE,
+    height: THUMB_SIZE,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  appleImage: {
+    width: THUMB_SIZE,
+    height: THUMB_SIZE,
+    resizeMode: 'contain',
   },
 });

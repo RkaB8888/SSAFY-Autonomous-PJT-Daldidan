@@ -2,7 +2,7 @@
 // useAnalysisApiHandler 훅에서 올바른 배열과 원본 해상도를 넘겨준다면 이 코드는 정상 작동합니다.
 // (변환 로직, 렌더링 로직 포함)
 
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import {
   Animated,
   StyleSheet,
@@ -230,16 +230,19 @@ export default function AnalyzedResultOverlay({
   const [minSugar, setMinSugar] = useState(10);
 
   // minSugar가 변경될 때 filterMode를 'slider'로 변경
-  const handleMinSugarChange = (sugar: number) => {
-    setMinSugar(sugar);
-    setFilterMode("slider");
-  };
+const stableResults = useMemo(() => results, [results]); // (거의 영향 없을 수도 있으나 넣어둠)
+
+const handleMinSugarChange = useCallback((sugar: number) => {
+  setMinSugar(sugar);
+  setFilterMode("slider");
+}, []);
 
   // topN이 변경될 때 filterMode를 'topN'으로 변경
   const handleTopNChange = (n: number) => {
     setTopN(n);
     setFilterMode("topN");
   };
+  
 
   // topNIds를 useMemo로 메모이제이션
   const topNIds = useMemo(
@@ -332,6 +335,8 @@ export default function AnalyzedResultOverlay({
     Array<{ x: number; y: number; size: number }>
   >([]);
 
+  const actualMinSugar = filterMode === "slider" ? minSugar : -Infinity;
+
   // 애니메이션 위치 업데이트를 위한 useEffect
   useEffect(() => {
     const newPositions: Array<{ x: number; y: number; size: number }> = [];
@@ -342,7 +347,7 @@ export default function AnalyzedResultOverlay({
           ? topNIds.includes(result.id)
           : result.sugar_content !== undefined &&
             result.sugar_content !== null &&
-            result.sugar_content >= minSugar;
+            result.sugar_content >= actualMinSugar;
 
       if (
         isHighlighted &&
@@ -449,7 +454,7 @@ export default function AnalyzedResultOverlay({
               ? topNIds.includes(result.id)
               : result.sugar_content !== undefined &&
                 result.sugar_content !== null &&
-                result.sugar_content >= minSugar;
+                result.sugar_content >= actualMinSugar;
 
           if (
             isHighlighted &&
