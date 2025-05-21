@@ -2,7 +2,13 @@
 // useAnalysisApiHandler 훅에서 올바른 배열과 원본 해상도를 넘겨준다면 이 코드는 정상 작동합니다.
 // (변환 로직, 렌더링 로직 포함)
 
-import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useMemo,
+  useCallback,
+} from "react";
 import {
   Animated,
   StyleSheet,
@@ -193,8 +199,8 @@ export default function AnalyzedResultOverlay({
     }[]
   >([]);
 
-  type FilterMode = "topN" | "slider";
-  const [filterMode, setFilterMode] = useState<FilterMode>("topN");
+  // type FilterMode = "topN" | "slider";
+  // const [filterMode, setFilterMode] = useState<FilterMode>("topN");
 
   if (
     !results ||
@@ -226,36 +232,45 @@ export default function AnalyzedResultOverlay({
 
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
-  const [topN, setTopN] = useState(3);
+  // const [topN, setTopN] = useState(3);
   const [minSugar, setMinSugar] = useState(10);
 
   // minSugar가 변경될 때 filterMode를 'slider'로 변경
-const stableResults = useMemo(() => results, [results]); // (거의 영향 없을 수도 있으나 넣어둠)
+  const stableResults = useMemo(() => results, [results]); // (거의 영향 없을 수도 있으나 넣어둠)
+  const [showTopOnly, setShowTopOnly] = useState(false);
 
-const handleMinSugarChange = useCallback((sugar: number) => {
-  setMinSugar(sugar);
-  setFilterMode("slider");
-}, []);
-
-  // topN이 변경될 때 filterMode를 'topN'으로 변경
-  const handleTopNChange = (n: number) => {
-    setTopN(n);
-    setFilterMode("topN");
-  };
-  
-
-  // topNIds를 useMemo로 메모이제이션
-  const topNIds = useMemo(
+  const top3Ids = useMemo(
     () =>
       [...results]
-        .filter(
-          (r) => r.sugar_content !== undefined && r.sugar_content !== null
-        )
+        .filter((r) => r.sugar_content != null)
         .sort((a, b) => b.sugar_content! - a.sugar_content!)
-        .slice(0, topN)
+        .slice(0, 3)
         .map((r) => r.id),
-    [results, topN]
+    [results]
   );
+  const handleMinSugarChange = useCallback((sugar: number) => {
+    setMinSugar(sugar);
+    // setFilterMode("slider");
+  }, []);
+
+  // topN이 변경될 때 filterMode를 'topN'으로 변경
+  // const handleTopNChange = (n: number) => {
+  //   setTopN(n);
+  //   setFilterMode("topN");
+  // };
+
+  // topNIds를 useMemo로 메모이제이션
+  // const topNIds = useMemo(
+  //   () =>
+  //     [...results]
+  //       .filter(
+  //         (r) => r.sugar_content !== undefined && r.sugar_content !== null
+  //       )
+  //       .sort((a, b) => b.sugar_content! - a.sugar_content!)
+  //       .slice(0, topN)
+  //       .map((r) => r.id),
+  //   [results, topN]
+  // );
 
   const highest = useMemo(
     () =>
@@ -286,11 +301,11 @@ const handleMinSugarChange = useCallback((sugar: number) => {
     ).start();
   }, [scaleAnim]);
 
-  useEffect(() => {
-    if (topN > results.length) {
-      setTopN(results.length > 0 ? results.length : 1); // 최소 1개는 있도록 수정
-    }
-  }, [results.length, topN]);
+  // useEffect(() => {
+  //   if (topN > results.length) {
+  //     setTopN(results.length > 0 ? results.length : 1); // 최소 1개는 있도록 수정
+  //   }
+  // }, [results.length, topN]);
 
   const handleApplePress = (result: AnalyzedObjectResult) => {
     if (result.bbox) {
@@ -335,82 +350,75 @@ const handleMinSugarChange = useCallback((sugar: number) => {
     Array<{ x: number; y: number; size: number }>
   >([]);
 
-  const actualMinSugar = filterMode === "slider" ? minSugar : -Infinity;
+  const shouldShow = useCallback(
+    (r: AnalyzedObjectResult) =>
+      showTopOnly
+        ? top3Ids.includes(r.id)
+        : r.sugar_content != null && r.sugar_content >= minSugar,
+    [showTopOnly, top3Ids, minSugar]
+  );
 
   // 애니메이션 위치 업데이트를 위한 useEffect
-  useEffect(() => {
-    const newPositions: Array<{ x: number; y: number; size: number }> = [];
+ useEffect(() => {
+  const newPositions: Array<{ x: number; y: number; size: number }> = [];
 
-    results.forEach((result) => {
-      const isHighlighted =
-        filterMode === "topN"
-          ? topNIds.includes(result.id)
-          : result.sugar_content !== undefined &&
-            result.sugar_content !== null &&
-            result.sugar_content >= actualMinSugar;
+  results.forEach((result) => {
+    if (!shouldShow(result) || !result.segmentation?.points?.length) return;
 
-      if (
-        isHighlighted &&
-        result.segmentation?.points &&
-        result.segmentation.points.length > 0
-      ) {
-        const originalPoints = result.segmentation.points;
-        let pointsToProcess = originalPoints;
+    const originalPoints = result.segmentation.points;
+    let pointsToProcess = originalPoints;
 
-        if (LINEAR_INTERPOLATION_LEVEL > 0 && originalPoints.length >= 2) {
-          pointsToProcess = interpolateOriginalPoints(
-            originalPoints,
-            LINEAR_INTERPOLATION_LEVEL
-          );
-        }
+    if (LINEAR_INTERPOLATION_LEVEL > 0 && originalPoints.length >= 2) {
+      pointsToProcess = interpolateOriginalPoints(
+        originalPoints,
+        LINEAR_INTERPOLATION_LEVEL
+      );
+    }
 
-        const screenPoints = pointsToProcess.map((p: number[]) =>
-          transformPointToScreen(
-            p,
-            originalImageSize.width,
-            originalImageSize.height,
-            screenSize.width,
-            screenSize.height
-          )
-        );
+    const screenPoints = pointsToProcess.map((p: number[]) =>
+      transformPointToScreen(
+        p,
+        originalImageSize.width,
+        originalImageSize.height,
+        screenSize.width,
+        screenSize.height
+      )
+    );
 
-        // 중앙점 계산
-        const centerX =
-          screenPoints.reduce(
-            (sum: number, p: { x: number; y: number }) => sum + p.x,
-            0
-          ) / screenPoints.length;
-        const centerY =
-          screenPoints.reduce(
-            (sum: number, p: { x: number; y: number }) => sum + p.y,
-            0
-          ) / screenPoints.length;
+    const centerX =
+      screenPoints.reduce((sum, p) => sum + p.x, 0) / screenPoints.length;
+    const centerY =
+      screenPoints.reduce((sum, p) => sum + p.y, 0) / screenPoints.length;
 
-        // 사과 크기 계산
-        const xCoords = screenPoints.map((p) => p.x);
-        const yCoords = screenPoints.map((p) => p.y);
-        const width = Math.max(...xCoords) - Math.min(...xCoords);
-        const height = Math.max(...yCoords) - Math.min(...yCoords);
-        const size = Math.max(width, height) * 1.5; // 크기 조정 계수 (필요에 따라 조정 가능)
+    const xCoords = screenPoints.map((p) => p.x);
+    const yCoords = screenPoints.map((p) => p.y);
+    const width = Math.max(...xCoords) - Math.min(...xCoords);
+    const height = Math.max(...yCoords) - Math.min(...yCoords);
+    const size = Math.max(width, height) * 1.5;
 
-        newPositions.push({ x: centerX, y: centerY, size });
-      }
-    });
+    newPositions.push({ x: centerX, y: centerY, size });
+  });
 
-    setAnimationPositions(newPositions);
-  }, [results, filterMode, topNIds, minSugar, screenSize, originalImageSize]);
+  setAnimationPositions(newPositions);
+}, [results, shouldShow, screenSize, originalImageSize]);
+
 
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="auto">
-      <View
-        style={{ position: "absolute", top: 50, left: 20, zIndex: 1000 }}
-        pointerEvents="auto"
-      >
-        <TopNAppleSelector
-          topN={topN}
-          onChange={handleTopNChange}
-          maxN={Math.max(1, results.length)}
-        />
+      <View style={{ position: "absolute", top: 80, left: 27, zIndex: 1000 }}>
+        <Pressable onPress={() => setShowTopOnly((prev) => !prev)}>
+          <Image
+            source={
+              showTopOnly
+                ? require("../assets/images/all_apple.png")
+                : require("../assets/images/top3.png")
+            }
+            style={{ width: 60, height: 60, resizeMode: "contain" }}
+          />
+          <Text style={{ marginTop: 4, fontSize: 12, fontWeight: "bold", color: "#fff" }}>
+        {showTopOnly ? "전체 보기" : "TOP3 보기"}
+      </Text>
+        </Pressable>
       </View>
       <View
         style={{
@@ -449,15 +457,9 @@ const handleMinSugarChange = useCallback((sugar: number) => {
 
         {/* 세그멘테이션 영역 클리핑 */}
         {results.map((result, index) => {
-          const isHighlighted =
-            filterMode === "topN"
-              ? topNIds.includes(result.id)
-              : result.sugar_content !== undefined &&
-                result.sugar_content !== null &&
-                result.sugar_content >= actualMinSugar;
+          if (!shouldShow(result) || !result.segmentation?.points?.length) return null;
 
           if (
-            isHighlighted &&
             result.segmentation?.points &&
             result.segmentation.points.length > 0
           ) {
