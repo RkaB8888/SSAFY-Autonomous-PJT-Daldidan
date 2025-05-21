@@ -85,7 +85,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 4,
-    minWidth: 60,
+    width: 70,
     textAlign: 'center',
     textAlignVertical: 'center'
   },
