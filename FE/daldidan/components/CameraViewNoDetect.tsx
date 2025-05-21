@@ -47,6 +47,8 @@ export default function CameraView() {
   const [showCaptureImage, setShowCaptureImage] = useState(false);
   const capturingRef = useRef(false);
   const [freezeDetection, setFreezeDetection] = useState(false);
+  const [minSugar, setMinSugar] = useState(11);
+
   const captureFrames = [
   {
     character: require('../assets/images/apple_char1.png'),
@@ -329,6 +331,8 @@ useShake(() => {
               results={analyzedResults}
               screenSize={screenSize}
               originalImageSize={originalImageSize}
+              minSugar={minSugar}
+              onChangeMinSugar={setMinSugar}
             />
           ) : null}
 

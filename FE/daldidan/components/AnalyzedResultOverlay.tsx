@@ -42,6 +42,8 @@ interface Props {
   results: AnalyzedObjectResult[];
   screenSize: { width: number; height: number };
   originalImageSize: { width: number; height: number };
+  minSugar: number;
+  onChangeMinSugar: (s: number) => void;
 }
 
 // 각 포인트를 화면 좌표로 변환하는 함수
@@ -186,6 +188,8 @@ export default function AnalyzedResultOverlay({
   results,
   screenSize,
   originalImageSize,
+   minSugar,        
+  onChangeMinSugar,
 }: Props) {
   const [selectedAppleId, setSelectedAppleId] = useState<
     string | number | null
@@ -233,7 +237,7 @@ export default function AnalyzedResultOverlay({
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
   // const [topN, setTopN] = useState(3);
-  const [minSugar, setMinSugar] = useState(10);
+  // const [minSugar, setMinSugar] = useState(11);
 
   // minSugar가 변경될 때 filterMode를 'slider'로 변경
   const stableResults = useMemo(() => results, [results]); // (거의 영향 없을 수도 있으나 넣어둠)
@@ -248,10 +252,9 @@ export default function AnalyzedResultOverlay({
         .map((r) => r.id),
     [results]
   );
-  const handleMinSugarChange = useCallback((sugar: number) => {
-    setMinSugar(sugar);
-    // setFilterMode("slider");
-  }, []);
+ const handleMinSugarChange = useCallback((sugar: number) => {
+  onChangeMinSugar(sugar); // 부모에게 전달
+}, [onChangeMinSugar]);
 
   // topN이 변경될 때 filterMode를 'topN'으로 변경
   // const handleTopNChange = (n: number) => {

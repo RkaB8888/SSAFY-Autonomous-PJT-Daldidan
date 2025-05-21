@@ -61,7 +61,7 @@ export default function ShakeReminder() {
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    bottom: 40,
+    bottom: 80,
     alignSelf: 'center',
     alignItems: 'center',
     zIndex: 10,

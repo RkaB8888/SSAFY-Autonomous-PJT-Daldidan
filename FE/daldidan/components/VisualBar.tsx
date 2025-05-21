@@ -19,7 +19,10 @@ interface VisualBarProps {
 }
 
 
-const appleImage = require('../assets/apple_40.png');
+const appleUnsweet = require('../assets/images/emot_unsweet.png');
+const appleSoso = require('../assets/images/emot_soso.png');
+const appleSweet = require('../assets/images/emot_sweet.png');
+
 const FIXED_MIN_BRIX = 8;
 const FIXED_MAX_BRIX = 18;
 const SLIDER_HEIGHT = 300;
@@ -35,6 +38,12 @@ export default function VisualBar({ results, onChangeMinSugar, minSugar }: Visua
     setInternalSugar(newSugar);
     onChangeMinSugar?.(newSugar);
   }, [minSugar]);
+
+  const getAppleImageBySugar = (sugar: number) => {
+  if (sugar < 11) return appleUnsweet;
+  if (sugar < 14) return appleSoso;
+  return appleSweet;
+};
 
   const panResponder = PanResponder.create({
     onStartShouldSetPanResponder: () => true,
@@ -62,7 +71,7 @@ export default function VisualBar({ results, onChangeMinSugar, minSugar }: Visua
           style={[styles.thumb, { top: topPosition }]}
           {...panResponder.panHandlers}
         >
-          <Image source={appleImage} style={styles.appleImage} />
+          <Image source={getAppleImageBySugar(internalSugar)} style={styles.appleImage} />
         </View>
       </View>
     </View>
@@ -72,20 +81,22 @@ export default function VisualBar({ results, onChangeMinSugar, minSugar }: Visua
 const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
-    height: SLIDER_HEIGHT + 50,
+    height: SLIDER_HEIGHT + 55,
     justifyContent: 'center',
     // paddingHorizontal: 20,
   },
   sugarText: {
     position: 'absolute',
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    bottom : -25,
+    fontFamily: 'Maplestory_Light',
+    backgroundColor: 'rgba(242, 105, 105, 0.7)',
+    bottom : -15,
     color: 'white',
     fontSize: 12,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 4,
-    width: 70,
+    width: 75,
+    left: -8, 
     textAlign: 'center',
     textAlignVertical: 'center'
   },
