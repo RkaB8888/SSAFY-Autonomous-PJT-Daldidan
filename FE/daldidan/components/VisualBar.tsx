@@ -9,6 +9,8 @@ import {
   PanResponderGestureState,
 } from 'react-native';
 import { AnalyzedObjectResult } from '../hooks/types/objectDetection';
+import { LinearGradient } from 'expo-linear-gradient';
+
 
 interface VisualBarProps {
   results: AnalyzedObjectResult[];
@@ -21,7 +23,7 @@ const appleImage = require('../assets/apple_40.png');
 const FIXED_MIN_BRIX = 8;
 const FIXED_MAX_BRIX = 18;
 const SLIDER_HEIGHT = 300;
-const THUMB_SIZE = 36;
+const THUMB_SIZE = 50;
 
 export default function VisualBar({ results, onChangeMinSugar, minSugar }: VisualBarProps) {
   const [internalSugar, setInternalSugar] = useState(minSugar);
@@ -50,7 +52,12 @@ export default function VisualBar({ results, onChangeMinSugar, minSugar }: Visua
       <Text style={styles.sugarText}>{internalSugar.toFixed(1)} Bx</Text>
 
       <View style={styles.sliderTrack}>
-        <View style={styles.sliderBar} />
+        <LinearGradient
+          colors={['#ff5f6d', '#a8e063']} // ← 원하는 색상 조합
+          style={styles.sliderBar}
+          start={{ x: 0.5, y: 0 }}
+          end={{ x: 0.5, y: 1 }}
+        />
         <View
           style={[styles.thumb, { top: topPosition }]}
           {...panResponder.panHandlers}
@@ -67,19 +74,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     height: SLIDER_HEIGHT + 50,
     justifyContent: 'center',
-    paddingHorizontal: 20,
+    // paddingHorizontal: 20,
   },
   sugarText: {
     position: 'absolute',
     backgroundColor: 'rgba(0,0,0,0.7)',
-    bottom : -100,
+    bottom : -25,
     color: 'white',
     fontSize: 12,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 4,
-    minWidth: 60,
+    width: 70,
     textAlign: 'center',
+    textAlignVertical: 'center'
   },
   sliderTrack: {
     height: SLIDER_HEIGHT,
@@ -92,7 +100,7 @@ const styles = StyleSheet.create({
   sliderBar: {
     position: 'absolute',
     width: 4,
-    backgroundColor: '#a8e063',
+    backgroundColor: '#ff5f6d',
     top: 0,
     bottom: 0,
     left: '50%',
