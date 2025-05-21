@@ -379,7 +379,7 @@ export default function CameraView() {
           ) : null}
 
           <CaptureOverlay
-            visible={showCaptureImage}
+            visible={showCaptureImage && !isAnalyzing}
             framePair={captureFrames[frameIndex]}
           />
         </View>
