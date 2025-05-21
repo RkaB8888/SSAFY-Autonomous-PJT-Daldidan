@@ -42,7 +42,7 @@ export default function CameraView() {
   const justReset = useRef(false);
   const [autoCaptureEnabled, setAutoCaptureEnabled] = useState(true);
   const lastCenterRef = useRef<{ x: number; y: number } | null>(null);
-  const [frameIndex, setFrameIndex] = useState(0)
+  const [frameIndex, setFrameIndex] = useState(0);
   const countdownSoundRef = useRef<Sound | null>(null);
   const [showCaptureImage, setShowCaptureImage] = useState(false);
   const capturingRef = useRef(false);
@@ -50,22 +50,22 @@ export default function CameraView() {
   const [minSugar, setMinSugar] = useState(11);
 
   const captureFrames = [
-  {
-    character: require('../assets/images/apple_char1.png'),
-    camera: require('../assets/images/apple_capture.png'),
-    message: '사과를 찾았어요!',
-  },
-  {
-    character: require('../assets/images/apple_char2.png'),
-    camera: require('../assets/images/apple_capture2.png'),
-    message: '포즈 잡는중... \n카메라를 가만히 들고 있어주세요!',
-  },
-  {
-    character: require('../assets/images/apple_char3.png'),
-    camera: require('../assets/images/apple_capture3.png'),
-    message: '애플~~',
-  },
-];
+    {
+      character: require('../assets/images/apple_char1.png'),
+      camera: require('../assets/images/apple_capture.png'),
+      message: '사과를 찾았어요!',
+    },
+    {
+      character: require('../assets/images/apple_char2.png'),
+      camera: require('../assets/images/apple_capture2.png'),
+      message: '포즈 잡는중... \n카메라를 가만히 들고 있어주세요!',
+    },
+    {
+      character: require('../assets/images/apple_char3.png'),
+      camera: require('../assets/images/apple_capture3.png'),
+      message: '애플~~',
+    },
+  ];
 
   // ★★★ useAnalysisApiHandler 훅 사용 ★★★
   // useAnalysisApiHandler.ts 파일에 이 훅 구현 코드가 있어야 합니다. (resetAnalysis, originalImageSize 반환 포함)
@@ -82,22 +82,26 @@ export default function CameraView() {
     Sound.setCategory('Playback');
     const snd = new Sound(countdownAudio, Sound.MAIN_BUNDLE, (err) => {
       if (err) console.warn('Countdown sound load error', err);
-       });
-        countdownSoundRef.current = snd;
-          return () => { snd.release(); };
-        }, []);
-      
-    useEffect(() => {
-  let timer: NodeJS.Timeout;
-  if (showCaptureImage) {
-    timer = setInterval(() => {
-      setFrameIndex(i => (i + 1) % captureFrames.length);
-    }, 2000); 
-  } else {
-    setFrameIndex(0);
-  }
-  return () => { clearInterval(timer); };
-}, [showCaptureImage]);
+    });
+    countdownSoundRef.current = snd;
+    return () => {
+      snd.release();
+    };
+  }, []);
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (showCaptureImage) {
+      timer = setInterval(() => {
+        setFrameIndex((i) => (i + 1) % captureFrames.length);
+      }, 2000);
+    } else {
+      setFrameIndex(0);
+    }
+    return () => {
+      clearInterval(timer);
+    };
+  }, [showCaptureImage]);
 
   // API 훅의 상태 (isAnalyzing, analyzedResults, analysisError)와 원본 해상도를 이 컴포넌트에서 직접 접근하여 UI 업데이트에 사용합니다.
 
@@ -115,14 +119,21 @@ export default function CameraView() {
     device?.formats.find((f) => f.maxFps >= 60) ?? device?.formats[0];
   const fps = format ? Math.min(60, format.maxFps) : 30;
 
-  const {
-    hasPermission,
-    detections, // useObjectDetection에서 실시간으로 받아오는 탐지 결과
-    frameProcessor, // useObjectDetection에서 정의된 프레임 프로세서 함수
-    cameraRef, // useVisionCamera의 Camera 컴포넌트 ref (사진 촬영에 사용!)
-    // detectionResults, // useObjectDetection에서 사용하던 예전 로직 (이제 사용 안 함)
-  } = useObjectDetection(format);
-  const hasApple = detections.some((d) => d.class_id === 52);
+  const { hasPermission, detections, frameProcessor, cameraRef } =
+    useObjectDetection(format);
+
+  // 사과 감지 상태를 실시간으로 업데이트
+  const [hasApple, setHasApple] = useState(false);
+  const hasAppleRef = useRef(false); // 추가: 최신 hasApple 상태를 참조하기 위한 ref
+
+  useEffect(() => {
+    hasAppleRef.current = hasApple; // 최신 hasApple 상태 저장
+  }, [hasApple]);
+
+  useEffect(() => {
+    const appleDetected = detections.some((d) => d.class_id === 52);
+    setHasApple(appleDetected);
+  }, [detections]);
 
   useEffect(() => {
     if (device && hasPermission && format) {
@@ -200,7 +211,6 @@ export default function CameraView() {
       await triggerAnalysis(uri, photoOriginalWidth, photoOriginalHeight);
       console.log('[CameraView] Triggered analysis process.');
       setFreezeDetection(true);
-
     } catch (error: any) {
       console.error(
         '[CameraView] Error during photo capture or triggering analysis:',
@@ -214,37 +224,64 @@ export default function CameraView() {
       // 카메라 일시 정지/재개 로직은 isAnalyzing 상태에 의해 자동으로 처리됩니다.
     }
     setCountdown(null);
-
   }, [isAnalyzing, triggerAnalysis, cameraRef]);
-  
+
   useEffect(() => {
-  if (analyzedResults !== null && !isAnalyzing) {
-    setFreezeDetection(false); // 분석 끝났을 때만 다시 감지 허용
-  }
-}, [analyzedResults, isAnalyzing]);
-
-
-
-    // 3) 사운드 재생 → 캡처 & 이미지 토글 함수
-  const startCaptureSequence = () => {
-  if (isAnalyzing || analyzedResults !== null || showCaptureImage || capturingRef.current || freezeDetection) return;
-
-  capturingRef.current = true;
-  setShowCaptureImage(true);
-  setFreezeDetection(true);
-
-  // 🟡 사운드 재생 후에 촬영
-  countdownSoundRef.current?.play((success) => {
-    if (success) {
-      handleCaptureAndAnalyze(); // ✅ 사운드 끝나고 촬영 시작
+    if (analyzedResults !== null && !isAnalyzing) {
+      setFreezeDetection(false); // 분석 끝났을 때만 다시 감지 허용
     }
+  }, [analyzedResults, isAnalyzing]);
 
-    // 이미지 숨기기
-    setShowCaptureImage(false);
-    capturingRef.current = false;
-  });
-};
+  const startCaptureSequence = () => {
+    if (
+      isAnalyzing ||
+      analyzedResults !== null ||
+      showCaptureImage ||
+      capturingRef.current ||
+      freezeDetection ||
+      !hasApple
+    )
+      return;
 
+    capturingRef.current = true;
+    setShowCaptureImage(true);
+    setFreezeDetection(true);
+
+    // 사과 감지 상태 모니터링을 위한 인터벌 설정
+    const appleDetectionCheck = setInterval(() => {
+      if (!hasAppleRef.current) {
+        // 수정: hasApple 대신 hasAppleRef.current 사용
+        // 사과가 감지되지 않으면 모든 동작 중단
+        clearInterval(appleDetectionCheck);
+        setShowCaptureImage(false);
+        capturingRef.current = false;
+        setFreezeDetection(false);
+        if (countdownSoundRef.current) {
+          countdownSoundRef.current.stop();
+        }
+      }
+    }, 100);
+
+    // 🟡 사운드 재생 후에 촬영
+    countdownSoundRef.current?.play((success) => {
+      clearInterval(appleDetectionCheck);
+      if (success && hasAppleRef.current) {
+        // 수정: hasApple 대신 hasAppleRef.current 사용
+        handleCaptureAndAnalyze().then(() => {
+          setShowCaptureImage(false);
+          capturingRef.current = false;
+          setFreezeDetection(false);
+        });
+      } else {
+        setShowCaptureImage(false);
+        capturingRef.current = false;
+        setFreezeDetection(false);
+        if (countdownSoundRef.current) {
+          countdownSoundRef.current.stop();
+        }
+      }
+    });
+  };
 
   // AppleButton 또는 다른 캡쳐 트리거 UI 표시 여부 결정
   const appleOrDonutDetected = detections.some(
@@ -254,19 +291,23 @@ export default function CameraView() {
   // 분석 완료 상태 판단: analyzedResults가 null이 아니고 배열이며, isAnalyzing이 false일 때
   const analysisFinished = analyzedResults !== null && !isAnalyzing;
 
-useShake(() => {
-  if (analysisFinished) {
-    console.log('[Shake] 감지됨 → 분석 초기화');
-    justReset.current = true; // ✅ 자동 캡처 방지 플래그 ON
-    resetAnalysis();
+  useShake(
+    () => {
+      if (analysisFinished) {
+        console.log('[Shake] 감지됨 → 분석 초기화');
+        justReset.current = true; // ✅ 자동 캡처 방지 플래그 ON
+        resetAnalysis();
 
-    // ✅ 일정 시간 후 자동 캡처 다시 허용
-    setTimeout(() => {
-      justReset.current = false;
-      console.log('[Shake] 자동 캡처 재허용됨');
-    }, 2000); // 2초 뒤에 자동 캡처 허용
-  }
-}, 2.0, 700);
+        // ✅ 일정 시간 후 자동 캡처 다시 허용
+        setTimeout(() => {
+          justReset.current = false;
+          console.log('[Shake] 자동 캡처 재허용됨');
+        }, 2000); // 2초 뒤에 자동 캡처 허용
+      }
+    },
+    2.0,
+    700
+  );
 
   // ★★★ React 컴포넌트는 하나의 루트 엘리먼트만 반환해야 합니다. ★★★
   return (
@@ -283,17 +324,14 @@ useShake(() => {
     >
       {!hasPermission || !device || !format ? (
         <View style={styles.container}>
-        <ActivityIndicator size="large" color="white" />
-        <Text style={{ color: 'white', marginTop: 12 }}>
-          카메라 설정 또는 권한 확인 중...
-        </Text>
-      </View>
-
+          <ActivityIndicator size='large' color='white' />
+          <Text style={{ color: 'white', marginTop: 12 }}>
+            카메라 설정 또는 권한 확인 중...
+          </Text>
+        </View>
       ) : (
-        <>
+        <View style={StyleSheet.absoluteFill}>
           {/* Camera 컴포넌트 */}
-          {/* appState가 'active'   상태일 때만 Camera 마운트 */}
-          {/* isAnalyzing 중이거나 analysisFinished 상태일 때 isActive는 false */}
           {appState === 'active' ? (
             <Camera
               ref={cameraRef}
@@ -307,26 +345,12 @@ useShake(() => {
             />
           ) : null}
 
-          {/* 실시간 탐지 결과 오버레이 */}
-          {/* {detections.length > 0 && !isAnalyzing && analyzedResults === null ? (
-            <DetectionOverlay
-              detections={detections}
-              screenSize={screenSize} // 화면 크기 (onLayout 후 업데이트된 값)
-              format={format}
-              //  detectionResults={[]}
-            />
-          ) : null} */}
-
-          {/* ★★★ API 분석 결과 오버레이 (AnalyzedResultOverlay) ★★★ */}
-          {/* 분석 완료 상태이고 결과가 있으며, 원본 크기 정보가 있고, ★★★ 화면 크기도 유효할 때만 렌더링 ★★★ */}
-          {/* screenSize가 0이 아니게 업데이트된 후에 이 조건이 true가 될 가능성이 생깁니다. */}
           {analysisFinished &&
           analyzedResults &&
           analyzedResults.length > 0 &&
           originalImageSize &&
           screenSize.width > 0 &&
           screenSize.height > 0 ? (
-            // ★★★ AnalyzedResultOverlay 컴포넌트 렌더링 ★★★
             <AnalyzedResultOverlay
               results={analyzedResults}
               screenSize={screenSize}
@@ -336,7 +360,6 @@ useShake(() => {
             />
           ) : null}
 
-          {/* API 분석 완료 후 결과는 없지만 카메라는 정지 상태인 경우 */}
           {analysisFinished &&
           analyzedResults !== null &&
           analyzedResults.length === 0 ? (
@@ -345,78 +368,32 @@ useShake(() => {
             </View>
           ) : null}
 
-          {/* 캡쳐 버튼 등 나머지 UI 요소들 */}
-
-          {/* 사과 또는 도넛 탐지 시 캡쳐 버튼 표시 */}
-          {/* {appleOrDonutDetected && !isAnalyzing && analyzedResults === null ? (
-          <View style={styles.captureButtonContainer}>
-              <AppleButton
-                  detections={detections}
-                  onPress={handleCaptureAndAnalyze}
-              />
-          </View>
-       ) : null}
-     */}
-          {/* {countdown !== null && (
-            <View style={styles.countdownOverlay}>
-              <Text style={styles.countdownText}>{'🍎'.repeat(countdown)}</Text>
-            </View>
-          )} */}
-
-         
-
-
-          {/* 분석 중 인디케이터 표시 */}
           {isAnalyzing && <AppleProcessing status='juicing' />}
 
-          {/* 탐지된 객체가 없을 때 힌트 메시지 */}
-          {/* detections.length === 0 이고, isAnalyzing 중이 아니고, 분석 완료 상태가 아닐 때 표시 */}
           {detections.length === 0 &&
           !isAnalyzing &&
           analyzedResults === null &&
-           !showCaptureImage &&
-           !freezeDetection ? (
+          !showCaptureImage &&
+          !freezeDetection ? (
             <AppleHint />
           ) : null}
 
-         <CaptureOverlay
-          visible={showCaptureImage}
-          framePair={captureFrames[frameIndex]}
-        />
-
-
-          {/* analysisError 상태 표시 (필요시) */}
-          {/* analysisError && !isAnalyzing ? (
-             <View style={styles.errorOverlay}>
-                  <Text style={styles.errorText}>Error: {analysisError}</Text>
-             </View>
-         ) : null */}
-
-          {/* ★★★ 분석 완료 후 카메라를 다시 켜기 위한 버튼 등 UI 추가 필요 ★★★ */}
-          {/* 분석 완료 상태일 때만 "다시 시작" 버튼 표시 */}
-          {/* {analysisFinished ? (
-            <View style={styles.resumeButtonContainer}>
-              <Button
-                title='🐝사과 찾으러가기'
-                onPress={() => {
-                  resetAnalysis(); // 훅에서 가져온 resetAnalysis 함수 호출
-                  setCountdown(null);
-                }}
-              />
-            </View>
-          ) : null} */}
-        </>
+          <CaptureOverlay
+            visible={showCaptureImage}
+            framePair={captureFrames[frameIndex]}
+          />
+        </View>
       )}
-    </View> // ✅ 여기 View 닫고
+    </View>
   );
 }
 const styles = StyleSheet.create({
   container: {
-  flex: 1,
-  backgroundColor: 'black',
-  justifyContent: 'center', // 수직 중앙
-  alignItems: 'center',     // 수평 중앙
-},
+    flex: 1,
+    backgroundColor: 'black',
+    justifyContent: 'center', // 수직 중앙
+    alignItems: 'center', // 수평 중앙
+  },
   grayedCamera: { opacity: 0.7 },
   captureButtonContainer: {
     position: 'absolute',
@@ -472,7 +449,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: 'white',
   },
-    captureOverlay: {
+  captureOverlay: {
     ...StyleSheet.absoluteFillObject,
     justifyContent: 'center',
     alignItems: 'center',
