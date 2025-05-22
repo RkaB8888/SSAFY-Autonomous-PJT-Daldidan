@@ -6,6 +6,8 @@ Thumbs.db
 .vscode/
 .idea/
 
+/runs
+
 # Expo 관련 캐시/설정 파일 무시
 .expo/
 .expo-shared/

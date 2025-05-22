@@ -14,6 +14,9 @@ export default function RootLayout() {
   const colorScheme = useColorScheme();
   const [loaded] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
+    On: require('../assets/fonts/On.ttf'),
+    Maplestory: require('../assets/fonts/Maplestory_Bold.ttf'),
+    Maplestory_Light: require('../assets/fonts/Maplestory_Light.ttf'),
   });
 
   if (!loaded) {
