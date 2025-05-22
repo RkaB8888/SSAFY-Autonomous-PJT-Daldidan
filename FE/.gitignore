@@ -1,0 +1,61 @@
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Node modules
+node_modules/
+
+# Expo & React Native build artifacts
+.expo/
+.expo-shared/
+web-build/
+dist/
+build/
+*.log
+
+# iOS build artifacts
+ios/build/
+ios/Pods/
+ios/Podfile.lock
+
+# Android build artifacts
+android/.gradle/
+android/app/build/
+android/build/
+android/local.properties
+
+# Environment files
+.env
+.env.*
+
+# VSCode & Cursor IDE settings
+.vscode/
+.cursor/
+
+# Metro, Yarn, NPM, Watchman, etc.
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+.pnpm-debug.log*
+.watchmanconfig
+
+# Test coverage
+coverage/
+
+# Miscellaneous
+*.swp
+*.swo
+*.tmp
+*.bak
+
+# Expo specific
+*.expo
+.expo/
+.expo-shared/

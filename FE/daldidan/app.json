@@ -1,0 +1,79 @@
+{
+  "expo": {
+    "name": "DaldidanDev",
+    "slug": "daldidan-dev",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "splash": {
+      "image": "./assets/images/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FF5255"
+    },
+    "icon": "./assets/images/daldidan.png",
+    "scheme": "daldidan-dev",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "assetBundlePatterns": ["**/*"],
+    "packagerOpts": {
+      "config": "metro.config.js"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.jinmoon23.daldidan.dev",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Allow $(PRODUCT_NAME) to access your camera"
+      }
+    },
+    "android": {
+      "splash": {
+        "image": "./assets/images/splash.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#FF5255"
+      },
+      "package": "com.jinmoon23.daldidan.dev",
+      "permissions": ["android.permission.CAMERA"]
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "minSdkVersion": 26
+          }
+        }
+      ],
+      "expo-router",
+      [
+        "react-native-vision-camera",
+        {
+          "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera",
+          "microphonePermission": "Allow $(PRODUCT_NAME) to access your microphone"
+        }
+      ],
+      "expo-font",
+      [
+        "react-native-fast-tflite",
+        {
+          "enableAndroidGpuLibraries": ["libOpenCL-pixel.so", "libGLES_mali.so"]
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "ff487748-a6a5-4ce3-b88c-48b1993796df"
+      }
+    },
+    "owner": "psum9903"
+  }
+}
