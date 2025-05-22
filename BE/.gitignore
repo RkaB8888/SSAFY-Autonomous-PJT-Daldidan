@@ -173,8 +173,34 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 
-# ========== AI 모델 가중치 파일 무시 ==========
-ai/models/*/*.pth
-ai/models/*/*.h5
-ai/models/*/*.pt
-!ai/models/**/.gitkeep
+# 학습 데이터셋 무시
+ai/dataset/*
+!ai/dataset/**/.gitkeep
+
+# ========== AI 모델 가중치 확장자 전역 무시 ==========
+
+*.pkl
+*.pt
+*.h5
+*.pth
+*.ckpt
+*.joblib
+*.npy
+*.dat
+
+# 실험 결과 캐시
+ai/services/**/cache/**
+ai/tmp/**
+!ai/services/**/cache/.gitkeep
+
+# 로그
+*.log
+*.out
+*.err
+*.bak
+log.txt
+
+# 단, 필요시 .gitkeep 유지 예외는 명시
+!**/weights/.gitkeep
+
+*.tflite
