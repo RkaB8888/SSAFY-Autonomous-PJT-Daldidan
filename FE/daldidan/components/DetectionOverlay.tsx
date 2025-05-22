@@ -1,97 +1,113 @@
-import { Canvas, Group, Rect } from '@shopify/react-native-skia';
-import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import React, { useRef, useEffect, useState } from 'react';
+import { StyleSheet, Animated, View } from 'react-native';
 import { Detection } from '../hooks/types/objectDetection';
 
 interface Props {
   detections: Detection[];
   screenSize: { width: number; height: number };
   format: any;
-  detectionResults: import('../hooks/types/objectDetection').DetectionResult[];
 }
 
-export default function DetectionOverlay({
-  detections,
-  detectionResults,
-  screenSize,
-  format,
-}: Props) {
+export default function DetectionOverlay({ detections, screenSize }: Props) {
+  const prevBoxes = useRef<Detection[]>([]);
+  const [smoothed, setSmoothed] = useState<Detection[]>([]);
+  const glowAnim = useRef(new Animated.Value(0)).current;
+
+  const SMOOTH_FACTOR = 0.2;
+
+  // 위치 스무딩
+  useEffect(() => {
+    if (detections.length !== prevBoxes.current.length) {
+      prevBoxes.current = detections.map((d) => ({ ...d }));
+      setSmoothed(detections);
+      return;
+    }
+
+      const next = detections.map((d, i) => {
+      const prev = prevBoxes.current[i];
+      return {
+        ...d,
+        x: prev.x + (d.x - prev.x) * SMOOTH_FACTOR,
+        y: prev.y + (d.y - prev.y) * SMOOTH_FACTOR,
+        width: prev.width + (d.width - prev.width) * SMOOTH_FACTOR,
+        height: prev.height + (d.height - prev.height) * SMOOTH_FACTOR,
+      };
+    });
+
+    prevBoxes.current = next;
+    setSmoothed(next);
+  }, [detections]);
+
+  // glow 애니메이션
+  useEffect(() => {
+    if (detections.some((d) => d.class_id === 52)) {
+      glowAnim.setValue(0);
+      Animated.timing(glowAnim, {
+        toValue: 1,
+        duration: 1200,
+        useNativeDriver: false,
+      }).start();
+    }
+  }, [detections]);
+
   return (
     <>
-      <Canvas style={StyleSheet.absoluteFill}>
-        <Group>
-          {detections.map((detection, i) => {
-            const scaleX = screenSize.width / (format?.videoWidth || 1);
-            const scaleY = screenSize.height / (format?.videoHeight || 1);
+      {smoothed.map((detection, i) => {
+        if (detection.class_id !== 52) return null;
 
-            const x = detection.x * scaleX;
-            const y = detection.y * scaleY;
-            const width = detection.width * scaleX;
-            const height = detection.height * scaleY;
+        // 카메라 프레임 -> 화면 좌표 변환
+        const frameW = 1920;
+        const frameH = 1080;
+        const screenW = screenSize.width;
+        const screenH = screenSize.height;
 
-            return (
-              <Group key={i}>
-                <Rect
-                  x={x}
-                  y={y}
-                  width={width}
-                  height={height}
-                  color='red'
-                  style='stroke'
-                  strokeWidth={3}
-                />
-              </Group>
-            );
-          })}
-        </Group>
-      </Canvas>
-      {detections.map((detection, i) => {
-        const scaleX = screenSize.width / (format?.videoWidth || 1);
-        const scaleY = screenSize.height / (format?.videoHeight || 1);
+        const rotated = {
+          x: detection.y,
+          y: frameW - detection.x - detection.width,
+          width: detection.height,
+          height: detection.width,
+        };
 
-        const x = detection.x * scaleX;
-        const y = detection.y * scaleY;
+        const scaleX = screenW / frameH;
+        const scaleY = screenH / frameW;
 
-        // class_id만 같으면 표시
-        const matched = detectionResults.find(
-          (r) =>
-            r.detection.class_id === detection.class_id &&
-            r.detection.sugar_content !== undefined
-        );
+        const x = rotated.x * scaleX;
+        const y = rotated.y * scaleY;
+        const width = rotated.width * scaleX;
+        const height = rotated.height * scaleY;
+
+        const glowSize = Math.max(width, height) * 1.5;
 
         return (
-          <View
-            key={i}
-            style={[
-              styles.textContainer,
-              {
-                position: 'absolute',
-                left: Math.max(0, Math.min(x, screenSize.width - 150)),
-                top: Math.max(0, Math.min(y - 25, screenSize.height - 25)),
-                width: 150,
-              },
-            ]}
-          >
-            <Text style={styles.text} numberOfLines={1}>
-              {matched ? `당도: ${matched.detection.sugar_content}Bx` : ''}
-            </Text>
-          </View>
+          <Animated.View
+            key={`glow-${i}`}
+            style={{
+              position: 'absolute',
+              left: x + width / 2 - glowSize / 2,
+              top: y + height / 2 - glowSize / 2,
+              width: glowSize,
+              height: glowSize,
+              borderRadius: glowSize / 2,
+              backgroundColor: 'rgba(233, 172, 103, 0.54)',
+              transform: [
+                {
+                  scale: glowAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0.6, 1.2],
+                  }),
+                },
+              ],
+              opacity: glowAnim.interpolate({
+                inputRange: [0, 1],
+                outputRange: [0.7, 0],
+              }),
+              zIndex: 5,
+            }}
+          />
         );
       })}
     </>
   );
 }
 
-const styles = StyleSheet.create({
-  textContainer: {
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    padding: 4,
-    borderRadius: 4,
-    zIndex: 1,
-  },
-  text: {
-    color: 'white',
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-});
+const styles = StyleSheet.create({});

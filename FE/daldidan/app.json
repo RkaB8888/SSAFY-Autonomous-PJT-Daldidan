@@ -1,11 +1,16 @@
 {
   "expo": {
-    "name": "daldidan",
-    "slug": "daldidan",
+    "name": "DaldidanDev",
+    "slug": "daldidan-dev",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
-    "scheme": "daldidan",
+    "splash": {
+      "image": "./assets/images/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FF5255"
+    },
+    "icon": "./assets/images/daldidan.png",
+    "scheme": "daldidan-dev",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "assetBundlePatterns": ["**/*"],
@@ -14,15 +19,19 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.jinmoon23.daldidan"
+      "bundleIdentifier": "com.jinmoon23.daldidan.dev",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Allow $(PRODUCT_NAME) to access your camera"
+      }
     },
     "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+      "splash": {
+        "image": "./assets/images/splash.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#FF5255"
       },
-
-      "package": "com.jinmoon23.daldidan"
+      "package": "com.jinmoon23.daldidan.dev",
+      "permissions": ["android.permission.CAMERA"]
     },
     "web": {
       "bundler": "metro",
@@ -39,15 +48,6 @@
         }
       ],
       "expo-router",
-      [
-        "expo-splash-screen",
-        {
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 200,
-          "resizeMode": "contain",
-          "backgroundColor": "#ffffff"
-        }
-      ],
       [
         "react-native-vision-camera",
         {
@@ -67,7 +67,13 @@
       "typedRoutes": true
     },
     "extra": {
-      "router": {}
-    }
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "ff487748-a6a5-4ce3-b88c-48b1993796df"
+      }
+    },
+    "owner": "psum9903"
   }
 }

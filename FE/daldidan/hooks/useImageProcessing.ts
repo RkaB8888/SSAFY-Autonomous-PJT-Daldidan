@@ -1,6 +1,6 @@
 import { Worklets } from 'react-native-worklets-core';
 import { useResizePlugin } from 'vision-camera-resize-plugin';
-import { Detection, CroppedImageData } from './types/objectDetection';
+import { CroppedImageData, Detection } from './types/objectDetection';
 
 export const useImageProcessing = () => {
   const { resize } = useResizePlugin();
@@ -16,12 +16,23 @@ export const useImageProcessing = () => {
 
   const preprocessFrame = (frame: any, targetSize: number) => {
     'worklet';
-    return resize(frame, {
-      scale: { width: targetSize, height: targetSize },
-      pixelFormat: 'rgb',
-      dataType: 'uint8',
-    });
-  };
+     const isPortrait = frame.height > frame.width;
+  const shortSide = Math.min(frame.width, frame.height);
+  const cropX = (frame.width - shortSide) / 2;
+  const cropY = (frame.height - shortSide) / 2;
+
+  return resize(frame, {
+    scale: { width: targetSize, height: targetSize },
+    pixelFormat: 'rgb',
+    dataType: 'uint8',
+    crop: {
+      x: cropX,
+      y: cropY,
+      width: shortSide,
+      height: shortSide,
+    },
+  });
+};
 
   const extractCroppedData = async (
     frame: any,
@@ -39,7 +50,7 @@ export const useImageProcessing = () => {
 
       // 최소 크기 제한을 더 크게 설정
       if (safeWidth < 20 || safeHeight < 20) {
-        logWorklet(`[Worklet] Area too small: ${safeWidth}x${safeHeight}`);
+        // logWorklet(`[Worklet] Area too small: ${safeWidth}x${safeHeight}`);
         return null;
       }
 
@@ -66,7 +77,7 @@ export const useImageProcessing = () => {
       }
 
       const dataArray = Array.from(new Uint8Array(resized));
-      logWorklet(`[Worklet] Extracted data size: ${dataArray.length} bytes`);
+      // logWorklet(`[Worklet] Extracted data size: ${dataArray.length} bytes`);
 
       return {
         data: dataArray,

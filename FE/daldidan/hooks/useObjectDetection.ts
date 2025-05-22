@@ -5,17 +5,11 @@ import {
   TensorflowModel,
   TensorflowModelDelegate,
 } from 'react-native-fast-tflite';
-import {
-  Camera,
-  useFrameProcessor,
-  useCameraDevice,
-} from 'react-native-vision-camera';
+import { Camera, useFrameProcessor } from 'react-native-vision-camera';
 import { Worklets } from 'react-native-worklets-core';
-import * as ImageManipulator from 'expo-image-manipulator';
 import { CONFIDENCE_THRESHOLD, MODEL_INPUT_SIZE } from '../constants/model';
 import { Detection, DetectionResult } from './types/objectDetection';
 import { useImageProcessing } from './useImageProcessing';
-import { useObjectAnalysis } from './useObjectAnalysis';
 
 export function useObjectDetection(format: any) {
   const modelRef = useRef<TensorflowModel | null>(null);
@@ -26,17 +20,58 @@ export function useObjectDetection(format: any) {
     []
   );
   const [hasPermission, setHasPermission] = useState(false);
-  const device = useCameraDevice('back');
 
   const { preprocessFrame, extractCroppedData, clamp, logWorklet } =
     useImageProcessing();
-  const { processImageData } = useObjectAnalysis();
 
-  const updateDetections = (data: Detection[]) => {
-    setDetections(data);
-  };
+  // const updateDetections = (data: Detection[]) => {
+  //   setDetections(data);
+  // };
 
-  const updateDetectionsWorklet = Worklets.createRunOnJS(updateDetections);
+  // const updateDetectionsWorklet = Worklets.createRunOnJS(updateDetections);
+
+  const updateDetectionsWorklet = useRef(
+    Worklets.createRunOnJS((data: Detection[]) => {
+      setDetections(data);
+    })
+  ).current;
+
+  function nonMaxSuppression(
+    boxes: { x1: number; y1: number; x2: number; y2: number }[],
+    scores: number[],
+    iouThreshold = 1
+  ) {
+    'worklet';
+    // 점수 내림차순 인덱스
+    const idxs = boxes.map((_, i) => i).sort((a, b) => scores[b] - scores[a]);
+    const keep: number[] = [];
+
+    for (let _i = 0; _i < idxs.length; _i++) {
+      const i = idxs[_i];
+      const bi = boxes[i];
+      let shouldKeep = true;
+      for (let j = 0; j < keep.length; j++) {
+        const bj = boxes[keep[j]];
+        // IoU 계산
+        const xx1 = Math.max(bi.x1, bj.x1);
+        const yy1 = Math.max(bi.y1, bj.y1);
+        const xx2 = Math.min(bi.x2, bj.x2);
+        const yy2 = Math.min(bi.y2, bj.y2);
+        const w = Math.max(0, xx2 - xx1);
+        const h = Math.max(0, yy2 - yy1);
+        const inter = w * h;
+        const areaI = (bi.x2 - bi.x1) * (bi.y2 - bi.y1);
+        const areaJ = (bj.x2 - bj.x1) * (bj.y2 - bj.y1);
+        const iou = inter / (areaI + areaJ - inter);
+        if (iou > iouThreshold) {
+          shouldKeep = false;
+          break;
+        }
+      }
+      if (shouldKeep) keep.push(i);
+    }
+    return keep;
+  }
 
   const processDetectionsInWorklet = (frame: any, model: TensorflowModel) => {
     'worklet';
@@ -53,12 +88,32 @@ export function useObjectDetection(format: any) {
         scores.length
       );
 
+      const filteredBoxes = [];
+      const filteredScores = [];
+      const originalIndices = [];
+
+      // ✅ 사과(class_id = 52) + score 조건 사전 필터링
+      for (let i = 0; i < totalDetections; i++) {
+        const classId = Math.round(classes[i]);
+        const score = scores[i];
+        if (classId !== 52 || score < CONFIDENCE_THRESHOLD) continue;
+
+        const y1 = boxes[i * 4];
+        const x1 = boxes[i * 4 + 1];
+        const y2 = boxes[i * 4 + 2];
+        const x2 = boxes[i * 4 + 3];
+
+        filteredBoxes.push({ x1, y1, x2, y2 });
+        filteredScores.push(score);
+        originalIndices.push(i);
+      }
+
+      const keepIdx = nonMaxSuppression(filteredBoxes, filteredScores, 0.4);
+
       const detected: Detection[] = [];
 
-      for (let i = 0; i < totalDetections; i++) {
-        const score = scores[i];
-        if (score < CONFIDENCE_THRESHOLD) continue;
-
+      for (const idx of keepIdx) {
+        const i = originalIndices[idx]; // 실제 index 복원
         const [y1, x1, y2, x2] = [
           boxes[i * 4],
           boxes[i * 4 + 1],
@@ -68,18 +123,22 @@ export function useObjectDetection(format: any) {
 
         if ([x1, y1, x2, y2].some((v) => isNaN(v) || v < 0 || v > 1)) continue;
 
-        const x = clamp(x1 * frame.width, 0, frame.width);
-        const y = clamp(y1 * frame.height, 0, frame.height);
-        const width = clamp((x2 - x1) * frame.width, 0, frame.width - x);
-        const height = clamp((y2 - y1) * frame.height, 0, frame.height - y);
+        const inputSize = 320;
+        const cropSize = 1080;
+        const cropOffsetX = (1920 - cropSize) / 2;
+
+        const x = clamp(x1 * cropSize + cropOffsetX, 0, frame.width);
+        const y = clamp(y1 * cropSize, 0, frame.height);
+        const width = clamp((x2 - x1) * cropSize, 0, frame.width - x);
+        const height = clamp((y2 - y1) * cropSize, 0, frame.height - y);
 
         detected.push({
           x,
           y,
           width,
           height,
-          score,
-          class_id: Math.round(classes[i]),
+          score: filteredScores[idx], // 이미 저장된 값 재사용
+          class_id: 52,
         });
       }
 
@@ -102,79 +161,11 @@ export function useObjectDetection(format: any) {
   const recentRequests = new Map();
   const DUPLICATE_TIMEOUT = 5000; // 5초
 
-  const capturePhoto = async (detection: Detection): Promise<string | null> => {
-    try {
-      if (!cameraRef.current) {
-        console.log('[JS] Camera ref is not available');
-        return null;
-      }
+  // const capturePhoto = async (detection: Detection): Promise<string | null> => {
+  //   ...
+  // };
 
-      console.log('[JS] Starting photo capture for detection:', {
-        x: detection.x,
-        y: detection.y,
-        width: detection.width,
-        height: detection.height,
-        class_id: detection.class_id,
-      });
-
-      const photo = await cameraRef.current.takePhoto({
-        flash: 'off',
-        enableShutterSound: false,
-      });
-
-      console.log('[JS] Photo captured successfully:', {
-        path: photo.path,
-        width: photo.width,
-        height: photo.height,
-      });
-
-      // 이미지 크기 조정
-      const manipResult = await ImageManipulator.manipulateAsync(
-        photo.path,
-        [{ resize: { width: 800 } }],
-        { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
-      );
-
-      console.log('[JS] Image resized:', {
-        originalPath: photo.path,
-        newPath: manipResult.uri,
-        width: manipResult.width,
-        height: manipResult.height,
-      });
-
-      // 이미지 데이터를 base64로 변환
-      const response = await fetch(manipResult.uri);
-      const blob = await response.blob();
-
-      console.log('[JS] Image blob created:', {
-        size: blob.size,
-        type: blob.type,
-      });
-
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => {
-          const base64data = reader.result as string;
-          const base64String = base64data.split(',')[1];
-          console.log('[JS] Base64 conversion completed:', {
-            length: base64String.length,
-            preview: base64String.substring(0, 50) + '...',
-          });
-          resolve(base64String);
-        };
-        reader.onerror = (error) => {
-          console.error('[JS] Base64 conversion error:', error);
-          reject(error);
-        };
-        reader.readAsDataURL(blob);
-      });
-    } catch (error) {
-      console.error('[JS] Photo capture error:', error);
-      return null;
-    }
-  };
-
-  const processExtractedData = async (extractedDataArray: any[]) => {
+  const processExtractedData = useRef(async (extractedDataArray: any[]) => {
     const now = Date.now();
     console.log('[JS] Processing extracted data:', {
       totalItems: extractedDataArray.length,
@@ -213,88 +204,28 @@ export function useObjectDetection(format: any) {
     if (uniqueItems.length === 0) return;
 
     try {
-      const promises = uniqueItems.map(async (item) => {
-        const { detection, timestamp } = item;
-        console.log('[JS] Processing item:', {
-          detection,
-          timestamp,
-        });
-
-        const base64String = await capturePhoto(detection);
-        if (!base64String) {
-          console.log('[JS] Failed to capture photo for detection');
-          return null;
-        }
-
-        // Convert base64 string to Uint8Array
-        const binaryString = atob(base64String);
-        const bytes = new Uint8Array(binaryString.length);
-        for (let i = 0; i < binaryString.length; i++) {
-          bytes[i] = binaryString.charCodeAt(i);
-        }
-
-        const result = await processImageData(
-          bytes,
-          detection,
-          timestamp,
-          true
-        );
-
-        if (!result) {
-          console.log('[JS] Failed to process image data');
-          return null;
-        }
-
-        console.log('[JS] Successfully processed detection:', {
-          class_id: detection.class_id,
-          sugar_content: result.detection.sugar_content,
-        });
-
-        return {
-          ...result,
-          imageData: `data:image/jpeg;base64,${base64String}`,
-        };
-      });
-
-      const results = await Promise.allSettled(promises);
-      console.log('[JS] All promises settled:', {
-        total: results.length,
-        fulfilled: results.filter((r) => r.status === 'fulfilled').length,
-        rejected: results.filter((r) => r.status === 'rejected').length,
-      });
-
-      const validResults = results
-        .filter(
-          (result): result is PromiseFulfilledResult<DetectionResult> =>
-            result.status === 'fulfilled' && result.value !== null
-        )
-        .map((result) => result.value);
-
-      console.log('[JS] Valid results:', {
-        count: validResults.length,
-        results: validResults.map((r) => ({
-          class_id: r.detection.class_id,
-          sugar_content: r.detection.sugar_content,
-        })),
-      });
-
-      if (validResults.length > 0) {
-        setDetectionResults((prev) => {
-          const prevKeys = new Set(prev.map((r) => getGridKey(r.detection)));
-          const newUnique = validResults.filter(
-            (r) => !prevKeys.has(getGridKey(r.detection))
-          );
-          return [...prev, ...newUnique];
-        });
-      }
+      // const promises = uniqueItems.map(async (item) => {
+      //   ...
+      //   return null;
+      // });
+      // const results = await Promise.allSettled(promises);
+      // const validResults = results
+      //   .filter(...)
+      //   .map(...);
+      // if (validResults.length > 0) {
+      //   setDetectionResults(...);
+      // }
     } catch (error) {
       console.error('[JS] Batch processing error:', error);
     }
-  };
+  }).current;
 
-  const runOnJSThread = Worklets.createRunOnJS(processExtractedData);
-
-  const SAMPLE_RATE = 10;
+  // const runOnJSThread = Worklets.createRunOnJS(processExtractedData);
+  // processExtractedData를 한 번만 래핑한 뒤, 콜백도 한 번만 생성
+  const runOnJSThread = useRef(
+    Worklets.createRunOnJS(processExtractedData)
+  ).current;
+  const SAMPLE_RATE = 15;
 
   const frameProcessor = useFrameProcessor(
     async (frame) => {
