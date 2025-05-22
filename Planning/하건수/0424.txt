@@ -1,0 +1,49 @@
+- mask-r-cnn 공부
+- yolo v8 모델 학습 방법 공부
+
+✅ 현재까지 구축된 구조 요약
+
+apple-grade-yolo/
+├── train.py                  ← YOLO 학습 스크립트
+├── predict_crop.py          ← 사과 탐지 후 Crop 이미지 저장
+├── requirements.txt         ← 패키지 설치 목록
+├── dataset/
+│   ├── data.yaml            ← YOLO 학습 설정 (클래스 정의 등)
+│   ├── images/
+│   │   ├── train/           ← 사과 학습용 이미지 (.jpg)
+│   │   └── val/             ← 검증용 이미지
+│   ├── labels/
+│   │   ├── train/           ← YOLO 학습 라벨 (.txt: class_id + bbox)
+│   │   └── val/             ← 검증용 라벨
+│   └── crops/               ← YOLO가 잘라낸 사과 이미지 저장 경로
+├── brix_labels.csv          ← Crop 이미지명 + 당도값(Brix) 매핑 (회귀용)
+└── [추후 추가]
+    ├── hsv_regressor.py     ← HSV 기반 당도 회귀 모델
+    └── cnn_regressor.py     ← CNN 기반 이미지 회귀 모델
+    
+✅ 현재 흐름
+
+1. YOLO 학습
+학습용 이미지 (images/train/)와 라벨 (labels/train/)을 이용해
+
+train.py 실행 → best.pt 생성
+
+2. 사과 Crop 추출
+predict_crop.py 실행
+
+val/ 이미지 넣으면 → dataset/crops/에 잘린 사과 이미지 저장
+
+3. 회귀 학습 준비
+Crop 이미지명과 Brix값을 brix_labels.csv에 매핑
+
+🔄 전체 파이프라인 플로우
+
+📸 원본 이미지
+   ↓
+[YOLO] → 사과 탐지 (train.py)
+   ↓
+[Crop] → 사과 부분만 저장 (predict_crop.py)
+   ↓
+[CSV] → Crop된 파일명 + Brix 값 연결 (brix_labels.csv)
+   ↓
+[회귀모델] → HSV or CNN으로 당도 예측 학습 (hsv_regressor.py or cnn_regressor.py)
