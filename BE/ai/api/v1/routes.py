@@ -13,15 +13,19 @@ from services.detect_service import detect  # ▶︎ YOLO 등 (bytes → list[di
 
 """
 -------추론 모델------------------------
-{ 
+{
+    cnn_feature_enhanced_seg,
+    cnn_feature_finetuning_seg,
+    cnn_feature_maskcrop_seg,
+    cnn_feature_seg,
+    cnn_feature_seg_v2,
     cnn_lgbm_bbox,
     cnn_lgbm_seg,
     lgbm_bbox,
     lgbm_seg,
+    model_a,
     xgb_bbox,
     xgb_seg,
-    model_jmk2,
-    cnn_feature_maskcrop_seg,
 }
 -------인식 모델------------------------
 { 
