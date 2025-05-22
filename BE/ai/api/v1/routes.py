@@ -13,14 +13,19 @@ from services.detect_service import detect  # ▶︎ YOLO 등 (bytes → list[di
 
 """
 -------추론 모델------------------------
-{ 
+{
+    cnn_feature_enhanced_seg,
+    cnn_feature_finetuning_seg,
+    cnn_feature_maskcrop_seg,
+    cnn_feature_seg,
+    cnn_feature_seg_v2,
     cnn_lgbm_bbox,
     cnn_lgbm_seg,
     lgbm_bbox,
     lgbm_seg,
+    model_a,
     xgb_bbox,
     xgb_seg,
-    model_jmk2,
 }
 -------인식 모델------------------------
 { 
@@ -44,7 +49,7 @@ from services.detect_service import detect  # ▶︎ YOLO 등 (bytes → list[di
 DETECT_MODEL_NAME: str = "yolov8_pt"
 DETECT_MODEL_VERSION: str = "m"
 # 당도 추론 모델: predict()에 전달할 모델 식별자
-PREDICT_MODEL_NAME: str = "xgb_seg"
+PREDICT_MODEL_NAME: str = "cnn_feature_maskcrop_seg"
 # -----------------------------
 
 router = APIRouter()
