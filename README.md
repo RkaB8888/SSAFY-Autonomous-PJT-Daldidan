@@ -49,9 +49,11 @@ YOLO 기반 객체 탐지와 CNN 기반 회귀 모델을 통해 사과의 당도
 
 ### Infra
 
-- Jenkins
-- Docker
-- Gitlab CI/CD
+- Gitlab
+- Jenkins: GitLab 연동 자동 빌드 & 배포 파이프라인 구축
+- Docker: FastAPI 백엔드 컨테이너화
+- AWS EC2: Jenkins, 백엔드 서버 등 배포 환경 운영
+- Nginx: 리버스 프록시 및 HTTPS 인증 설정
 
 ---
 
@@ -94,14 +96,15 @@ YOLO 기반 객체 탐지와 CNN 기반 회귀 모델을 통해 사과의 당도
 
 ### 2. CNN 기반 특징 추출 및 병합
 
-- EfficientNet-B0의 중간 임베딩(1280차원) 추출
-- RGB, LBP 등 수작업 시각 특징 10차원과 병합
-- 총 1290차원 → 차원 축소 후 256차원 입력
+- EfficientNet-B0의 최종 임베딩 벡터(1280차원)를 추출 (Classifier 제거 후 feature extractor로 사용)
+- RGB, YCbCr, GLCM 기반의 수작업 시각 특징 6차원과 병합
+- 총 1286차원의 벡터를 Fully Connected Layer에 입력
 
 ### 3. PyTorch 기반 MLP 회귀 모델
 
-- CNN + 수작업 특징 기반 벡터로 브릭스 값 예측
-- 다양한 조합 실험을 통해 R² 성능 최적화
+- CNN 임베딩 + 수작업 feature를 concat한 벡터를 기반으로 브릭스(Brix) 값을 회귀 방식으로 예측
+- 1286 → 128 → 1 구조의 MLP(다층 퍼셉트론)로 학습
+- CNN은 전체 학습 가능하도록 설정 (전이학습 기반 End-to-End 회귀 모델)
 
 ### 4. 실시간 모바일 객체 인식 최적화
 
@@ -128,7 +131,7 @@ YOLO 기반 객체 탐지와 CNN 기반 회귀 모델을 통해 사과의 당도
 
 | 이름   | 역할                        |
 | ------ | --------------------------- |
-| 최진문 | 팀장, Front-End, AI, Infra |
+| 최진문(팀장) | Front-End, AI, Infra |
 | 박수민 | Front-End, AI               |
 | 이원재 | Front-End, AI               |
 | 하건수 | Front-End, AI               |
@@ -139,7 +142,7 @@ YOLO 기반 객체 탐지와 CNN 기반 회귀 모델을 통해 사과의 당도
 
 ### 🎨 Front-End
 
-#### 최진문 [Front-End] (팀장)
+#### 최진문(팀장) [Front-End]
 
 - 프론트측 사과 객체 인식 모델(EfficientDet lite-0.tflite) 적용
 - 실시간 카메라뷰 프레임 연산을 위한 FrameProcessor 적용
