@@ -39,7 +39,8 @@ YOLO 기반 객체 탐지와 CNN 기반 회귀 모델을 통해 사과의 당도
 
 - React Native
 - Expo
-- Frame Processor (실시간 추론용)
+- Frame Processor
+- EfficientDet-lite0 (TFLite)
 
 ### Backend
 
@@ -86,7 +87,7 @@ YOLO 기반 객체 탐지와 CNN 기반 회귀 모델을 통해 사과의 당도
 
 ---
 
-## 🧪 주요 기술 (최신 버전 기반)
+## 🧪 주요 기술
 
 ### 1. YOLOv8l-seg 기반 사과 인식
 
@@ -131,25 +132,25 @@ YOLO 기반 객체 탐지와 CNN 기반 회귀 모델을 통해 사과의 당도
 
 | 이름   | 역할                        |
 | ------ | --------------------------- |
-| 최진문(팀장) | Front-End, AI, Infra |
-| 박수민 | Front-End, AI               |
-| 이원재 | Front-End, AI               |
-| 하건수 | Front-End, AI               |
-| 전민경 | Back-End, AI, Infra        |
-| 정한균 | Back-End, AI                |
+| 최진문(팀장) | Frontend, AI, Infra |
+| 박수민 | Frontend, AI               |
+| 이원재 | Frontend, AI               |
+| 하건수 | Frontend, AI               |
+| 전민경 | Backend, AI, Infra        |
+| 정한균 | Backend, AI                |
 
 ## 📌 역할 및 담당 업무
 
 ### 🎨 Front-End
 
-#### 최진문(팀장) [Front-End]
+#### 최진문(팀장) [Frontend]
 
 - 프론트측 사과 객체 인식 모델(EfficientDet lite-0.tflite) 적용
 - 실시간 카메라뷰 프레임 연산을 위한 FrameProcessor 적용
 - 당도 페이지 구현
 - Infra (expo 앱 배포)
 
-#### 박수민 [Front-End]
+#### 박수민 [Frontend]
 
 - 프론트측 사과 객체 인식 모델
 - 초기 당도 예측 모델 개발(XGBoost)
@@ -157,14 +158,14 @@ YOLO 기반 객체 탐지와 CNN 기반 회귀 모델을 통해 사과의 당도
 - UX/UI 디자인
 - 당도 페이지 구현
 
-#### 이원재 [Front-End]
+#### 이원재 [Frontend]
 
 - 프론트측 사과 객체 인식 모델
 - 초기 프론트측 사과 객체 인식 모델(YOLOv8n)
 - 로딩 페이지 구현
 - 당도 페이지 구현
 
-#### 하건수 [Front-End]
+#### 하건수 [Frontend]
 
 - 프론트측 사과 객체 인식 모델
 - 초기 프론트측 사과 객체 인식 모델(YOLOv8n)
@@ -174,14 +175,14 @@ YOLO 기반 객체 탐지와 CNN 기반 회귀 모델을 통해 사과의 당도
 
 ### 🖥️ Back-End
 
-#### 전민경 [Back-End]
+#### 전민경 [Backend]
 
 - 당도 예측 모델 개발 (CNN + 수작업 특징 기반 Fusion 모델 구현, Fine-tuning 및 Feature 확장 실험)
 - 초기 당도 예측 모델 개발(Linear Regression)
 - API 구현
 - Infra (백엔드 배포)
 
-#### 정한균 [Back-End]
+#### 정한균 [Backend]
 
 - 백엔드측 사과 객체 인식 모델
 - 초기 당도 예측 모델 개발(EfficientNet-B0+LightGBM, LightGBM)
@@ -207,7 +208,7 @@ YOLO 기반 객체 탐지와 CNN 기반 회귀 모델을 통해 사과의 당도
 
 ## 📂 프로젝트 구조
 
-### Back-end
+### Backend
 
 ```
 📁 BE/
@@ -272,7 +273,7 @@ YOLO 기반 객체 탐지와 CNN 기반 회귀 모델을 통해 사과의 당도
 
 ---
 
-### Front-end
+### Frontend
 
 ```
 📁 FE/
