@@ -1,36 +1,55 @@
-import base64
-import requests
-import tkinter as tk
-from tkinter import filedialog
+# scripts/test_predict_api.py
 
-# Tkinter 루트 윈도우 생성 (보이지 않게 숨김)
-root = tk.Tk()
-root.withdraw()
+import asyncio
+import aiohttp
+import time
+from pathlib import Path
 
-# 1. 파일 다이얼로그로 이미지 선택
-file_path = filedialog.askopenfilename(
-    title="당도 추론용 이미지를 선택하세요",
-    filetypes=[("Image files", "*.jpg *.jpeg *.png")],
-)
+# 테스트할 API 주소 (로컬 or 서버 주소)
+URL = "https://k12e206.p.ssafy.io/predict"  # EC2 포트에 맞게 수정 가능
+HEADERS = {"accept": "application/json"}
+IMAGE_PATH = "sample.jpg"  # 반드시 이 경로에 테스트 이미지가 있어야 함
 
-if not file_path:
-    print("이미지를 선택하지 않았습니다.")
-    exit()
+# 요청 수와 동시 처리 수 설정
+TOTAL_REQUESTS = 100
+CONCURRENCY = 10
 
-# 2. 이미지 → base64 인코딩
-with open(file_path, "rb") as f:
-    encoded = base64.b64encode(f.read()).decode("utf-8")
 
-# 3. 요청 구성
-url = "https://k12e206.p.ssafy.io/predict"
-data = {
-    "id": 1,
-    "image_base64": encoded,
-}
+async def send_request(session, idx):
+    with open(IMAGE_PATH, "rb") as f:
+        form = aiohttp.FormData()
+        form.add_field("image", f, filename="sample.jpg", content_type="image/jpeg")
+        try:
+            async with session.post(URL, data=form) as resp:
+                status = resp.status
+                if status == 200:
+                    return True
+                else:
+                    print(f"[{idx}] ❌ Status: {status}")
+                    return False
+        except Exception as e:
+            print(f"[{idx}] ❌ Error: {e}")
+            return False
 
-# 4. 요청 전송
-response = requests.post(url, data=data)
 
-# 5. 응답 출력
-print("Status Code:", response.status_code)
-print("Response JSON:", response.json())
+async def main():
+    connector = aiohttp.TCPConnector(limit=CONCURRENCY)
+    async with aiohttp.ClientSession(headers=HEADERS, connector=connector) as session:
+        tasks = [send_request(session, i) for i in range(TOTAL_REQUESTS)]
+        start_time = time.perf_counter()
+        results = await asyncio.gather(*tasks)
+        elapsed = time.perf_counter() - start_time
+
+        success_count = sum(results)
+        fail_count = TOTAL_REQUESTS - success_count
+        qps = TOTAL_REQUESTS / elapsed
+
+        print("\n✅ 테스트 결과 요약")
+        print(f"총 요청 수: {TOTAL_REQUESTS}")
+        print(f"성공: {success_count}, 실패: {fail_count}")
+        print(f"총 소요 시간: {elapsed:.2f}초")
+        print(f"초당 처리량 (QPS): {qps:.2f} req/sec")
+
+
+if __name__ == "__main__":
+    asyncio.run(main())

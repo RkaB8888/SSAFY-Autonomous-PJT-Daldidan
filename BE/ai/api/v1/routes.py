@@ -80,36 +80,36 @@ async def predict_image(
         else:
             img_bytes = base64.b64decode(image_base64)
 
-        # 📁 저장 디렉토리 생성
-        save_dir = "tmp/uploads"
-        os.makedirs(save_dir, exist_ok=True)
+        # # 📁 저장 디렉토리 생성
+        # save_dir = "tmp/uploads"
+        # os.makedirs(save_dir, exist_ok=True)
 
-        # 📸 저장 파일명: predict_20240515_213803.jpg 형식
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        ext = imghdr.what(None, h=img_bytes) or "jpg"
-        filename = f"predict_{timestamp}.{ext}"
-        save_path = os.path.join(save_dir, filename)
+        # # 📸 저장 파일명: predict_20240515_213803.jpg 형식
+        # timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        # ext = imghdr.what(None, h=img_bytes) or "jpg"
+        # filename = f"predict_{timestamp}.{ext}"
+        # save_path = os.path.join(save_dir, filename)
 
-        # 전달받은 이미지 저장
-        with open(save_path, "wb") as f:
-            f.write(img_bytes)
+        # # 전달받은 이미지 저장
+        # with open(save_path, "wb") as f:
+        #     f.write(img_bytes)
 
         pil_img = Image.open(io.BytesIO(img_bytes)).convert("RGB")
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Invalid image: {e}")
 
     # 2️⃣  사과 탐지 -------------------------------------------------------------
-    print("[/predict] 🔍 detect() 호출 시작")
+    # print("[/predict] 🔍 detect() 호출 시작")
 
     apples = detect(DETECT_MODEL_NAME, pil_img, version=DETECT_MODEL_VERSION)
-    print(f"[/predict] 🔍 사과 탐지 결과: {len(apples)}개")
+    # print(f"[/predict] 🔍 사과 탐지 결과: {len(apples)}개")
 
     if not apples:
         return PredictResponse(results=[])
 
-    # 🔴 바운딩 박스 그리기용 복제본 생성
-    draw_img = pil_img.copy()
-    draw = ImageDraw.Draw(draw_img)
+    # # 🔴 바운딩 박스 그리기용 복제본 생성
+    # draw_img = pil_img.copy()
+    # draw = ImageDraw.Draw(draw_img)
 
     # 3️⃣  각 사과 영역 crop → 당도 추정 -----------------------------------------
     results: List[ApplePred] = []
@@ -153,22 +153,22 @@ async def predict_image(
         sugar = predict(
             PREDICT_MODEL_NAME, image_bytes
         )  # ← bytes/PIL 둘 중 하나에 맞춰 predict 수정
-        # 🔴 박스 시각화
-        draw.rectangle(
-            [int(xmin), int(ymin), int(xmax), int(ymax)], outline="red", width=4
-        )
-        text_y = int(ymin) - 10 if ymin > 10 else int(ymin) + 10
-        draw.text(
-            (int(xmin), text_y),
-            f"id={idx} | {sugar:.2f}",
-            fill="red",
-            stroke_width=1,
-            stroke_fill="white",
-        )
+        # # 🔴 박스 시각화
+        # draw.rectangle(
+        #     [int(xmin), int(ymin), int(xmax), int(ymax)], outline="red", width=4
+        # )
+        # text_y = int(ymin) - 10 if ymin > 10 else int(ymin) + 10
+        # draw.text(
+        #     (int(xmin), text_y),
+        #     f"id={idx} | {sugar:.2f}",
+        #     fill="red",
+        #     stroke_width=1,
+        #     stroke_fill="white",
+        # )
 
-        # 🔴 segmentation 윤곽선 그리기
-        if pts_list:
-            draw.polygon(pts_list, outline="blue", width=2)
+        # # 🔴 segmentation 윤곽선 그리기
+        # if pts_list:
+        #     draw.polygon(pts_list, outline="blue", width=2)
 
         item = ApplePred(
             id=idx,
@@ -183,13 +183,13 @@ async def predict_image(
         )
         results.append(item)
 
-    # ✅ 시각화 이미지 저장 -----------------------------------------
-    drawn_path = os.path.join(save_dir, f"predict_{timestamp}_drawn.{ext}")
-    draw_img.save(drawn_path)
-    print(f"✅ 시각화 이미지 저장: {drawn_path}")
+    # # ✅ 시각화 이미지 저장 -----------------------------------------
+    # drawn_path = os.path.join(save_dir, f"predict_{timestamp}_drawn.{ext}")
+    # draw_img.save(drawn_path)
+    # print(f"✅ 시각화 이미지 저장: {drawn_path}")
 
     # 4️⃣  응답 + 로그 -----------------------------------------------------------
-    print(
-        f"[/predict] apples={len(results)}  elapsed={(time.perf_counter()-t0)*1000:.1f} ms"
-    )
+    # print(
+    #     f"[/predict] apples={len(results)}  elapsed={(time.perf_counter()-t0)*1000:.1f} ms"
+    # )
     return PredictResponse(results=results)
